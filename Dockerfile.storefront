@@ -12,6 +12,6 @@ WORKDIR /app/apps/storefront
 
 EXPOSE 8000
 
-# Install, build, and start AT RUNTIME. We sleep for 300 seconds to let the backend finish its massive install/build first.
-# We check if node_modules exists so we don't reinstall on simple restarts.
-CMD ["sh", "-c", "echo 'Sleeping for 300s to let backend install and build first...' && sleep 300 && if [ ! -d node_modules ]; then npm install --legacy-peer-deps; fi && npm run build && npm run start"]
+# Install, build, and start AT RUNTIME. We wait for the backend to fully start before doing anything.
+# This ensures we never run npm install or npm run build simultaneously, saving the VPS RAM.
+CMD ["sh", "-c", "echo 'Waiting for backend to become ready...' && while ! wget -qO- http://backend:9000/health > /dev/null 2>&1; do sleep 5; done && echo 'Backend is ready! Starting storefront setup...' && if [ ! -d node_modules ]; then npm install --legacy-peer-deps; fi && npm run build && npm run start"]
