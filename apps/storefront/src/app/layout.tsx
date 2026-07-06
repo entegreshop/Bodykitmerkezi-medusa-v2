@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic"
 import { Inter, Plus_Jakarta_Sans } from "next/font/google"
 import "../styles/globals.css"
 
