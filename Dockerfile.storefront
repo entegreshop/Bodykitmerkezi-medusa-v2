@@ -15,5 +15,6 @@ RUN sleep 90 && npm install --legacy-peer-deps
 
 EXPOSE 8000
 
-# Run build and start AT RUNTIME. This bypasses all Coolify Docker build phase restrictions (OOM, missing backend)
-CMD ["sh", "-c", "npm run build && npm run start"]
+# Run build and start AT RUNTIME. We sleep for 150 seconds to let the backend finish its build and start up first.
+# This prevents both containers from maxing out the VPS memory simultaneously.
+CMD ["sh", "-c", "echo 'Sleeping for 150s to let backend build first...' && sleep 150 && npm run build && npm run start"]
