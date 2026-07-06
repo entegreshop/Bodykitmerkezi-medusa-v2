@@ -33,6 +33,7 @@
     "react-router-dom": "6.30.3",
     "react-i18next": "13.5.0",
     "@medusajs/ui": "4.1.13",
+    "recharts": "^2.12.7",
     "zod": "4.2.0"
   },
   "devDependencies": {

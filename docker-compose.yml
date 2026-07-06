@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-medusa}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-medusa}
+      POSTGRES_DB: ${POSTGRES_DB:-medusa}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: always
+
+  redis:
+    image: redis:alpine
+    restart: always
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-medusa}:${POSTGRES_PASSWORD:-medusa}@db:5432/${POSTGRES_DB:-medusa}
+      REDIS_URL: redis://redis:6379
+      STORE_CORS: http://www.xoox.com.tr,https://www.xoox.com.tr
+      ADMIN_CORS: http://www.xoox.com.tr,https://www.xoox.com.tr
+      AUTH_CORS: http://www.xoox.com.tr,https://www.xoox.com.tr
+      JWT_SECRET: ${JWT_SECRET:-supersecret}
+      COOKIE_SECRET: ${COOKIE_SECRET:-supersecret}
+      PORT: 9000
+    depends_on:
+      - db
+      - redis
+    restart: always
+
+  storefront:
+    build:
+      context: .
+      dockerfile: Dockerfile.storefront
+    environment:
+      NEXT_PUBLIC_MEDUSA_BACKEND_URL: https://www.xoox.com.tr
+      PORT: 8000
+    depends_on:
+      - backend
+    restart: always
+
+
+volumes:
+  postgres_data:

@@ -1,0 +1,25 @@
+FROM node:20-alpine AS builder
+# Set working directory
+WORKDIR /app
+# Install dependencies
+COPY package.json package-lock.json turbo.json ./
+# For storefront we assume it will have the default package name from the starter
+COPY apps/storefront/package.json ./apps/storefront/
+RUN npm ci
+
+# Copy source code and build
+COPY . .
+# Next.js Medusa starter doesn't always have a build script registered in Turborepo by default
+# Let's just build it directly
+WORKDIR /app/apps/storefront
+RUN npm run build
+
+FROM node:20-alpine AS runner
+WORKDIR /app/apps/storefront
+COPY --from=builder /app/apps/storefront/.next/standalone ./
+COPY --from=builder /app/apps/storefront/.next/static ./.next/static
+COPY --from=builder /app/apps/storefront/public ./public
+
+EXPOSE 8000
+# Assuming Next.js standalone mode is configured in next.config.mjs
+CMD ["node", "server.js"]
