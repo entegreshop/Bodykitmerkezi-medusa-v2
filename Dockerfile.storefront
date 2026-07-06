@@ -9,7 +9,9 @@ COPY . .
 RUN mv package.json package.json.bak || true
 
 WORKDIR /app/apps/storefront
-RUN npm install --legacy-peer-deps
+# Sleep for 90 seconds to let the backend npm install finish first. 
+# This prevents both Dockerfiles from running npm install simultaneously and crashing the VPS due to out-of-memory.
+RUN sleep 90 && npm install --legacy-peer-deps
 
 EXPOSE 8000
 
