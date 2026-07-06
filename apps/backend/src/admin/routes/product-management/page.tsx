@@ -161,7 +161,7 @@ const IkasProductsPage = () => {
         if (prod.variants) {
           prod.variants = prod.variants.map((v: any) => {
             const inventoryItemId = v.inventory_items?.[0]?.inventory_item_id
-            const stock = inventoryItemId ? (inventoryItemsMap.get(inventoryItemId) ?? 100) : 100
+            const stock = inventoryItemId ? (inventoryItemsMap.get(inventoryItemId) ?? v.metadata?.stock ?? 0) : (v.metadata?.stock ?? 0)
             return {
               ...v,
               inventory_quantity: stock
@@ -425,7 +425,7 @@ const IkasProductsPage = () => {
         costPrice: (v.metadata?.cost_price || 0).toString(),
         sku: v.sku || "",
         barcode: v.barcode || "",
-        stock: (v.inventory_quantity || 100).toString(), // Fallback quantity
+        stock: (v.inventory_quantity ?? v.metadata?.stock ?? 0).toString(), // Fallback quantity
         image: v.metadata?.image || prod.thumbnail || ""
       }
     }) || []
@@ -665,14 +665,14 @@ const IkasProductsPage = () => {
                 }
 
                 // Match with target stock from the variantsTable or standard state
-                let targetStock = 100
+                let targetStock = 0
                 if (isVariantProduct) {
                   const formV = variantsTable.find(v => v.sku === sku || `${v.color} / ${v.size}` === sv.title)
                   if (formV) {
                     targetStock = parseInt(formV.stock) || 0
                   }
                 } else {
-                  targetStock = parseInt(variantsTable[0]?.stock || "100") || 0
+                  targetStock = parseInt(variantsTable[0]?.stock || "0") || 0
                 }
 
                 // Query existing location levels for this item
@@ -796,6 +796,23 @@ const IkasProductsPage = () => {
     } catch (err) {
       console.error(err)
       alert("Hata oluştu.")
+    }
+  }
+
+  // --- Bulk Delete Handler ---
+  const handleBulkDelete = async () => {
+    if (!confirm(`Seçili ${selectedProductIds.length} ürünü silmek istediğinize emin misiniz?`)) return
+    
+    try {
+      // Basic loop to delete selected products (in production, batch delete API might be better if supported)
+      for (const id of selectedProductIds) {
+        await fetch(`/admin/products/${id}`, { method: "DELETE" })
+      }
+      setProducts(prev => prev.filter(p => !selectedProductIds.includes(p.id)))
+      setSelectedProductIds([])
+    } catch (err) {
+      console.error(err)
+      alert("Toplu silme işleminde hata oluştu.")
     }
   }
 
@@ -1145,6 +1162,7 @@ const IkasProductsPage = () => {
                   </button>
                   <button
                     type="button"
+                    onClick={handleBulkDelete}
                     className="bg-[#ef4444] hover:bg-red-600 text-white font-bold text-sm px-6 py-2.5 rounded transition-colors flex items-center gap-1.5"
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>

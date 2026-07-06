@@ -7,6 +7,7 @@ export async function POST(
 ) {
   try {
     const xmlImportService: any = req.scope.resolve(XML_IMPORT_MODULE)
+    console.log("Resolved Service Keys: ", Object.keys(xmlImportService), xmlImportService.__type)
     const created = await xmlImportService.createXmlSources(req.body)
     res.json({ xml_source: created })
   } catch (error: any) {

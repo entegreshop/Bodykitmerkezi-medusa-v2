@@ -1,7 +1,7 @@
 {
   "name": "yeni-medusa-projesi",
-  "private": false,
-  "packageManager": "npm@11.11.0",
+  "version": "0.0.0",
+  "private": true,
   "engines": {
     "node": ">=20"
   },

@@ -6,12 +6,130 @@ const XmlImportTab = () => {
   const [activeTab, setActiveTab] = useState("bilgiler")
   const [isTagMappingOpen, setIsTagMappingOpen] = useState(false)
   const [isCategoryMappingOpen, setIsCategoryMappingOpen] = useState(false)
+  const [tagOptions, setTagOptions] = useState<string[]>([])
+  const [isRefreshingTags, setIsRefreshingTags] = useState(false)
 
   // Form State
   const [kaynakAdi, setKaynakAdi] = useState("BYM")
-  const [dosyaLinki, setDosyaLinki] = useState("https://www.cizgibutik.com/export/84cf1f5f-1677-44f4-8b06-8d728adb2f3a")
+  const [dosyaLinki, setDosyaLinki] = useState("https://www.bymfashion.com/xml/?R=19701&K=3657&AltUrun=1&TamLink=1&Dislink=1&Seo=1&Imgs=1&start=0&limit=99999&pass=C96k4zm7")
   const [zamanlama, setZamanlama] = useState("Hiçbir Zaman")
   const [isSaving, setIsSaving] = useState(false)
+
+  const handleRefreshTags = async () => {
+    if (!dosyaLinki) {
+      toast.error("Hata", { description: "Lütfen bir dosya linki girin." })
+      return
+    }
+    setIsRefreshingTags(true)
+    try {
+      const response = await fetch("/admin/xml-sources/fetch-tags", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: dosyaLinki })
+      })
+      if (response.ok) {
+        const data = await response.json()
+        if (data.tags && data.tags.length > 0) {
+          setTagOptions(data.tags)
+          toast.success("Başarılı", { description: `${data.tags.length} adet etiket bulundu.` })
+        } else {
+          toast.warning("Uyarı", { description: "Etiket bulunamadı." })
+        }
+      } else {
+        toast.error("Hata", { description: "Etiketler çekilemedi." })
+      }
+    } catch (e) {
+      toast.error("Hata", { description: "Bağlantı hatası." })
+    } finally {
+      setIsRefreshingTags(false)
+    }
+  }
+
+  // Mapping State
+  const [mappedTags, setMappedTags] = useState<Record<string, string>>({
+    "Ürün Kodu": "productCode", "Barkod": "barcode", "Ürün Adı": "name", 
+    "Marka": "brand", "Ana Kategori": "category", "Üst Kategori": "top_category", 
+    "Kategori": "sub_category", "Piyasa Fiyatı": "listPrice", "KDV": "tax", 
+    "Satış Fiyatı": "price", "Alış Fiyatı": "price", "Para Birimi": "currency", 
+    "Desi": "desi", "Stok": "stockAmount", "Ana Resim": "image1",
+    "İçerik": "description", "1. Ürün Varyant Başlığı": "variant_name",
+    "Ürün Varyant Stoğu": "variant_stock", "Ürün Varyant Barkodu": "variant_barcode",
+    "Ürün Varyant Fiyatı": "price", "Ürün Varyant Görseli": "image1"
+  })
+  
+  // Category State
+  const [xmlCategories, setXmlCategories] = useState<{ src: string, dst: string, marginAmt: string, marginPct: string, active: boolean }[]>([
+    { src: "ALT GİYİM > Etek", dst: "", marginAmt: "0", marginPct: "0", active: true }
+  ])
+  const [medusaCategories, setMedusaCategories] = useState<{id: string, name: string}[]>([])
+  const [isRefreshingCats, setIsRefreshingCats] = useState(false)
+
+  React.useEffect(() => {
+    fetch("/admin/product-categories?limit=500")
+      .then(res => res.json())
+      .then(data => {
+        if (data.product_categories) setMedusaCategories(data.product_categories)
+      })
+      .catch(console.error)
+  }, [])
+
+  const handleRefreshCategories = async () => {
+    if (!dosyaLinki) {
+      toast.error("Hata", { description: "Lütfen bir dosya linki girin." })
+      return
+    }
+    setIsRefreshingCats(true)
+    try {
+      const response = await fetch("/admin/xml-sources/fetch-categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: dosyaLinki })
+      })
+      if (response.ok) {
+        const data = await response.json()
+        if (data.categories && data.categories.length > 0) {
+          const newCats = data.categories.map((c: string) => ({
+             src: c, dst: "", marginAmt: "0", marginPct: "0", active: true
+          }))
+          setXmlCategories(newCats)
+          toast.success("Başarılı", { description: `${data.categories.length} adet kategori bulundu.` })
+        } else {
+          toast.warning("Uyarı", { description: "Kategori bulunamadı." })
+        }
+      } else {
+        toast.error("Hata", { description: "Kategoriler çekilemedi." })
+      }
+    } catch (e) {
+      toast.error("Hata", { description: "Bağlantı hatası." })
+    } finally {
+      setIsRefreshingCats(false)
+    }
+  }
+
+  const [isImporting, setIsImporting] = useState(false)
+
+  const handleImportProducts = async () => {
+    setIsImporting(true)
+    toast.info("İçe Aktarma Başladı", { description: "Ürünler arka planda aktarılıyor. Bu işlem birkaç dakika sürebilir." })
+    try {
+      const response = await fetch("/admin/xml-sources/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: dosyaLinki, tag_mappings: mappedTags })
+      })
+      if (response.ok) {
+        const data = await response.json()
+        toast.success("Başarılı", { description: `${data.importedCount || 0} ürün işlendi.` })
+      } else {
+        const err = await response.json()
+        toast.error("Hata", { description: err.message || "Bilinmeyen hata" })
+      }
+    } catch (e) {
+      toast.error("Hata", { description: "Sunucuya bağlanılamadı." })
+    } finally {
+      setIsImporting(false)
+    }
+  }
 
   const handleSave = async () => {
     setIsSaving(true)
@@ -19,7 +137,9 @@ const XmlImportTab = () => {
       const payload = {
         name: kaynakAdi,
         url: dosyaLinki,
-        schedule: zamanlama
+        schedule: zamanlama,
+        tag_mappings: mappedTags,
+        category_mappings: xmlCategories
       }
       const response = await fetch("/admin/xml-sources", {
         method: "POST",
@@ -355,7 +475,11 @@ const XmlImportTab = () => {
       <div className="mt-auto border-t border-zinc-200 pt-6 flex justify-between items-center">
         <div className="flex items-center gap-x-4">
           <div className="text-sm font-semibold text-zinc-700 bg-zinc-100 py-2 px-3 rounded border border-zinc-200">İşlemler *</div>
-          <Button className="bg-[#a855f7] hover:bg-[#9333ea] text-white border-0 flex items-center gap-x-2 px-6">
+          <Button 
+            onClick={handleImportProducts}
+            isLoading={isImporting}
+            className="bg-[#a855f7] hover:bg-[#9333ea] text-white border-0 flex items-center gap-x-2 px-6"
+          >
             ▶ Ürünleri Aktar
           </Button>
           <div className="flex flex-col text-[11px]">
@@ -467,25 +591,31 @@ const XmlImportTab = () => {
                       { id: 50, name: "Model Kodu", val: "productCode" },
                       { id: 51, name: "Garanti Süresi", val: "secin" },
                       { id: 52, name: "Menşei", val: "secin" }
-                    ].map((row) => (
+                    ].map((row) => {
+                      const currentVal = mappedTags[row.name] || row.val;
+                      return (
                       <tr key={row.id}>
                         <td className="px-4 py-2 text-zinc-500">{row.id}</td>
                         <td className="px-4 py-2 text-zinc-700">{row.name}</td>
                         <td className="px-4 py-1">
-                          <Select defaultValue={row.val}>
+                          <Select 
+                            value={currentVal} 
+                            onValueChange={(val) => setMappedTags(prev => ({ ...prev, [row.name]: val }))}
+                          >
                             <Select.Trigger className="h-8 text-xs"><Select.Value /></Select.Trigger>
                             <Select.Content>
-                              <Select.Item value={row.val}>{row.val === 'secin' ? 'Seçin' : row.val}</Select.Item>
-                              <Select.Item value="productCode">productCode</Select.Item>
-                              <Select.Item value="barcode">barcode</Select.Item>
-                              <Select.Item value="name">name</Select.Item>
-                              <Select.Item value="brand">brand</Select.Item>
-                              <Select.Item value="category">category</Select.Item>
+                              <Select.Item value="secin">Seçin</Select.Item>
+                              {tagOptions.map(tag => (
+                                <Select.Item key={tag} value={tag}>{tag}</Select.Item>
+                              ))}
+                              {currentVal !== 'secin' && !tagOptions.includes(currentVal) && (
+                                <Select.Item value={currentVal}>{currentVal}</Select.Item>
+                              )}
                             </Select.Content>
                           </Select>
                         </td>
                       </tr>
-                    ))}
+                    )})}
                   </tbody>
                 </table>
               </div>
@@ -502,7 +632,11 @@ const XmlImportTab = () => {
             </div>
             {/* Modal Footer */}
             <div className="bg-zinc-100 p-4 border-t border-zinc-200 flex justify-between items-center rounded-b-lg">
-              <Button className="bg-[#3b82f6] hover:bg-[#2563eb] text-white border-0 flex items-center gap-x-2">
+              <Button 
+                onClick={handleRefreshTags}
+                isLoading={isRefreshingTags}
+                className="bg-[#3b82f6] hover:bg-[#2563eb] text-white border-0 flex items-center gap-x-2"
+              >
                 <ArrowDownTray className="w-4 h-4" /> Etiketleri Yenile
               </Button>
               <Button onClick={() => setIsTagMappingOpen(false)} className="bg-[#10b981] hover:bg-[#059669] text-white border-0">
@@ -572,29 +706,40 @@ const XmlImportTab = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-100">
-                    {[
-                      { id: 1, src: "ALT GİYİM >>> Etek >>> Etek", dst: "ALT GİYİM >>> Etek (28)" },
-                      { id: 2, src: "ALT GİYİM >>> Eşofman >>> Eşofman", dst: "ALT GİYİM >>> Eşofman (30)" },
-                      { id: 3, src: "ALT GİYİM >>> Jean Pantolon >>> Jean Pantolon", dst: "ALT GİYİM >>> Jean Pantolon (19)" },
-                      { id: 4, src: "ALT GİYİM >>> Pantolon >>> Pantolon", dst: "ALT GİYİM >>> Pantolon (24)" },
-                      { id: 5, src: "ALT GİYİM >>> Tayt >>> Tayt", dst: "ALT GİYİM >>> Tayt (29)" },
-                      { id: 6, src: "ALT GİYİM >>> Şort >>> Şort", dst: "ALT GİYİM >>> Şort (15)" },
-                      { id: 7, src: "DIŞ GİYİM >>> Ceket >>> Ceket", dst: "DIŞ GİYİM >>> Ceket (21)" },
-                      { id: 8, src: "DIŞ GİYİM >>> Kürk >>> Kürk", dst: "DIŞ GİYİM >>> Kürk (20)" },
-                      { id: 9, src: "DIŞ GİYİM >>> Mont >>> Mont", dst: "DIŞ GİYİM >>> Mont (32)" },
-                      { id: 10, src: "ELBİSE", dst: "ELBİSE (10)" },
-                      { id: 11, src: "GÖZLÜK >>> Güneş Gözlüğü >>> Güneş Gözlüğü", dst: "GÖZLÜK >>> Güneş Gözlüğü (13)" },
-                    ].map((row) => (
-                      <tr key={row.id}>
+                    {xmlCategories.map((row, idx) => (
+                      <tr key={idx}>
                         <td className="px-4 py-3 text-zinc-700 text-[11px] leading-relaxed">{row.src}</td>
-                        <td className="px-4 py-2"><Input value={row.dst} readOnly className="bg-zinc-50 h-8 text-xs text-zinc-600" /></td>
-                        <td className="px-4 py-2 text-center"><Input defaultValue="0" className="text-center h-8" /></td>
-                        <td className="px-4 py-2 text-center"><Input defaultValue="0" className="text-center h-8" /></td>
-                        <td className="px-4 py-2 flex justify-center"><Switch checked={true} /></td>
+                        <td className="px-4 py-2">
+                          <Input 
+                            list="medusa-categories" 
+                            value={row.dst} 
+                            onChange={(e) => {
+                               const newCats = [...xmlCategories];
+                               newCats[idx].dst = e.target.value;
+                               setXmlCategories(newCats);
+                            }}
+                            className="bg-zinc-50 h-8 text-xs text-zinc-600" 
+                          />
+                        </td>
+                        <td className="px-4 py-2 text-center"><Input defaultValue={row.marginAmt} className="text-center h-8" /></td>
+                        <td className="px-4 py-2 text-center"><Input defaultValue={row.marginPct} className="text-center h-8" /></td>
+                        <td className="px-4 py-2 flex justify-center">
+                          <Switch 
+                            checked={row.active} 
+                            onCheckedChange={(val) => {
+                               const newCats = [...xmlCategories];
+                               newCats[idx].active = val;
+                               setXmlCategories(newCats);
+                            }} 
+                          />
+                        </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
+                <datalist id="medusa-categories">
+                  {medusaCategories.map(c => <option key={c.id} value={c.name} />)}
+                </datalist>
               </div>
 
               <div className="mt-4 flex justify-between items-center text-xs text-zinc-500 font-medium">
@@ -616,13 +761,29 @@ const XmlImportTab = () => {
             {/* Modal Footer */}
             <div className="bg-zinc-100 p-4 border-t border-zinc-200 flex justify-between items-center rounded-b-lg">
               <div className="flex gap-x-2">
-                <Button className="bg-[#3b82f6] hover:bg-[#2563eb] text-white border-0 flex items-center gap-x-2">
+                <Button 
+                  onClick={handleRefreshCategories}
+                  isLoading={isRefreshingCats}
+                  className="bg-[#3b82f6] hover:bg-[#2563eb] text-white border-0 flex items-center gap-x-2"
+                >
                   <ArrowDownTray className="w-4 h-4" /> Kategorileri Yenile
                 </Button>
-                <Button variant="secondary" className="bg-white text-zinc-700 border-zinc-300">
+                <Button 
+                  onClick={() => {
+                    const newCats = xmlCategories.map(c => ({...c, active: true}))
+                    setXmlCategories(newCats)
+                  }}
+                  variant="secondary" className="bg-white text-zinc-700 border-zinc-300"
+                >
                   <span className="text-[#10b981] font-bold mr-1">✔</span> Tümünü Aktif Yap
                 </Button>
-                <Button variant="secondary" className="bg-white text-zinc-700 border-zinc-300">
+                <Button 
+                  onClick={() => {
+                    const newCats = xmlCategories.map(c => ({...c, active: false}))
+                    setXmlCategories(newCats)
+                  }}
+                  variant="secondary" className="bg-white text-zinc-700 border-zinc-300"
+                >
                   <span className="text-red-500 font-bold mr-1">✖</span> Tümünü Pasif Yap
                 </Button>
               </div>
