@@ -22,9 +22,9 @@ services:
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER:-medusa}:${POSTGRES_PASSWORD:-medusa}@db:5432/${POSTGRES_DB:-medusa}
       REDIS_URL: redis://redis:6379
-      STORE_CORS: http://www.xoox.com.tr,https://www.xoox.com.tr
-      ADMIN_CORS: http://www.xoox.com.tr,https://www.xoox.com.tr
-      AUTH_CORS: http://www.xoox.com.tr,https://www.xoox.com.tr
+      STORE_CORS: ${SERVICE_URL_STOREFRONT}
+      ADMIN_CORS: ${SERVICE_URL_STOREFRONT}
+      AUTH_CORS: ${SERVICE_URL_STOREFRONT}
       JWT_SECRET: ${JWT_SECRET:-supersecret}
       COOKIE_SECRET: ${COOKIE_SECRET:-supersecret}
       PORT: 9000
@@ -38,7 +38,7 @@ services:
       context: .
       dockerfile: Dockerfile.storefront
     environment:
-      NEXT_PUBLIC_MEDUSA_BACKEND_URL: https://www.xoox.com.tr
+      NEXT_PUBLIC_MEDUSA_BACKEND_URL: ${SERVICE_URL_BACKEND}
       PORT: 8000
     depends_on:
       - backend
