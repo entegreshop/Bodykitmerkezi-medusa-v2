@@ -37,6 +37,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.storefront
+      args:
+        - NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY=${NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY:-pk_123456789}
     environment:
       NEXT_PUBLIC_MEDUSA_BACKEND_URL: ${SERVICE_URL_BACKEND}
       NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY: ${NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY:-pk_123456789}

@@ -1,17 +1,33 @@
-FROM node:20-alpine AS runner
-# Set working directory
+FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Copy source code
+# Add build argument for the publishable key so the Next.js build can use it
+ARG NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
+ENV NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY=$NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
+
+# Copy package.json files first to leverage Docker cache
+COPY package.json package-lock.json turbo.json ./
+COPY apps/backend/package.json ./apps/backend/
+COPY apps/storefront/package.json ./apps/storefront/
+
+# Install dependencies and cache them
+RUN npm install --legacy-peer-deps
+
+# Copy the rest of the source code
 COPY . .
 
-# Disable root package.json to bypass npm workspace resolution bugs
-RUN mv package.json package.json.bak || true
+# Build the storefront
+RUN npx turbo run build --filter=medusa-next
+
+FROM node:20-alpine AS runner
+WORKDIR /app
+
+# Copy the built artifacts from the builder
+COPY --from=builder /app /app
 
 WORKDIR /app/apps/storefront
 
 EXPOSE 8000
 
-# Install, build, and start AT RUNTIME. We wait for the backend to fully start before doing anything.
-# This ensures we never run npm install or npm run build simultaneously, saving the VPS RAM.
-CMD ["sh", "-c", "echo 'Waiting for backend to become ready...' && while ! wget -qO- http://backend:9000/health > /dev/null 2>&1; do sleep 5; done && echo 'Backend is ready! Starting storefront setup...' && if [ ! -d node_modules ]; then npm install --legacy-peer-deps; fi && npm run build && npm run start"]
+# Start the storefront directly (it will wait for backend internally or just retry fetching products)
+CMD ["npm", "run", "start"]
