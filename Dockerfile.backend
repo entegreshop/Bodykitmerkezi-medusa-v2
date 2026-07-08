@@ -10,6 +10,5 @@ WORKDIR /app/apps/backend
 
 EXPOSE 9000
 
-# Install, build, and start at runtime to completely bypass Docker build timeouts and limits.
-# We check if node_modules exists so we don't reinstall on simple restarts.
-CMD ["sh", "-c", "if [ ! -d node_modules ]; then npm install --legacy-peer-deps; fi && npm run build && npm run start"]
+# Install and start in DEV mode to bypass production deadlocks and build errors
+CMD ["sh", "-c", "if [ ! -d node_modules ]; then npm install --legacy-peer-deps; fi && npm run dev"]

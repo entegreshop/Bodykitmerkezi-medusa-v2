@@ -20,6 +20,7 @@ services:
       context: .
       dockerfile: Dockerfile.backend
     environment:
+      NODE_ENV: development
       DATABASE_URL: postgres://${POSTGRES_USER:-medusa}:${POSTGRES_PASSWORD:-medusa}@db:5432/${POSTGRES_DB:-medusa}
       REDIS_URL: redis://redis:6379
       STORE_CORS: ${SERVICE_URL_STOREFRONT}
