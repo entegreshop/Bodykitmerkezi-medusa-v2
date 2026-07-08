@@ -13,4 +13,5 @@ WORKDIR /app/apps/storefront
 EXPOSE 8000
 
 # Install and start in DEV mode to bypass build errors and see exact Next.js errors in the browser.
-CMD ["sh", "-c", "echo 'Starting storefront setup...' && if [ ! -d node_modules ]; then npm install --legacy-peer-deps; fi && npm run dev"]
+# We MUST wait for the backend to fully start before doing npm install, otherwise the server runs out of RAM (OOM) from two simultaneous npm installs!
+CMD ["sh", "-c", "echo 'Waiting for backend on port 9000...' && node -e \"const net=require('net'); const check=()=>{const s=new net.Socket();s.connect(9000,'backend',()=>{s.destroy();process.exit(0);});s.on('error',()=>setTimeout(check,5000));};check();\" && echo 'Backend is ready!' && if [ ! -d node_modules ]; then npm install --legacy-peer-deps; fi && npm run dev"]
