@@ -6,7 +6,7 @@ module.exports = defineConfig({
     admin: {
     disable: false,
     path: (process.env.MEDUSA_ADMIN_PATH || "/app") as `/${string}`,
-    backendUrl: process.env.MEDUSA_BACKEND_URL || "http://localhost:9000",
+    backendUrl: process.env.MEDUSA_BACKEND_URL || "https://api.bodykitmerkezi.com",
   },
   projectConfig: {
     databaseUrl: process.env.DATABASE_URL,
