@@ -18,8 +18,9 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     const base64Data = base64.includes(",") ? base64.split(",")[1] : base64
     const buffer = Buffer.from(base64Data, "base64")
 
-    // Define the upload directory in the storefront public folder
-    const uploadDir = path.join(process.cwd(), "..", "storefront", "public", "uploads")
+    // Dosyaların kaydedileceği yol (Artık direkt backend'in kendi uploads klasörü)
+    let uploadDir = path.join(process.cwd(), "uploads");
+
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true })
     }
@@ -30,22 +31,16 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     const safeFilename = `${Date.now()}-${base}${ext}`
     const filePath = path.join(uploadDir, safeFilename)
 
-    // Write file to storefront public uploads
+    // Write file to backend uploads
     fs.writeFileSync(filePath, buffer)
 
-    // Get storefront URL from STORE_CORS if available, otherwise default to localhost:8000
-    let storefrontUrl = "http://localhost:8000"
-    if (process.env.STORE_CORS) {
-      const origins = process.env.STORE_CORS.split(",")
-      const localOrigin = origins.find(o => o.includes("localhost:8000") || o.includes("xoox.com.tr"))
-      if (localOrigin) {
-        storefrontUrl = localOrigin.trim()
-      } else if (origins.length > 0) {
-        storefrontUrl = origins[0].trim()
-      }
-    }
-
-    const publicUrl = `${storefrontUrl}/uploads/${safeFilename}`
+    // Artık dosyaları Storefront'tan değil, kendi yazdığımız Backend rotasından okuyacağız!
+    // Bu yüzden URL direkt olarak Backend adresimiz olmalı.
+    const host = req.headers["x-forwarded-host"] || req.headers.host || "api.bodykitmerkezi.com"
+    const protocol = req.headers["x-forwarded-proto"] || "https"
+    
+    // Doğru URL: https://api.bodykitmerkezi.com/uploads/dosya.mp4
+    const publicUrl = `${protocol}://${host}/uploads/${safeFilename}`
 
     res.json({
       success: true,
