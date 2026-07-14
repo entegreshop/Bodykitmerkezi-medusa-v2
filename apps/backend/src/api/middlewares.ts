@@ -1,19 +1,7 @@
 import { defineMiddlewares } from "@medusajs/framework/http"
-import express from "express"
 
 export default defineMiddlewares({
   routes: [
-    {
-      method: "USE",
-      matcher: "/uploads/*",
-      middlewares: [
-        (req, res, next) => {
-          req.url = req.url.replace(/^\/uploads/, "")
-          next()
-        },
-        express.static("uploads")
-      ],
-    },
     {
       method: ["POST"],
       matcher: "/admin/hero-config/upload",
@@ -28,5 +16,5 @@ export default defineMiddlewares({
         sizeLimit: "25mb",
       },
     },
-  ]
+  ],
 })
