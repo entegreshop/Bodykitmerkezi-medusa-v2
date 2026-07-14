@@ -7,7 +7,11 @@ export default defineMiddlewares({
       method: "USE",
       matcher: "/uploads/*",
       middlewares: [
-        express.static(".")
+        (req, res, next) => {
+          req.url = req.url.replace(/^\/uploads/, "")
+          next()
+        },
+        express.static("uploads")
       ],
     },
     {
