@@ -1,12 +1,20 @@
 import { defineMiddlewares } from "@medusajs/framework/http"
+import express from "express"
 
 export default defineMiddlewares({
   routes: [
     {
+      method: "USE",
+      matcher: "/uploads/*",
+      middlewares: [
+        express.static("uploads")
+      ],
+    },
+    {
       method: ["POST"],
       matcher: "/admin/hero-config/upload",
       bodyParser: {
-        sizeLimit: "25mb", // Set a generous 25MB limit to support high-quality images and short MP4 videos
+        sizeLimit: "25mb",
       },
     },
     {
@@ -16,5 +24,5 @@ export default defineMiddlewares({
         sizeLimit: "25mb",
       },
     },
-  ],
+  ]
 })
