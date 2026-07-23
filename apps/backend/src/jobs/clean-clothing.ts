@@ -18,9 +18,9 @@ export default async function cleanClothingJob({
     
     // 1. Delete all reservations
     console.log("Fetching reservations...");
-    const [reservations, count] = await inventoryModule.listReservations({}, { take: 10000 });
-    if (reservations.length > 0) {
-      await inventoryModule.deleteReservations(reservations.map((r: any) => r.id));
+    const reservations = await inventoryModule.listReservationItems({}, { take: 10000 });
+    if (reservations && reservations.length > 0) {
+      await inventoryModule.deleteReservationItems(reservations.map((r: any) => r.id));
       console.log(`Deleted ${reservations.length} reservations`);
     } else {
       console.log("No reservations found.");
@@ -28,7 +28,7 @@ export default async function cleanClothingJob({
     
     // 2. Find and delete clothing products
     console.log("Fetching products...");
-    const [products, pCount] = await productModule.listProducts({}, { take: 10000 });
+    const products = await productModule.listProducts({}, { take: 10000 });
     
     const clothingKeywords = [
       "tayt", "pantolon", "kaban", "kürk", "ceket", "elbise", "likra", "oysho", 
@@ -38,20 +38,22 @@ export default async function cleanClothingJob({
     
     let deletedCount = 0;
     
-    for (const p of products) {
-       const titleLower = p.title.toLowerCase();
-       const isClothing = clothingKeywords.some(kw => titleLower.includes(kw));
-       
-       if (isClothing) {
-           console.log(`Deleting clothing product: ${p.title}`);
-           // Delete variants first to be safe
-           const [variants] = await productModule.listProductVariants({ product_id: p.id }, { take: 100 });
-           if (variants.length > 0) {
-              await productModule.deleteProductVariants(variants.map((v: any) => v.id));
-           }
-           await productModule.deleteProducts([p.id]);
-           deletedCount++;
-       }
+    if (products && products.length > 0) {
+      for (const p of products) {
+         const titleLower = p.title.toLowerCase();
+         const isClothing = clothingKeywords.some(kw => titleLower.includes(kw));
+         
+         if (isClothing) {
+             console.log(`Deleting clothing product: ${p.title}`);
+             // Delete variants first to be safe
+             const variants = await productModule.listProductVariants({ product_id: p.id }, { take: 100 });
+             if (variants && variants.length > 0) {
+                await productModule.deleteProductVariants(variants.map((v: any) => v.id));
+             }
+             await productModule.deleteProducts([p.id]);
+             deletedCount++;
+         }
+      }
     }
     
     console.log(`Job finished. Deleted ${deletedCount} clothing products.`);
