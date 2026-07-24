@@ -9,13 +9,15 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
         
         let msg: string[] = [];
         
-        // Find clothing products in draft status
-        const products = await productModule.listProducts({ status: "draft" }, { take: 10000 });
+        // Find ALL products (removed status: "draft" so we can catch published ones too)
+        const products = await productModule.listProducts({}, { take: 10000 });
         const clothingKeywords = [
           "tayt", "pantolon", "kaban", "kürk", "ceket", "elbise", "likra", "oysho", 
           "bomber", "eşofman", "tulum", "şalvar", "jean", "yüksel bel", "yüksek bel",
           "toparlayıcı", "sıkılaştırıcı", "etek", "triko", "kazak", "hırka", "gömlek",
-          "mercedes içi astarlı", "porsche içi astarlı"
+          "mercedes içi astarlı", "porsche içi astarlı",
+          // New keywords to catch the remaining items
+          "sweat", "polar", "kapşonlu", "kapüşonlu", "oversize", "scuba", "garnili"
         ];
         
         let deletedCount = 0;
@@ -24,6 +26,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
         if (products && products.length > 0) {
           for (const p of products) {
              const titleLower = p.title.toLowerCase();
+             // Check if any keyword matches
              const isClothing = clothingKeywords.some(kw => titleLower.includes(kw));
              
              if (isClothing) {
