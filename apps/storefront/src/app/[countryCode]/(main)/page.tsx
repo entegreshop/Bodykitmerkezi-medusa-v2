@@ -15,8 +15,8 @@ import { getCategoryByHandle } from "@lib/data/categories"
 import { listProducts } from "@lib/data/products"
 
 export const metadata: Metadata = {
-  title: "XOOX Medusa Storefront",
-  description: "A performant international storefront for XOOX Commerce.",
+  title: "Bodykit Merkezi | Araç Tasarım & Modifiye",
+  description: "Türkiye'nin en büyük body kit ve araç modifiye merkezi. Bodykit Merkezi ile aracınızı baştan yaratın.",
 }
 
 const NEXT_PUBLIC_MEDUSA_BACKEND_URL = process.env.MEDUSA_BACKEND_URL || "http://localhost:9000"
