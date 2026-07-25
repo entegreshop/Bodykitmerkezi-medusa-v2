@@ -33,6 +33,18 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
       } catch (err) {}
   }
   
+  // Read logo settings from JSON
+  const logoConfigFilePath = path.join(process.cwd(), "uploads", "logo-config.json")
+  if (fs.existsSync(logoConfigFilePath)) {
+      try {
+          const content = fs.readFileSync(logoConfigFilePath, "utf-8")
+          const parsed = JSON.parse(content)
+          settings.admin_logos = {
+              main: parsed.checkoutLogo || parsed.logo
+          }
+      } catch (err) {}
+  }
+  
   // Enforce the requested copyright string text from user payload
   settings["footer-telif"] = "Tüm bilgileriniz 256bit SSL Sertifikası ile korunmaktadır.\n© 2026 XOOX.com Tüm Hakları Saklıdır"
 

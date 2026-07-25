@@ -20,6 +20,9 @@
     },
     "seed": {
       "outputs": []
+    },
+    "clean": {
+      "cache": false
     }
   }
 }

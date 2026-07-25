@@ -32,13 +32,32 @@ async function getHeroConfig() {
   }
 }
 
+async function getLogoConfig() {
+  try {
+    const headers: Record<string, string> = {}
+    if (NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY) {
+      headers["x-publishable-api-key"] = NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
+    }
+    const res = await fetch(`${NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/logo-config`, {
+      cache: "no-store",
+      headers,
+    })
+    const data = await res.json()
+    return data?.config || null
+  } catch (err) {
+    console.error("Failed to fetch logo config in Nav:", err)
+    return null
+  }
+}
+
 export default async function Nav() {
-  const [regions, locales, currentLocale, categories, config] = await Promise.all([
+  const [regions, locales, currentLocale, categories, config, logoConfig] = await Promise.all([
     listRegions().then((regions: StoreRegion[]) => regions),
     listLocales(),
     getLocale(),
     listCategories().catch(() => []),
     getHeroConfig(),
+    getLogoConfig(),
   ])
 
   const topAnnouncementPhrases = config?.top_announcement
@@ -68,9 +87,26 @@ export default async function Nav() {
               className="txt-compact-xlarge-plus text-zinc-950 hover:text-violet-600 font-bold uppercase tracking-widest flex items-center gap-1.5 transition-colors"
               data-testid="nav-store-link"
             >
-              <span>XOOX</span>
-              <span className="w-2 h-2 rounded-full bg-violet-500 shadow-[0_0_8px_rgba(139,92,246,0.5)] inline-block"></span>
-              <span className="text-zinc-400 font-normal text-xs tracking-normal lowercase hidden small:inline">store</span>
+              {logoConfig?.logo || logoConfig?.mobileLogo ? (
+                <>
+                  {logoConfig.mobileLogo ? (
+                    <img src={logoConfig.mobileLogo} alt="Store Logo" className="h-8 w-auto object-contain block md:hidden" />
+                  ) : (
+                    <img src={logoConfig.logo} alt="Store Logo" className="h-8 w-auto object-contain block md:hidden" />
+                  )}
+                  {logoConfig.logo ? (
+                    <img src={logoConfig.logo} alt="Store Logo" className="h-10 w-auto object-contain hidden md:block" />
+                  ) : (
+                    <img src={logoConfig.mobileLogo} alt="Store Logo" className="h-10 w-auto object-contain hidden md:block" />
+                  )}
+                </>
+              ) : (
+                <>
+                  <span>XOOX</span>
+                  <span className="w-2 h-2 rounded-full bg-violet-500 shadow-[0_0_8px_rgba(139,92,246,0.5)] inline-block"></span>
+                  <span className="text-zinc-400 font-normal text-xs tracking-normal lowercase hidden small:inline">store</span>
+                </>
+              )}
             </LocalizedClientLink>
           </div>
 
