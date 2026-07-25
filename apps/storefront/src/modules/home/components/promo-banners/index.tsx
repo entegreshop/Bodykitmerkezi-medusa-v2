@@ -6,19 +6,19 @@ const NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLIS
 
 const defaultBannersList = [
   {
-    tag: "Trend Koleksiyon",
-    title: "PREMIUM JEAN KOLEKSİYONU",
-    description: "En boy likralı kot taytlar ve yüksek bel toparlayıcı jean pantolonlar şimdi en popüler kesimleriyle vitrinde.",
-    btn_text: "Koleksiyonu Keşfet",
-    btn_link: "/categories/jean-pantolon",
+    tag: "Yeni Ürünler",
+    title: "PREMIUM BODYKİT SETLERİ",
+    description: "Aracınıza özel tasarlanmış, sportif ve agresif görünüme sahip premium bodykit setleri ile tarzınızı yansıtın.",
+    btn_text: "Setleri İncele",
+    btn_link: "/categories/bodykit",
     image_url: ""
   },
   {
     tag: "Özel Seçki",
-    title: "YAZ SEZONU KOMBİNLERİ",
-    description: "Oysho modal kumaş şalvar takımlar ve çift şerit paraşüt kargo pantolonlar ile konforlu ve şık kombinler.",
+    title: "AERODİNAMİK DİFÜZÖRLER",
+    description: "Aracınızın yol tutuşunu artıran ve şık bir arka görünüm sağlayan performans odaklı difüzör modelleri.",
     btn_text: "Şimdi İncele",
-    btn_link: "/categories/kombin",
+    btn_link: "/categories/difuzor",
     image_url: ""
   }
 ]
