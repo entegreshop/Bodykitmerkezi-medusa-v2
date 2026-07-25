@@ -39,7 +39,7 @@ export const getCategoryByHandle = async (categoryHandle: string[]) => {
       {
         query: {
           fields: "*category_children, *products",
-          handle,
+          handle: [handle, `/${handle}`],
         },
         next,
         cache: "force-cache",
