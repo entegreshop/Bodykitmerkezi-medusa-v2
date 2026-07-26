@@ -5,7 +5,7 @@ import os from "os"
 
 export async function GET(req: MedusaRequest, res: MedusaResponse) {
   try {
-    const configFilePath = path.join(os.homedir(), ".xoox-payment-settings.json")
+    const configFilePath = path.join(process.cwd(), "uploads", "payment-settings.json")
     let codSettings = { is_active: false, additional_fee: "0", min_amount: "0" }
     
     if (fs.existsSync(configFilePath)) {

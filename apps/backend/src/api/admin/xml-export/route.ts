@@ -22,7 +22,7 @@ export interface XmlFeedConfig {
   hide_no_image: boolean
 }
 
-const CONFIG_FILE_PATH = path.join(os.homedir(), ".xoox-xml-feeds.json")
+const CONFIG_FILE_PATH = path.join(process.cwd(), "uploads", "xml-feeds.json")
 
 export const getXmlFeeds = (): XmlFeedConfig[] => {
   try {

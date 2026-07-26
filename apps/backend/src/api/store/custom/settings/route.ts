@@ -12,7 +12,7 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
   const settings = store?.metadata || {}
   
   // Read payment settings from JSON
-  const configFilePath = path.join(os.homedir(), ".xoox-payment-settings.json")
+  const configFilePath = path.join(process.cwd(), "uploads", "payment-settings.json")
   if (fs.existsSync(configFilePath)) {
       try {
           const content = fs.readFileSync(configFilePath, "utf-8")
