@@ -14,13 +14,34 @@ import { getDictionary } from "@lib/util/get-dictionary"
 import { getCategoryByHandle } from "@lib/data/categories"
 import { listProducts } from "@lib/data/products"
 
-export const metadata: Metadata = {
-  title: "Bodykit Merkezi | Araç Tasarım & Modifiye",
-  description: "Türkiye'nin en büyük body kit ve araç modifiye merkezi. Bodykit Merkezi ile aracınızı baştan yaratın.",
+export async function generateMetadata(): Promise<Metadata> {
+  const config = await getLogoConfig()
+  return {
+    title: config?.siteTitle || "Bodykit Merkezi | Araç Tasarım & Modifiye",
+    description: "Türkiye'nin en büyük body kit ve araç modifiye merkezi. Bodykit Merkezi ile aracınızı baştan yaratın.",
+  }
 }
 
 const NEXT_PUBLIC_MEDUSA_BACKEND_URL = process.env.MEDUSA_BACKEND_URL || "http://localhost:9000"
 const NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
+
+async function getLogoConfig() {
+  try {
+    const headers: Record<string, string> = {}
+    if (NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY) {
+      headers["x-publishable-api-key"] = NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
+    }
+    const res = await fetch(`${NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/logo-config`, {
+      cache: "no-store",
+      headers,
+    })
+    const data = await res.json()
+    return data?.config || null
+  } catch (err) {
+    console.error("Failed to fetch logo config in Page:", err)
+    return null
+  }
+}
 
 async function getHeroConfig() {
   try {
