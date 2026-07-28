@@ -19,6 +19,9 @@ export async function GET(
           emailLogo: null,
           defaultImage: null,
           checkoutLogo: null,
+          sideMenuLogo: null,
+          siteTitle: "",
+          footerCopyrightText: "",
         }
       })
     }

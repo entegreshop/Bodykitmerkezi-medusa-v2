@@ -149,8 +149,8 @@ const SideMenu = ({ regions, locales, currentLocale, categories, logoConfig }: S
                     <div className="flex items-center justify-between p-4 pb-2">
                        {/* Left space for alignment or site logo */}
                        <div className="flex-1">
-                         {logoConfig?.logo || logoConfig?.mobileLogo ? (
-                           <img src={logoConfig.logo || logoConfig.mobileLogo} alt="Store Logo" className="h-6 w-auto object-contain" />
+                         {logoConfig?.sideMenuLogo || logoConfig?.logo || logoConfig?.mobileLogo ? (
+                           <img src={logoConfig.sideMenuLogo || logoConfig.logo || logoConfig.mobileLogo} alt="Store Logo" className="h-6 w-auto object-contain" />
                          ) : (
                            <span className="font-bold text-2xl tracking-widest uppercase text-black">XOOX</span>
                          )}

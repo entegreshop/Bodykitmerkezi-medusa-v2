@@ -67,7 +67,7 @@ const FileUploadField = ({
   )
 }
 
-export default function LogoSettingsPage() {
+export default function StoreSettingsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [config, setConfig] = useState<any>({
@@ -78,6 +78,14 @@ export default function LogoSettingsPage() {
     emailLogo: null,
     defaultImage: null,
     checkoutLogo: null,
+    sideMenuLogo: null,
+    siteTitle: "",
+    footerCopyrightText: "",
+    contactCompany: "",
+    contactAddress: "",
+    contactPhone: "",
+    contactEmail: "",
+    contactHours: "",
   })
 
   useEffect(() => {
@@ -85,12 +93,29 @@ export default function LogoSettingsPage() {
       .then((res) => res.json())
       .then((data) => {
         if (data.config) {
-          setConfig(data.config)
+          setConfig({
+            logo: null,
+            favicon: null,
+            mobileLogo: null,
+            footerLogo: null,
+            emailLogo: null,
+            defaultImage: null,
+            checkoutLogo: null,
+            sideMenuLogo: null,
+            siteTitle: "",
+            footerCopyrightText: "",
+            contactCompany: "",
+            contactAddress: "",
+            contactPhone: "",
+            contactEmail: "",
+            contactHours: "",
+            ...data.config
+          })
         }
         setLoading(false)
       })
       .catch((err) => {
-        console.error("Error fetching logo config", err)
+        console.error("Error fetching store config", err)
         setLoading(false)
         toast.error("Ayarlar yüklenemedi")
       })
@@ -159,15 +184,16 @@ export default function LogoSettingsPage() {
     <Container className="p-8">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <Heading level="h1">Logo Ayarları</Heading>
-          <Text className="text-ui-fg-subtle mt-2">Mağazanızın tüm görsel kimliğini (logo, favicon, varsayılan görseller) buradan yönetebilirsiniz.</Text>
+          <Heading level="h1">Mağaza Ayarları</Heading>
+          <Text className="text-ui-fg-subtle mt-2">Mağazanızın tüm görsel kimliğini ve temel ayarlarını (logo, favicon, site başlığı, footer telif hakkı vb.) buradan yönetebilirsiniz.</Text>
         </div>
         <Button variant="primary" onClick={saveConfig} isLoading={saving}>
           Kaydet
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8">
+      <Heading level="h2" className="mb-4">Görsel Ayarları</Heading>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 mb-8 border-b border-ui-border-base pb-8">
         <div>
           <FileUploadField 
             label="Logo (Ana Sayfa)" 
@@ -182,16 +208,16 @@ export default function LogoSettingsPage() {
             onRemove={() => removeFile('mobileLogo')} 
           />
           <FileUploadField 
+            label="Menü Logosu (Açılır Yan Menü)" 
+            value={config.sideMenuLogo} 
+            onChange={(f) => handleFileUpload(f, 'sideMenuLogo')} 
+            onRemove={() => removeFile('sideMenuLogo')} 
+          />
+          <FileUploadField 
             label="Footer Logo" 
             value={config.footerLogo} 
             onChange={(f) => handleFileUpload(f, 'footerLogo')} 
             onRemove={() => removeFile('footerLogo')} 
-          />
-          <FileUploadField 
-            label="E-Posta Logosu" 
-            value={config.emailLogo} 
-            onChange={(f) => handleFileUpload(f, 'emailLogo')} 
-            onRemove={() => removeFile('emailLogo')} 
           />
         </div>
         <div>
@@ -200,6 +226,12 @@ export default function LogoSettingsPage() {
             value={config.favicon} 
             onChange={(f) => handleFileUpload(f, 'favicon')} 
             onRemove={() => removeFile('favicon')} 
+          />
+          <FileUploadField 
+            label="E-Posta Logosu" 
+            value={config.emailLogo} 
+            onChange={(f) => handleFileUpload(f, 'emailLogo')} 
+            onRemove={() => removeFile('emailLogo')} 
           />
           <FileUploadField 
             label="Ödeme Detayı Logosu (Checkout)" 
@@ -216,17 +248,87 @@ export default function LogoSettingsPage() {
           />
         </div>
       </div>
+
+      <Heading level="h2" className="mb-4">Metin Ayarları</Heading>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+        <div className="flex flex-col gap-2">
+          <Label>Site Başlığı (Tarayıcı Sekmesi)</Label>
+          <Input 
+            placeholder="Örn: XOOX Medusa Storefront" 
+            value={config.siteTitle} 
+            onChange={(e) => setConfig({ ...config, siteTitle: e.target.value })} 
+          />
+          <Text size="xsmall" className="text-ui-fg-subtle">
+            Tarayıcı sekmesinde, favicon'un hemen yanında görünen site başlığı.
+          </Text>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <Label>Footer Telif Yazısı (Copyright)</Label>
+          <Input 
+            placeholder="Örn: © 2026 Kombingo.com Tüm Hakları Saklıdır" 
+            value={config.footerCopyrightText} 
+            onChange={(e) => setConfig({ ...config, footerCopyrightText: e.target.value })} 
+          />
+          <Text size="xsmall" className="text-ui-fg-subtle">
+            Sayfanın en altındaki bilgi metni. (Güvenlik sertifikası metni sabittir, buraya sadece telif kısmını girebilirsiniz.)
+          </Text>
+        </div>
+      </div>
+
+      <Heading level="h2" className="mb-4 mt-8">İletişim Bilgileri (Bize Ulaşın)</Heading>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+        <div className="flex flex-col gap-2">
+          <Label>Firma Adı</Label>
+          <Input 
+            placeholder="Örn: ÖZSE MODA TEKSTİL LTD. ŞTİ." 
+            value={config.contactCompany || ""} 
+            onChange={(e) => setConfig({ ...config, contactCompany: e.target.value })} 
+          />
+        </div>
+        <div className="flex flex-col gap-2">
+          <Label>E-Posta Adresi</Label>
+          <Input 
+            placeholder="Örn: E-posta: info@kombingo.com" 
+            value={config.contactEmail || ""} 
+            onChange={(e) => setConfig({ ...config, contactEmail: e.target.value })} 
+          />
+        </div>
+        <div className="flex flex-col gap-2">
+          <Label>Telefon Numarası</Label>
+          <Input 
+            placeholder="Örn: Tel: +90 530 456 43 77" 
+            value={config.contactPhone || ""} 
+            onChange={(e) => setConfig({ ...config, contactPhone: e.target.value })} 
+          />
+        </div>
+        <div className="flex flex-col gap-2">
+          <Label>Çalışma Saatleri</Label>
+          <Input 
+            placeholder="Örn: Hafta içi 09.00 - 19.00..." 
+            value={config.contactHours || ""} 
+            onChange={(e) => setConfig({ ...config, contactHours: e.target.value })} 
+          />
+        </div>
+        <div className="flex flex-col gap-2 md:col-span-2">
+          <Label>Adres</Label>
+          <Input 
+            placeholder="Örn: Adres: Merkez Mahallesi..." 
+            value={config.contactAddress || ""} 
+            onChange={(e) => setConfig({ ...config, contactAddress: e.target.value })} 
+          />
+        </div>
+      </div>
     </Container>
   )
 }
 
 export const config = defineRouteConfig({
-  label: "Logo Ayarları",
+  label: "Mağaza Ayarları",
   icon: () => (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-      <circle cx="8.5" cy="8.5" r="1.5" />
-      <polyline points="21 15 16 10 5 21" />
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+      <polyline points="9 22 9 12 15 12 15 22" />
     </svg>
   ),
 })
