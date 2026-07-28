@@ -3,10 +3,11 @@
 import { useEffect, useRef } from "react"
 import { usePathname, useSearchParams } from "next/navigation"
 
+let globalLastTrackedUrl = ""
+
 export default function PixelRouteTracker({ config }: { config: any }) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const lastTrackedUrl = useRef<string>("")
 
   useEffect(() => {
     if (!config) return
@@ -20,11 +21,11 @@ export default function PixelRouteTracker({ config }: { config: any }) {
     // Construct full path relative to origin
     const url = pathname + (searchParams?.toString() ? `?${searchParams.toString()}` : "")
 
-    // Prevent duplicate tracks for the exact same URL (e.g. React StrictMode or multiple mounts)
-    if (lastTrackedUrl.current === url) {
+    // Prevent duplicate tracks for the exact same URL across component remounts
+    if (globalLastTrackedUrl === url) {
       return
     }
-    lastTrackedUrl.current = url
+    globalLastTrackedUrl = url
 
     // 1. Meta Pixel PageView
     if (meta_pixel?.active && meta_pixel?.pixel_id && (window as any).fbq) {
@@ -43,6 +44,22 @@ export default function PixelRouteTracker({ config }: { config: any }) {
         page_location: window.location.href,
         page_title: document.title,
       })
+    }
+
+    // 4. ViewCategory Event
+    const categoryQuery = searchParams?.get("category")
+    const isCategoryPath = pathname.includes("/categories/")
+    
+    if (categoryQuery || isCategoryPath) {
+      const categoryName = categoryQuery || pathname.split("/").pop() || "Category"
+      
+      if (meta_pixel?.active && (window as any).fbq) {
+        (window as any).fbq("trackCustom", "ViewCategory", { content_category: categoryName })
+      }
+      
+      if (tiktok_pixel?.active && (window as any).ttq) {
+        (window as any).ttq.track("ViewContent", { content_category: categoryName })
+      }
     }
   }, [pathname, searchParams, config])
 
