@@ -312,18 +312,25 @@ export default function ProductActions({
       return t === "beden" || t === "size"
     })
 
-    if (renkOption && options[renkOption.id]) {
-      params.set("RENK", options[renkOption.id]!)
-      params.delete("renk")
+    if (product.variants && product.variants.length > 1) {
+      if (renkOption && options[renkOption.id]) {
+        params.set("RENK", options[renkOption.id]!)
+        params.delete("renk")
+      } else {
+        params.delete("RENK")
+        params.delete("renk")
+      }
+
+      if (bedenOption && options[bedenOption.id]) {
+        params.set("BEDEN", options[bedenOption.id]!)
+        params.delete("beden")
+      } else {
+        params.delete("BEDEN")
+        params.delete("beden")
+      }
     } else {
       params.delete("RENK")
       params.delete("renk")
-    }
-
-    if (bedenOption && options[bedenOption.id]) {
-      params.set("BEDEN", options[bedenOption.id]!)
-      params.delete("beden")
-    } else {
       params.delete("BEDEN")
       params.delete("beden")
     }

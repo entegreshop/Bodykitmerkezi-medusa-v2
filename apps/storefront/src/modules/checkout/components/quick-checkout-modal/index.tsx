@@ -490,7 +490,7 @@ export default function QuickCheckoutModal({
             <div className="pt-2">
               <h2 className="text-2xl font-bold mb-6">Ödeme</h2>
               <div className="space-y-4">
-                 {["cash_on_delivery:Kapıda Nakit Ödeme", "cod_cc:Kapıda Kredi Kartı ile Ödeme", "havale:Havale / EFT", "credit_card:Kredi / Banka Kartı (PayTR)"].map(m => {
+                 {["havale:Havale / EFT", "credit_card:Kredi / Banka Kartı (PayTR)"].map(m => {
                     const [val, label] = m.split(":")
                     if (val === 'cash_on_delivery' && (!codSettings.is_active || numericalPrice > codSettings.min_amount)) {
                         return null;

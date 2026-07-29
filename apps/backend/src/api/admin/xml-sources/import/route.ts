@@ -97,7 +97,23 @@ export async function POST(
       // Get basic mapped values
       const name = resolvePath(item, tag_mappings["Ürün Adı"] || "name") || item.name || "İsimsiz Ürün"
       const handle = String(resolvePath(item, tag_mappings["Ürün Kodu"] || "code") || item.code || Math.random().toString(36).substring(7)).toLowerCase().replace(/[^a-z0-9]/g, '-')
-      const description = resolvePath(item, tag_mappings["İçerik"] || "description") || item.detail || ""
+      let description = resolvePath(item, tag_mappings["İçerik"] || "description") || item.detail || ""
+      
+      if (description.includes("Trendyol'dan Otomatik") || description === "") {
+        description = `<p><strong>${name}</strong>, aracınıza özel bir görünüm katan şık ve estetik bir aksesuardır. Yüksek kaliteli plastik malzemeden üretilmiş olup dayanıklılığı ve uzun ömürlü kullanımıyla dikkat çeker. Aracınızın arka bölümünde zarif bir görünüm sağlar ve aracınızın tasarımını güncelleyerek modern bir hava katmaya yardımcı olur.</p>
+<p>Özel olarak tasarlanmış detayları ve uyumlu yapısıyla aracınıza mükemmel bir uyum sağlar. Kolay montaj özelliği sayesinde kullanıcıların işini kolaylaştırırken, dayanıklı yapısı uzun süreli kullanım sunar. Görselde belirtilen ürün modeli size gönderilecektir.</p>
+<p><strong>Ürün Malzemesi:</strong> Yüksek kalite standartlarına sahiptir ve dayanıklı bir yapıya sahiptir. Ayrıca, koku yapmaz, leke tutmaz ve uzun süre dayanıklılığını korur.</p>
+<p><strong>Ürün Rengi:</strong> Ürün, astarsız/renksiz ve mat siyahtır.</p>
+<p><strong>Paket İçeriği:</strong> ${name}</p>
+<p>Tüm Donanım Paketlerine Uyumludur.</p>
+<p>Ürün, aracınızla birebir uyumludur.</p>
+<p>Plastik ürünlerin boyanarak kullanılması tavsiye edilir. Kaplamaya uygundur.</p>
+<p>Ürün, darbeye dayanıklı esnek sağlam malzemeden yapılmıştır.</p>
+<p>Ürünler boyasızdır. Boyalı sipariş vermek istiyorsanız seçeneklerden uygun olanı seçip siparişinizi gerçekleştirebilirsiniz.</p>
+<p>Boya ve Montaj için lütfen fiyat alınız.</p>
+<p>Ürünlerimiz üretim hatası ve/veya malzemeden kaynaklanacak sorunlara karşı 2 Yıl Garantilidir.</p>
+<p>Türkiye'nin her yerine gönderim yapmaktayız.</p>`;
+      }
       
       // Determine Category
       let productCategories: { id: string }[] = [];
@@ -166,17 +182,21 @@ export async function POST(
       }
 
       // Extract unique Options from Variants
+      let isVariantless = false;
       const optionNames = new Set<string>();
       if (xmlVariants[0]?.type1) optionNames.add("Renk");
       if (xmlVariants[0]?.type2) optionNames.add("Beden");
-      if (optionNames.size === 0) optionNames.add("Standart");
+      if (optionNames.size === 0) {
+         optionNames.add("Title");
+         isVariantless = true;
+      }
 
       const optionsInput = Array.from(optionNames).map(opt => ({
          title: opt,
          values: Array.from(new Set(xmlVariants.map(v => {
             if (opt === "Renk") return String(v.type1 || "Standart");
             if (opt === "Beden") return String(v.type2 || "Standart");
-            return "Standart";
+            return "Default Title";
          })))
       }));
 
@@ -202,10 +222,10 @@ export async function POST(
          const variantOptions: Record<string, string> = {};
          if (optionNames.has("Renk")) variantOptions["Renk"] = String(v.type1 || "Standart");
          if (optionNames.has("Beden")) variantOptions["Beden"] = String(v.type2 || "Standart");
-         if (optionNames.has("Standart")) variantOptions["Standart"] = "Standart";
+         if (optionNames.has("Title")) variantOptions["Title"] = "Default Title";
 
          return {
-            title: sku,
+            title: isVariantless ? "Default Variant" : sku,
             sku: sku,
             barcode: barcode,
             manage_inventory: true,

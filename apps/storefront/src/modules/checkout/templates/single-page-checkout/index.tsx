@@ -396,7 +396,8 @@ export default function SinglePageCheckout({
         isPaytrAvailable: true,
         isBankTransferAvailable: true,
         isCashOnDeliveryAvailable: true,
-        isCardOnDeliveryAvailable: true
+        isCashOnDeliveryAvailable: false,
+        isCardOnDeliveryAvailable: false
       }
     }
 
@@ -408,8 +409,8 @@ export default function SinglePageCheckout({
     return {
       isPaytrAvailable: paytr?.active && subtotalAmount >= (paytr.min_total ?? 0) && subtotalAmount <= (paytr.max_total ?? 1000000),
       isBankTransferAvailable: bt?.active && subtotalAmount >= (bt.min_total ?? 0) && subtotalAmount <= (bt.max_total ?? 1000000),
-      isCashOnDeliveryAvailable: cod?.active && subtotalAmount >= (cod.min_total ?? 0) && subtotalAmount <= (cod.max_total ?? 1000000),
-      isCardOnDeliveryAvailable: cc?.active && subtotalAmount >= (cc.min_total ?? 0) && subtotalAmount <= (cc.max_total ?? 1000000)
+      isCashOnDeliveryAvailable: false,
+      isCardOnDeliveryAvailable: false
     }
   }, [paymentSettings, subtotalAmount])
 
