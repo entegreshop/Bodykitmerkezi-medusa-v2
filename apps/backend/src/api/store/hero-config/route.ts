@@ -2,7 +2,7 @@ import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import fs from "fs"
 import path from "path"
 
-const configFilePath = path.join(process.cwd(), "uploads", "hero-config.json")
+const configFilePath = path.join(process.cwd(), "uploads", "hero-config-bodykit.json")
 
 const defaultCategories = [
   {
@@ -55,18 +55,18 @@ const defaultCategories = [
 const defaultBanners = [
   {
     tag: "Trend Koleksiyon",
-    title: "PREMIUM JEAN KOLEKSİYONU",
-    description: "En boy likralı kot taytlar ve yüksek bel toparlayıcı jean pantolonlar şimdi en popüler kesimleriyle vitrinde.",
+    title: "PREMIUM BODYKIT SETLERİ",
+    description: "Aracınızın görünümünü tamamen değiştirecek yeni nesil aero dinamik bodykit setleri vitrinde.",
     btn_text: "Koleksiyonu Keşfet",
-    btn_link: "/categories/jean-pantolon",
+    btn_link: "/categories/bodykit",
     image_url: "",
   },
   {
     tag: "Özel Seçki",
-    title: "YAZ SEZONU KOMBİNLERİ",
-    description: "Oysho modal kumaş şalvar takımlar ve çift şerit paraşüt kargo pantolonlar ile konforlu ve şık kombinler.",
+    title: "SPORTİF EKLENTİLER",
+    description: "Aracınıza sportif bir hava katacak spoiler, difüzör ve marşpiyel eklentileri ile şık görünümler.",
     btn_text: "Şimdi İncele",
-    btn_link: "/categories/kombin",
+    btn_link: "/categories/aksesuar",
     image_url: "",
   }
 ]
