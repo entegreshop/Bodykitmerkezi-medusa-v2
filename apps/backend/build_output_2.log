@@ -10,5 +10,5 @@
 [32minfo[39m:    Compiling backend source...
 [32minfo[39m:    Removing existing ".medusa\server" folder
 [32minfo[39m:    Compiling frontend source...
-[32minfo[39m:    Backend build completed successfully (26.88s)
-[32minfo[39m:    Frontend build completed successfully (74.85s)
+[32minfo[39m:    Backend build completed successfully (130.31s)
+[32minfo[39m:    Frontend build completed successfully (193.19s)
