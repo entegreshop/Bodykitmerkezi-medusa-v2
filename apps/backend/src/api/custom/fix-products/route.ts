@@ -13,20 +13,8 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
       let changed = false;
 
       // 1. Fix Description
-      if (p.description && (p.description.includes("Trendyol'dan Otomatik") || p.description.trim() === "")) {
-        updateData.description = `<p><strong>${p.title}</strong>, aracınıza özel bir görünüm katan şık ve estetik bir aksesuardır. Yüksek kaliteli plastik malzemeden üretilmiş olup dayanıklılığı ve uzun ömürlü kullanımıyla dikkat çeker. Aracınızın arka bölümünde zarif bir görünüm sağlar ve aracınızın tasarımını güncelleyerek modern bir hava katmaya yardımcı olur.</p>
-<p>Özel olarak tasarlanmış detayları ve uyumlu yapısıyla aracınıza mükemmel bir uyum sağlar. Kolay montaj özelliği sayesinde kullanıcıların işini kolaylaştırırken, dayanıklı yapısı uzun süreli kullanım sunar. Görselde belirtilen ürün modeli size gönderilecektir.</p>
-<p><strong>Ürün Malzemesi:</strong> Yüksek kalite standartlarına sahiptir ve dayanıklı bir yapıya sahiptir. Ayrıca, koku yapmaz, leke tutmaz ve uzun süre dayanıklılığını korur.</p>
-<p><strong>Ürün Rengi:</strong> Ürün, astarsız/renksiz ve mat siyahtır.</p>
-<p><strong>Paket İçeriği:</strong> ${p.title}</p>
-<p>Tüm Donanım Paketlerine Uyumludur.</p>
-<p>Ürün, aracınızla birebir uyumludur.</p>
-<p>Plastik ürünlerin boyanarak kullanılması tavsiye edilir. Kaplamaya uygundur.</p>
-<p>Ürün, darbeye dayanıklı esnek sağlam malzemeden yapılmıştır.</p>
-<p>Ürünler boyasızdır. Boyalı sipariş vermek istiyorsanız seçeneklerden uygun olanı seçip siparişinizi gerçekleştirebilirsiniz.</p>
-<p>Boya ve Montaj için lütfen fiyat alınız.</p>
-<p>Ürünlerimiz üretim hatası ve/veya malzemeden kaynaklanacak sorunlara karşı 2 Yıl Garantilidir.</p>
-<p>Türkiye'nin her yerine gönderim yapmaktayız.</p>`;
+      if (p.description && (p.description.includes("Trendyol'dan Otomatik") || p.description.includes("<p>") || p.description.trim() === "")) {
+        updateData.description = `${p.title}, aracınıza özel bir görünüm katan şık ve estetik bir aksesuardır. Yüksek kaliteli plastik malzemeden üretilmiş olup dayanıklılığı ve uzun ömürlü kullanımıyla dikkat çeker. Aracınızın arka bölümünde zarif bir görünüm sağlar ve aracınızın tasarımını güncelleyerek modern bir hava katmaya yardımcı olur.\n\nÖzel olarak tasarlanmış detayları ve uyumlu yapısıyla aracınıza mükemmel bir uyum sağlar. Kolay montaj özelliği sayesinde kullanıcıların işini kolaylaştırırken, dayanıklı yapısı uzun süreli kullanım sunar. Görselde belirtilen ürün modeli size gönderilecektir.\n\nÜrün Malzemesi: Yüksek kalite standartlarına sahiptir ve dayanıklı bir yapıya sahiptir. Ayrıca, koku yapmaz, leke tutmaz ve uzun süre dayanıklılığını korur.\n\nÜrün Rengi: Ürün, astarsız/renksiz ve mat siyahtır.\n\nPaket İçeriği: ${p.title}\n\nTüm Donanım Paketlerine Uyumludur.\n\nÜrün, aracınızla birebir uyumludur.\n\nPlastik ürünlerin boyanarak kullanılması tavsiye edilir. Kaplamaya uygundur.\n\nÜrün, darbeye dayanıklı esnek sağlam malzemeden yapılmıştır.\n\nÜrünler boyasızdır. Boyalı sipariş vermek istiyorsanız seçeneklerden uygun olanı seçip siparişinizi gerçekleştirebilirsiniz.\n\nBoya ve Montaj için lütfen fiyat alınız.\n\nÜrünlerimiz üretim hatası ve/veya malzemeden kaynaklanacak sorunlara karşı 2 Yıl Garantilidir.\n\nTürkiye'nin her yerine gönderim yapmaktayız.`;
         changed = true;
       }
 
