@@ -6,7 +6,7 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
     const productModuleService = req.scope.resolve("product")
     const products = await productModuleService.listProducts({}, { take: 5000, relations: ["options", "variants"] })
     
-    const productsToUpdate = [];
+    const productsToUpdate: any[] = [];
     
     for (const p of products) {
       let updateData: any = { id: p.id };
