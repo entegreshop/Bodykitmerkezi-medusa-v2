@@ -6,8 +6,8 @@ COPY . .
 # İşletim sistemi çakışmasını önlemek için kilit dosyasını siliyoruz
 RUN rm -f package-lock.json
 
-# 1. Proje yapısını bozmadan tüm ana bağımlılıkları kuruyoruz (NPM 429 hatasını aşmak için Yarn registry kullanıyoruz)
-RUN npm config set registry https://registry.yarnpkg.com && npm install --legacy-peer-deps --include=dev
+# 1. Proje yapısını bozmadan tüm ana bağımlılıkları kuruyoruz (NPM 429 hatasını aşmak için Taobao Mirror kullanıyoruz)
+RUN npm config set registry https://registry.npmmirror.com && npm install --legacy-peer-deps --include=dev
 
 WORKDIR /app/apps/backend
 ENV NODE_OPTIONS="--max-old-space-size=4096"
