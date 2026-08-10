@@ -51,8 +51,9 @@ export class PayTRProvider extends BasePaymentProvider {
       
       const max_installment = "0"
       const no_installment = "0"
-      const merchant_ok_url = `${process.env.STORE_CORS || "http://localhost:8000"}/checkout/success?order_id=${merchant_oid}`
-      const merchant_fail_url = `${process.env.STORE_CORS || "http://localhost:8000"}/checkout/failed`
+      const storeUrl = process.env.STORE_URL || (process.env.STORE_CORS ? process.env.STORE_CORS.split(",")[0] : "https://bodykitmerkezi.com")
+      const merchant_ok_url = `${storeUrl}/checkout/success?order_id=${merchant_oid}`
+      const merchant_fail_url = `${storeUrl}/checkout/failed`
 
       const hash_str = merchant_id + ip + merchant_oid + email + amount + user_basket_str + no_installment + max_installment + currency + test_mode + merchant_salt
       const paytr_token = crypto.createHmac("sha256", merchant_key).update(hash_str).digest("base64")
