@@ -121,15 +121,23 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     let responseData = response.data;
     
     if (typeof responseData === 'object') {
-        if (responseData.status === "error") {
+        if (responseData.status === "error" || responseData.status === "failed") {
             console.error("PayTR Direct API Error:", responseData);
-            return res.status(400).json({ success: false, error: responseData.reason || "Kredi kartı işlemi reddedildi." });
+            return res.status(400).json({ success: false, error: responseData.reason || responseData.message || JSON.stringify(responseData) });
+        }
+        
+        if (responseData.reason || responseData.message || responseData.err_msg) {
+             return res.status(400).json({ success: false, error: responseData.reason || responseData.message || responseData.err_msg || JSON.stringify(responseData) });
+        }
+        
+        if (!responseData.html && responseData.status !== "success") {
+             return res.status(400).json({ success: false, error: "PayTR Beklenmeyen Yanıt: " + JSON.stringify(responseData) });
         }
     } else if (typeof responseData === 'string') {
-        if (responseData.includes('status":"error"')) {
+        if (responseData.includes('status":"error"') || responseData.includes('status":"failed"')) {
             try {
                 const parsed = JSON.parse(responseData);
-                return res.status(400).json({ success: false, error: parsed.reason || "İşlem reddedildi." });
+                return res.status(400).json({ success: false, error: parsed.reason || parsed.message || "İşlem reddedildi." });
             } catch (e) {
                 return res.status(400).json({ success: false, error: "Banka iletişiminde hata." });
             }
@@ -139,7 +147,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
         return res.json({ success: true, html: responseData });
     }
 
-    return res.status(400).json({ success: false, error: "Bilinmeyen bir yanıt alındı." })
+    return res.status(400).json({ success: false, error: "Bilinmeyen bir yanıt alındı: " + JSON.stringify(responseData).substring(0, 100) })
 
   } catch (error: any) {
     console.error("PayTR Direct API Endpoint Error:", error)
@@ -150,8 +158,8 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
                 const parsed = JSON.parse(error.response.data);
                 errMsg = parsed.reason || parsed.message || errMsg;
             } catch (e) {}
-        } else if (error.response.data.reason) {
-            errMsg = error.response.data.reason;
+        } else if (error.response.data.reason || error.response.data.message) {
+            errMsg = error.response.data.reason || error.response.data.message;
         }
     }
     return res.status(500).json({ success: false, error: errMsg })
