@@ -162,6 +162,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
             errMsg = error.response.data.reason || error.response.data.message;
         }
     }
-    return res.status(500).json({ success: false, error: errMsg })
+    // Return 400 instead of 500 so Medusa's global error handler doesn't overwrite our custom error message
+    return res.status(400).json({ success: false, error: errMsg })
   }
 }
