@@ -50,8 +50,8 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     const user_ip = client_ip || req.headers["x-forwarded-for"] || "1.1.1.1"
     const email = cart.email || "guest@kombingo.com"
     
-    // Convert float total to integer string in Kurus
-    let payment_amount = Math.round(Number(cart.total))
+    // Convert kurus total to decimal string (e.g. 2809.00)
+    let payment_amount = (Number(cart.total) / 100).toFixed(2)
     const merchant_oid = cart.id.substring(0, 64) // cart_id limit 64 in PayTR
     
     const user_name = `${cart.shipping_address?.first_name || ""} ${cart.shipping_address?.last_name || ""}`.trim() || "Misafir"
@@ -59,7 +59,8 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     const user_phone = cart.shipping_address?.phone || "0000000000"
     
     const currency = (cart.region?.currency_code || "TL").toUpperCase()
-    const test_mode = paytrConfig.test_mode === "Açık" ? "1" : "0"
+    // handle encoding issues with 'Açık' by checking english chars or first letter
+    const test_mode = (paytrConfig.test_mode && paytrConfig.test_mode.startsWith("A")) ? "1" : "0"
     
     // Basket data needs to be a serialized JSON array of arrays
     const user_basket = cart.items.map((item: any) => [
@@ -69,8 +70,9 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     ])
     const user_basket_str = Buffer.from(JSON.stringify(user_basket)).toString("base64")
     
-    const merchant_ok_url = `${process.env.STORE_CORS || "http://localhost:8000"}/checkout/success?order_id=${merchant_oid}`
-    const merchant_fail_url = `${process.env.STORE_CORS || "http://localhost:8000"}/checkout/failed`
+    const storeUrl = process.env.STORE_URL || (process.env.STORE_CORS ? process.env.STORE_CORS.split(",")[0] : "https://bodykitmerkezi.com")
+    const merchant_ok_url = `${storeUrl}/checkout/success?order_id=${merchant_oid}`
+    const merchant_fail_url = `${storeUrl}/checkout/failed`
 
     // Direct API specifics
     const payment_type = "card"
@@ -141,6 +143,17 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
 
   } catch (error: any) {
     console.error("PayTR Direct API Endpoint Error:", error)
-    return res.status(500).json({ success: false, error: error.message })
+    let errMsg = error.message;
+    if (error.response && error.response.data) {
+        if (typeof error.response.data === 'string') {
+            try {
+                const parsed = JSON.parse(error.response.data);
+                errMsg = parsed.reason || parsed.message || errMsg;
+            } catch (e) {}
+        } else if (error.response.data.reason) {
+            errMsg = error.response.data.reason;
+        }
+    }
+    return res.status(500).json({ success: false, error: errMsg })
   }
 }
