@@ -199,7 +199,11 @@ export async function processQuickCheckout(data: QuickCheckoutFormData) {
         const backendUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000"
         await fetchWithTimeout(`${backendUrl}/store/custom/payment-cod/apply`, {
             method: "POST",
-            headers: { "Content-Type": "application/json", ...headers },
+            headers: { 
+                "Content-Type": "application/json", 
+                "x-publishable-api-key": process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "",
+                ...headers 
+            },
             body: JSON.stringify({ cart_id: targetCartId, method_id: data.payment_method })
         }, 10000)
         logToFile("payment-cod/apply success");
@@ -264,7 +268,11 @@ export async function processQuickCheckout(data: QuickCheckoutFormData) {
             logToFile(`Fetching ${backendUrl}/store/custom/paytr/direct...`);
             const directApiRes = await fetchWithTimeout(`${backendUrl}/store/custom/paytr/direct`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', ...headers },
+                headers: { 
+                    'Content-Type': 'application/json', 
+                    'x-publishable-api-key': process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "",
+                    ...headers 
+                },
                 body: JSON.stringify({ 
                     cart_id: targetCartId,
                     cc_owner: data.cc_owner,
