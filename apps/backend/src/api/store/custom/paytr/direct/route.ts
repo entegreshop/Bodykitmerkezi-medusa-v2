@@ -158,9 +158,26 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
         // It's likely the 3D Secure HTML
         let htmlContent = responseData;
         
-        // Fix relative form actions in PayTR HTML so it posts to PayTR instead of our own domain (e.g. Default.aspx)
-        htmlContent = htmlContent.replace(/action="(?!\s*http)([^"]+)"/gi, 'action="https://www.paytr.com/$1"');
-        htmlContent = htmlContent.replace(/action='(?!\s*http)([^']+)'/gi, "action='https://www.paytr.com/$1'");
+        // Axios follows redirects. The final URL might be something like https://www.paytr.com/odeme3d/xxx/
+        // We must resolve relative paths in the HTML using this final URL, not just the domain root.
+        const finalUrl = response.request?.res?.responseUrl || "https://www.paytr.com/odeme/";
+        
+        // A simple function to resolve relative URLs
+        const resolveUrl = (relativeUrl: string) => {
+            try {
+                return new URL(relativeUrl, finalUrl).href;
+            } catch(e) {
+                return "https://www.paytr.com/" + relativeUrl;
+            }
+        };
+
+        // Fix relative form actions in PayTR HTML
+        htmlContent = htmlContent.replace(/action="(?!\s*http)([^"]+)"/gi, (match: string, p1: string) => {
+            return `action="${resolveUrl(p1)}"`;
+        });
+        htmlContent = htmlContent.replace(/action='(?!\s*http)([^']+)'/gi, (match: string, p1: string) => {
+            return `action='${resolveUrl(p1)}'`;
+        });
         
         return res.json({ success: true, html: htmlContent });
     }
