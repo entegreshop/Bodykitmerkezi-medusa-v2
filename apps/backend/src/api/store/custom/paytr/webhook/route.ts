@@ -12,10 +12,21 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     }
 
     // 1. Get PayTR Config
-    // @ts-ignore
-    const { readConfig } = await import("../../../../admin/payment-settings/route")
-    const config = readConfig()
-    const paytrConfig = config.paytr || {}
+    const fs = require("fs")
+    const path = require("path")
+    let paytrConfig: any = {}
+    
+    try {
+        const SETTINGS_FILE_PATH = path.join(process.cwd(), "uploads", "payment-settings.json")
+        if (fs.existsSync(SETTINGS_FILE_PATH)) {
+            const fileContent = fs.readFileSync(SETTINGS_FILE_PATH, "utf-8")
+            const config = JSON.parse(fileContent)
+            paytrConfig = config.paytr || {}
+        }
+    } catch(e) {
+        console.error("Could not read payment settings in webhook", e)
+    }
+
     const merchant_key = paytrConfig.merchant_key
     const merchant_salt = paytrConfig.merchant_salt
 
@@ -44,9 +55,12 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
         // @ts-ignore
         const { placeOrderWorkflow } = await import("@medusajs/medusa/core-flows")
         
+        // We stripped "cart_" to make it alphanumeric for PayTR Direct API, so put it back!
+        const cart_id = "cart_" + merchant_oid
+
         // Execute placeOrderWorkflow
         await placeOrderWorkflow(req.scope).run({
-          input: { id: merchant_oid }
+          input: { id: cart_id }
         })
         
         console.log(`PayTR Webhook: Order placed successfully for ${merchant_oid}`)

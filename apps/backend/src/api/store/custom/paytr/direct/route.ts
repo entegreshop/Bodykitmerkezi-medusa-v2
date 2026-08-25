@@ -62,7 +62,9 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     
     // Convert kurus total to decimal string (e.g. 2809.00)
     let payment_amount = (Number(cart.total) / 100).toFixed(2)
-    const merchant_oid = cart.id.substring(0, 64) // cart_id limit 64 in PayTR
+    
+    // PayTR Direct API requires merchant_oid to be STRICTLY alphanumeric (no underscores like 'cart_')
+    const merchant_oid = cart.id.replace("cart_", "").substring(0, 64)
     
     const user_name = `${cart.shipping_address?.first_name || ""} ${cart.shipping_address?.last_name || ""}`.trim() || "Misafir"
     const user_address = `${cart.shipping_address?.address_1 || ""}, ${cart.shipping_address?.city || ""}`.trim() || "Girilmedi"
@@ -81,7 +83,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     const user_basket_str = Buffer.from(JSON.stringify(user_basket)).toString("base64")
     
     const storeUrl = process.env.STORE_URL || (process.env.STORE_CORS ? process.env.STORE_CORS.split(",")[0] : "https://bodykitmerkezi.com")
-    const merchant_ok_url = `${storeUrl}/checkout/success?order_id=${merchant_oid}`
+    const merchant_ok_url = `${storeUrl}/checkout/success?order_id=cart_${merchant_oid}`
     const merchant_fail_url = `${storeUrl}/checkout/failed`
 
     // Direct API specifics
