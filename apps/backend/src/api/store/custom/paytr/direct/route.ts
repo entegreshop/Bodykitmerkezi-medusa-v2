@@ -119,10 +119,10 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     
     // Credit Card Details
     formData.append("cc_owner", cc_owner)
-    formData.append("cc_number", cc_number)
+    formData.append("card_number", cc_number)
     formData.append("expiry_month", cc_month)
     formData.append("expiry_year", cc_year)
-    formData.append("cc_cvv", cc_cvv)
+    formData.append("cvv", cc_cvv)
 
     // API URL is /odeme for Direct API
     const response = await axios.post("https://www.paytr.com/odeme", formData.toString(), {
