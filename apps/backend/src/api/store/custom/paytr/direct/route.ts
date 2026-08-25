@@ -120,8 +120,8 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     // Credit Card Details
     formData.append("cc_owner", cc_owner)
     formData.append("cc_number", cc_number)
-    formData.append("cc_month", cc_month)
-    formData.append("cc_year", cc_year)
+    formData.append("expiry_month", cc_month)
+    formData.append("expiry_year", cc_year)
     formData.append("cc_cvv", cc_cvv)
 
     // API URL is /odeme for Direct API
