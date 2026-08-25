@@ -156,7 +156,13 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
         }
         
         // It's likely the 3D Secure HTML
-        return res.json({ success: true, html: responseData });
+        let htmlContent = responseData;
+        
+        // Fix relative form actions in PayTR HTML so it posts to PayTR instead of our own domain (e.g. Default.aspx)
+        htmlContent = htmlContent.replace(/action="(?!\s*http)([^"]+)"/gi, 'action="https://www.paytr.com/$1"');
+        htmlContent = htmlContent.replace(/action='(?!\s*http)([^']+)'/gi, "action='https://www.paytr.com/$1'");
+        
+        return res.json({ success: true, html: htmlContent });
     }
 
     return res.status(400).json({ success: false, error: "Bilinmeyen bir yanıt alındı: " + JSON.stringify(responseData).substring(0, 100) })
