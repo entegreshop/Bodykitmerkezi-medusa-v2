@@ -32,11 +32,21 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
       return res.status(404).json({ success: false, error: "Sepet bulunamadı" })
     }
 
-    // 2. Fetch PayTR Keys from Settings
-    // @ts-ignore
-    const { readConfig } = await import("../../../../admin/payment-settings/route")
-    const config = readConfig()
-    const paytrConfig = config.paytr || {}
+    // 2. Fetch PayTR Keys from Settings directly using fs
+    const fs = require("fs")
+    const path = require("path")
+    let paytrConfig: any = {}
+    
+    try {
+        const SETTINGS_FILE_PATH = path.join(process.cwd(), "uploads", "payment-settings.json")
+        if (fs.existsSync(SETTINGS_FILE_PATH)) {
+            const fileContent = fs.readFileSync(SETTINGS_FILE_PATH, "utf-8")
+            const config = JSON.parse(fileContent)
+            paytrConfig = config.paytr || {}
+        }
+    } catch(e) {
+        console.error("Could not read payment settings", e)
+    }
 
     const merchant_id = paytrConfig.merchant_id
     const merchant_key = paytrConfig.merchant_key
