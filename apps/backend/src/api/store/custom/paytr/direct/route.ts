@@ -68,7 +68,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     const user_address = `${cart.shipping_address?.address_1 || ""}, ${cart.shipping_address?.city || ""}`.trim() || "Girilmedi"
     const user_phone = cart.shipping_address?.phone || "0000000000"
     
-    const currency = (cart.region?.currency_code || "TL").toUpperCase()
+    const currency = "TL" // PayTR expects 'TL' rather than 'TRY' in some cases
     // handle encoding issues with 'Açık' by checking english chars or first letter
     const test_mode = (paytrConfig.test_mode && paytrConfig.test_mode.startsWith("A")) ? "1" : "0"
     
