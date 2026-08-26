@@ -288,9 +288,22 @@ export async function processQuickCheckout(data: QuickCheckoutFormData) {
             const directApiData = await directApiRes.json();
             logToFile("directApiData: " + JSON.stringify({ ...directApiData, html: directApiData.html ? "HTML_PRESENT" : undefined }));
             
-            if (directApiData.success && directApiData.html) {
-                logToFile("Returning requiresDirectHtml");
-                return { success: true, cartId: targetCartId, requiresDirectHtml: true, html: directApiData.html };
+            if (directApiData.success) {
+                if (directApiData.requiresClientPost && directApiData.formParams) {
+                    logToFile("Returning requiresClientPost");
+                    return { 
+                        success: true, 
+                        cartId: targetCartId, 
+                        requiresClientPost: true, 
+                        postUrl: directApiData.postUrl, 
+                        formParams: directApiData.formParams 
+                    };
+                } else if (directApiData.html) {
+                    logToFile("Returning requiresDirectHtml");
+                    return { success: true, cartId: targetCartId, requiresDirectHtml: true, html: directApiData.html };
+                } else {
+                    throw new Error("PayTR'dan beklenen HTML veya yönlendirme parametreleri alınamadı.");
+                }
             } else {
                 throw new Error(directApiData.error || "Banka ile iletişim kurulamadı. Lütfen bilgilerinizi kontrol edin.");
             }

@@ -124,80 +124,45 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     formData.append("expiry_year", cc_year)
     formData.append("cvv", cc_cvv)
 
-    // API URL is /odeme for Direct API
-    const response = await axios.post("https://www.paytr.com/odeme", formData.toString(), {
-      headers: { "Content-Type": "application/x-www-form-urlencoded" }
-    })
+    // 5. INSTEAD of posting from the backend (which breaks PayTR's 3D Secure relative HTML paths), 
+    // we must return the form parameters to the frontend. PayTR documentation STRICTLY requires 
+    // the POST request to be made directly from the user's browser to https://www.paytr.com/odeme.
+    const formParams = {
+        merchant_id,
+        user_ip,
+        merchant_oid,
+        email,
+        payment_amount: payment_amount.toString(),
+        payment_type,
+        installment_count,
+        currency,
+        test_mode,
+        non_3d,
+        merchant_ok_url,
+        merchant_fail_url,
+        user_name,
+        user_address,
+        user_phone,
+        user_basket: user_basket_str,
+        debug_on: "1",
+        paytr_token,
+        cc_owner,
+        card_number: cc_number,
+        expiry_month: cc_month,
+        expiry_year: cc_year,
+        cvv: cc_cvv
+    };
 
-    // If non_3d = 0, PayTR returns a 3D Secure HTML string. If there is an error, it usually returns JSON or a string containing "status":"error"
-    let responseData = response.data;
-    
-    if (typeof responseData === 'object') {
-        if (responseData.status === "error" || responseData.status === "failed") {
-            console.error("PayTR Direct API Error:", responseData);
-            return res.status(400).json({ success: false, error: responseData.reason || responseData.message || JSON.stringify(responseData) });
-        }
-        
-        if (responseData.reason || responseData.message || responseData.err_msg) {
-             return res.status(400).json({ success: false, error: responseData.reason || responseData.message || responseData.err_msg || JSON.stringify(responseData) });
-        }
-        
-        if (!responseData.html && responseData.status !== "success") {
-             return res.status(400).json({ success: false, error: "PayTR Beklenmeyen Yanıt: " + JSON.stringify(responseData) });
-        }
-    } else if (typeof responseData === 'string') {
-        if (responseData.includes('status":"error"') || responseData.includes('status":"failed"')) {
-            try {
-                const parsed = JSON.parse(responseData);
-                return res.status(400).json({ success: false, error: parsed.reason || parsed.message || "İşlem reddedildi." });
-            } catch (e) {
-                return res.status(400).json({ success: false, error: "Banka iletişiminde hata." });
-            }
-        }
-        
-        // It's likely the 3D Secure HTML
-        let htmlContent = responseData;
-        
-        // Axios follows redirects. The final URL might be something like https://www.paytr.com/odeme3d/xxx/
-        // We must resolve relative paths in the HTML using this final URL, not just the domain root.
-        const finalUrl = response.request?.res?.responseUrl || "https://www.paytr.com/odeme/";
-        
-        // A simple function to resolve relative URLs
-        const resolveUrl = (relativeUrl: string) => {
-            try {
-                return new URL(relativeUrl, finalUrl).href;
-            } catch(e) {
-                return "https://www.paytr.com/" + relativeUrl;
-            }
-        };
-
-        // Fix relative form actions in PayTR HTML
-        htmlContent = htmlContent.replace(/action="(?!\s*http)([^"]+)"/gi, (match: string, p1: string) => {
-            return `action="${resolveUrl(p1)}"`;
-        });
-        htmlContent = htmlContent.replace(/action='(?!\s*http)([^']+)'/gi, (match: string, p1: string) => {
-            return `action='${resolveUrl(p1)}'`;
-        });
-        
-        return res.json({ success: true, html: htmlContent });
-    }
-
-    return res.status(400).json({ success: false, error: "Bilinmeyen bir yanıt alındı: " + JSON.stringify(responseData).substring(0, 100) })
+    return res.json({ 
+        success: true, 
+        requiresDirectHtml: false,
+        requiresClientPost: true,
+        postUrl: "https://www.paytr.com/odeme",
+        formParams 
+    });
 
   } catch (error: any) {
     console.error("PayTR Direct API Endpoint Error:", error)
-    let errMsg = error.message;
-    if (error.response && error.response.data) {
-        if (typeof error.response.data === 'string') {
-            try {
-                const parsed = JSON.parse(error.response.data);
-                errMsg = parsed.reason || parsed.message || errMsg;
-            } catch (e) {}
-        } else if (error.response.data.reason || error.response.data.message) {
-            errMsg = error.response.data.reason || error.response.data.message;
-        }
-    }
-    // Return 400 instead of 500 so Medusa's global error handler doesn't overwrite our custom error message
-    return res.status(400).json({ success: false, error: errMsg })
+    return res.status(400).json({ success: false, error: error.message || "Bilinmeyen bir hata oluştu" })
   }
 }

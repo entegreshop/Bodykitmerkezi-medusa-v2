@@ -256,7 +256,27 @@ export default function QuickCheckoutModal({
         })
 
         if (result.success) {
-           if (result.requiresDirectHtml && result.html) {
+           if (result.requiresClientPost && result.formParams && result.postUrl) {
+               // Render loading state while submitting
+               setDirectPaytrHtml('<div style="display:flex;align-items:center;justify-center:center;height:100%;">Bankaya yönlendiriliyorsunuz...</div>');
+               
+               // Create dynamic form and submit to PayTR
+               const form = document.createElement("form");
+               form.method = "POST";
+               form.action = result.postUrl;
+               form.style.display = "none";
+               
+               Object.entries(result.formParams).forEach(([key, value]) => {
+                   const input = document.createElement("input");
+                   input.type = "hidden";
+                   input.name = key;
+                   input.value = String(value);
+                   form.appendChild(input);
+               });
+               
+               document.body.appendChild(form);
+               form.submit();
+           } else if (result.requiresDirectHtml && result.html) {
                // Render the 3D secure HTML form
                setDirectPaytrHtml(result.html);
                
