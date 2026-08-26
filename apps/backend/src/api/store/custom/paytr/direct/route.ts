@@ -83,8 +83,11 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     const user_basket_str = Buffer.from(JSON.stringify(user_basket)).toString("base64")
     
     const storeUrl = process.env.STORE_URL || (process.env.STORE_CORS ? process.env.STORE_CORS.split(",")[0] : "https://bodykitmerkezi.com")
-    const merchant_ok_url = `${storeUrl}/checkout/success?order_id=cart_${merchant_oid}`
-    const merchant_fail_url = `${storeUrl}/checkout/failed`
+    
+    // The user will be redirected via POST from PayTR. 
+    // We point to a Next.js API route so it can accept the POST and redirect via GET.
+    const merchant_ok_url = `${storeUrl}/api/paytr/callback?status=success&cart_id=cart_${merchant_oid}`
+    const merchant_fail_url = `${storeUrl}/api/paytr/callback?status=fail`
 
     // Direct API specifics
     const payment_type = "card"
