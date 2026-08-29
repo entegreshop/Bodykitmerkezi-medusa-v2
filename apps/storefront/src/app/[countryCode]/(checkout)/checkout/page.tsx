@@ -11,7 +11,14 @@ export const metadata: Metadata = {
   title: "Checkout",
 }
 
-export default async function Checkout() {
+type Props = {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}
+
+export default async function Checkout(props: Props) {
+  const searchParams = await props.searchParams
+  const errorParam = searchParams?.error as string | undefined
+
   const cart = await retrieveCart()
 
   if (!cart) {
@@ -29,6 +36,7 @@ export default async function Checkout() {
         customer={customer}
         shippingMethods={shippingMethods}
         paymentMethods={paymentMethods}
+        initialError={errorParam}
       />
     </PaymentWrapper>
   )

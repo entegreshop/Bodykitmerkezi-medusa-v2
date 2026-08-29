@@ -16,6 +16,23 @@ export async function POST(request: Request) {
         return NextResponse.redirect(`${origin}/tr/checkout?step=review&payment_status=success`, 302)
     }
 
-    // Redirect to cart with an error message
-    return NextResponse.redirect(`${origin}/tr/cart?error=payment_failed`, 302)
+    // Try to get fail_message from POST body
+    let failMessage = "Ödeme işlemi banka tarafından reddedildi."
+    if (request.method === "POST") {
+        try {
+            const bodyText = await request.text()
+            const params = new URLSearchParams(bodyText)
+            if (params.has("fail_message")) {
+                failMessage = params.get("fail_message") || failMessage
+            }
+        } catch(e) {
+            console.error("Failed to parse PayTR fail_message", e)
+        }
+    }
+
+    // Redirect to checkout with an error message
+    const errorUrl = new URL(`${origin}/tr/checkout`)
+    errorUrl.searchParams.set("error", failMessage)
+    
+    return NextResponse.redirect(errorUrl.toString(), 302)
 }

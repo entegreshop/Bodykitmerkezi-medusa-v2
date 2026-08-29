@@ -77,6 +77,7 @@ type SinglePageCheckoutProps = {
   customer: HttpTypes.StoreCustomer | null
   shippingMethods: HttpTypes.StoreCartShippingOption[] | null
   paymentMethods: any[] | null
+  initialError?: string
 }
 
 const CITIES_LIST = [
@@ -108,6 +109,7 @@ export default function SinglePageCheckout({
   customer,
   shippingMethods,
   paymentMethods,
+  initialError,
 }: SinglePageCheckoutProps) {
   const router = useRouter()
 
@@ -249,7 +251,7 @@ export default function SinglePageCheckout({
 
   const [agreeTerms, setAgreeTerms] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [errorMessage, setErrorMessage] = useState<string | null>(initialError || null)
 
   // Mobile Accordion state
   const [summaryExpanded, setSummaryExpanded] = useState(false)
