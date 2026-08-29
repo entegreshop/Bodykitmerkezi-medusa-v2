@@ -64,7 +64,9 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     let payment_amount = (Number(cart.total) / 100).toFixed(2)
     
     // PayTR Direct API requires merchant_oid to be STRICTLY alphanumeric (no underscores like 'cart_')
-    const merchant_oid = cart.id.replace("cart_", "").substring(0, 64)
+    // We append the timestamp to the 26-character ULID to ensure every attempt is unique!
+    const base_oid = cart.id.replace("cart_", "")
+    const merchant_oid = base_oid + Date.now().toString()
     
     const user_name = `${cart.shipping_address?.first_name || ""} ${cart.shipping_address?.last_name || ""}`.trim() || "Misafir"
     const user_address = `${cart.shipping_address?.address_1 || ""}, ${cart.shipping_address?.city || ""}`.trim() || "Girilmedi"
@@ -86,7 +88,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     
     // The user will be redirected via POST from PayTR. 
     // We point to a Next.js API route so it can accept the POST and redirect via GET.
-    const merchant_ok_url = `${storeUrl}/api/paytr/callback?status=success&cart_id=cart_${merchant_oid}`
+    const merchant_ok_url = `${storeUrl}/api/paytr/callback?status=success&cart_id=${cart.id}`
     const merchant_fail_url = `${storeUrl}/api/paytr/callback?status=fail`
 
     // Direct API specifics

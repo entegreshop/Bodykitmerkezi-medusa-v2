@@ -55,8 +55,10 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
         // @ts-ignore
         const { placeOrderWorkflow } = await import("@medusajs/medusa/core-flows")
         
-        // We stripped "cart_" to make it alphanumeric for PayTR Direct API, so put it back!
-        const cart_id = "cart_" + merchant_oid
+        // We stripped "cart_" and appended a timestamp for PayTR uniqueness.
+        // We only need the first 26 characters (Medusa's ULID length).
+        const original_id = merchant_oid.substring(0, 26)
+        const cart_id = "cart_" + original_id
 
         // Execute placeOrderWorkflow
         await placeOrderWorkflow(req.scope).run({
