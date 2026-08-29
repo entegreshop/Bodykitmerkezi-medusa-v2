@@ -1,4 +1,4 @@
-﻿import { NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 
 export async function POST(request: Request) {
     const url = new URL(request.url)
@@ -7,8 +7,8 @@ export async function POST(request: Request) {
     const origin = url.origin
 
     if (status === "success") {
-        return NextResponse.redirect(${origin}/tr/checkout/success?order_id=, 302)
+        return NextResponse.redirect(`${origin}/tr/checkout/success?order_id=${cartId}`, 302)
     }
 
-    return NextResponse.redirect(${origin}/tr/checkout/failed, 302)
+    return NextResponse.redirect(`${origin}/tr/checkout/failed`, 302)
 }
