@@ -1,6 +1,14 @@
 import { NextResponse } from "next/server"
 
+export async function GET(request: Request) {
+    return handleCallback(request)
+}
+
 export async function POST(request: Request) {
+    return handleCallback(request)
+}
+
+async function handleCallback(request: Request) {
     const url = new URL(request.url)
     const status = url.searchParams.get("status")
     const cartId = url.searchParams.get("cart_id")
