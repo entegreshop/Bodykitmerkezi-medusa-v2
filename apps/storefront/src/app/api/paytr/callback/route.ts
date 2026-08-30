@@ -36,6 +36,7 @@ async function handleCallback(request: Request) {
             console.error("Storefront PayTR callback failed to complete cart:", e);
             // It might fail if cart was completed by webhook and now it returns 404. Wait, docs said it's idempotent.
             // If it DOES fail, we can't easily get the order ID without a backend route.
+            return NextResponse.redirect(`${origin}/tr/checkout?error=${encodeURIComponent(e.message || "Cart completion failed")}`, 302)
         }
 
         if (orderId) {
@@ -43,7 +44,7 @@ async function handleCallback(request: Request) {
         }
         
         // Fallback if we couldn't get the order ID
-        return NextResponse.redirect(`${origin}/tr/checkout?step=review&payment_status=success`, 302)
+        return NextResponse.redirect(`${origin}/tr/checkout?error=${encodeURIComponent("Sipariş alınırken bir hata oluştu. Lütfen yöneticinizle iletişime geçin.")}`, 302)
     }
 
     // Try to get fail_message from POST body

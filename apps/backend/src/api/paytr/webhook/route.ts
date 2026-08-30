@@ -69,6 +69,18 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
 
       } catch (err: any) {
         console.error("PayTR Webhook: Error completing cart/order:", err)
+        
+        // Write the error to a file so we can debug it
+        try {
+            const fs = require("fs")
+            const path = require("path")
+            const LOGS_FILE_PATH = path.join(process.cwd(), "uploads", "paytr-error.log")
+            const errorMsg = `[${new Date().toISOString()}] Error for cart ${cart_id}: ${err.message}\nStack: ${err.stack}\n\n`
+            fs.appendFileSync(LOGS_FILE_PATH, errorMsg)
+        } catch(fileErr) {
+            console.error("Could not write to error log file", fileErr)
+        }
+        
         // If order already exists or cart is completed, Medusa will throw an error, which is fine to ignore.
       }
 
