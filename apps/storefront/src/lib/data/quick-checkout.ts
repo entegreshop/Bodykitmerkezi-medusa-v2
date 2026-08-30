@@ -159,35 +159,45 @@ export async function processQuickCheckout(data: QuickCheckoutFormData) {
     )
     logToFile("Metadata guncellendi");
 
+    // Retrieve cart to check if it already has a shipping method (it might have been cleared by address update)
+    const { cart: currentCart } = await sdk.store.cart.retrieve(targetCartId, { fields: "*shipping_methods" }, headers);
+
     // 3. Kargo Yontemi Secimi
-    logToFile("3. Kargo secenekleri aliniyor...");
-    const shippingOptsParams = { cart_id: targetCartId }
-    const { shipping_options } = await sdk.client.fetch<{ shipping_options: HttpTypes.StoreCartShippingOption[] }>(
-        "/store/shipping-options",
-        { query: shippingOptsParams, headers, cache: "no-store" }
-    )
+    if (!currentCart.shipping_methods || currentCart.shipping_methods.length === 0) {
+        logToFile("3. Kargo secenekleri aliniyor...");
+        const shippingOptsParams = { cart_id: targetCartId }
+        const { shipping_options } = await sdk.client.fetch<{ shipping_options: HttpTypes.StoreCartShippingOption[] }>(
+            "/store/shipping-options",
+            { query: shippingOptsParams, headers, cache: "no-store" }
+        )
 
-    if (shipping_options && shipping_options.length > 0) {
-        const methodToUse = shipping_options.find(so => so.price_type === 'calculated') || shipping_options[shipping_options.length - 1]
-        console.log("[QuickCheckout] 3. Kargo secildi:", methodToUse.id)
-        
-        if (methodToUse.price_type === 'calculated') {
-             await sdk.client.fetch(
-                `/store/shipping-options/${methodToUse.id}/calculate`,
-                { method: "POST", body: { cart_id: targetCartId }, headers }
-            ).catch(e => console.error("Kargo hesaplama uyarisi:", e.message))
-        }
+        if (shipping_options && shipping_options.length > 0) {
+            logToFile("Kargo Secenekleri bulundu: " + JSON.stringify(shipping_options.map(s => ({id: s.id, name: s.name, amount: s.amount}))))
+            // Pick the first shipping option, which is usually the default/standard one. 
+            // Avoid picking the last one as it might be a pickup method or belong to a different profile.
+            const methodToUse = shipping_options.find(so => so.price_type === 'calculated') || shipping_options[0]
+            console.log("[QuickCheckout] 3. Kargo secildi:", methodToUse.id)
+            
+            if (methodToUse.price_type === 'calculated') {
+                    await sdk.client.fetch(
+                    `/store/shipping-options/${methodToUse.id}/calculate`,
+                    { method: "POST", body: { cart_id: targetCartId }, headers }
+                ).catch(e => console.error("Kargo hesaplama uyarisi:", e.message))
+            }
 
-        try {
-            await sdk.store.cart.addShippingMethod(
-                targetCartId,
-                { option_id: methodToUse.id },
-                {},
-                headers
-            )
-        } catch(e: any) {
-            throw new Error(`2. Kargo secenekleri ayarlanamadi: ${e.message || JSON.stringify(e)}`)
+            try {
+                await sdk.store.cart.addShippingMethod(
+                    targetCartId,
+                    { option_id: methodToUse.id },
+                    {},
+                    headers
+                )
+            } catch(e: any) {
+                throw new Error(`2. Kargo secenekleri ayarlanamadi: ${e.message || JSON.stringify(e)}`)
+            }
         }
+    } else {
+        logToFile("3. Kargo zaten secilmis, atliyor...");
     }
 
     // 4. Odeme Yontemi Secimi
