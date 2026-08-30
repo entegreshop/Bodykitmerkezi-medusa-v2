@@ -160,7 +160,11 @@ export async function processQuickCheckout(data: QuickCheckoutFormData) {
     logToFile("Metadata guncellendi");
 
     // Retrieve cart to check if it already has a shipping method (it might have been cleared by address update)
-    const { cart: currentCart } = await sdk.store.cart.retrieve(targetCartId, { fields: "*shipping_methods" }, headers);
+    // We MUST use client.fetch with cache: "no-store" because sdk.store.cart.retrieve is cached by Next.js!
+    const { cart: currentCart } = await sdk.client.fetch<{ cart: HttpTypes.StoreCart }>(
+        `/store/carts/${targetCartId}`,
+        { query: { fields: "*shipping_methods" }, headers, cache: "no-store" }
+    );
 
     // 3. Kargo Yontemi Secimi
     if (!currentCart.shipping_methods || currentCart.shipping_methods.length === 0) {
@@ -240,7 +244,10 @@ export async function processQuickCheckout(data: QuickCheckoutFormData) {
 
     try {
         logToFile("Retrieving cart...");
-        const { cart } = await sdk.store.cart.retrieve(targetCartId);
+        const { cart } = await sdk.client.fetch<{ cart: HttpTypes.StoreCart }>(
+            `/store/carts/${targetCartId}`,
+            { headers, cache: "no-store" }
+        );
         
         // 4. Payment Session Başlat
         logToFile("4. Payment session baslatiliyor");
@@ -258,7 +265,10 @@ export async function processQuickCheckout(data: QuickCheckoutFormData) {
         logToFile("Payment session hatasi 1: " + e.message);
         try {
            // Fallback to old naming without pp_ prefix just in case
-           const { cart } = await sdk.store.cart.retrieve(targetCartId);
+           const { cart } = await sdk.client.fetch<{ cart: HttpTypes.StoreCart }>(
+               `/store/carts/${targetCartId}`,
+               { headers, cache: "no-store" }
+           );
            let fallbackId = "manual";
            if (data.payment_method === "credit_card") fallbackId = "pp_system_default"
            else if (data.payment_method === "havale") fallbackId = "bank_transfer"
