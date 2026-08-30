@@ -569,7 +569,7 @@ export default function SinglePageCheckout({
 
       // 3. Initiate payment session
       let providerId = "pp_system_default"
-      if (paymentMethod === "paytr") providerId = "pp_paytr_paytr"
+      if (paymentMethod === "paytr") providerId = "pp_system_default" // We handle PayTR completely externally
       else if (paymentMethod === "bank_transfer") providerId = "pp_bank-transfer_bank-transfer"
       else if (paymentMethod === "cash_on_delivery") providerId = "pp_cash-on-delivery_cash-on-delivery"
       else if (paymentMethod === "card_on_delivery") providerId = "pp_card-on-delivery_card-on-delivery"

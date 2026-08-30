@@ -232,10 +232,14 @@ export async function processQuickCheckout(data: QuickCheckoutFormData) {
         logToFile("Retrieving cart...");
         const { cart } = await sdk.store.cart.retrieve(targetCartId);
         
+        // 4. Payment Session Başlat
+        logToFile("4. Payment session baslatiliyor");
         let providerId = "pp_system_default";
-        if (data.payment_method === "credit_card") providerId = "pp_paytr"
-        else if (data.payment_method === "havale") providerId = "pp_bank_transfer"
-        else if (data.payment_method === "cash_on_delivery" || data.payment_method === "cod_cc") providerId = "pp_cod_cash"
+        // We use pp_system_default for credit_card because we handle PayTR completely externally via Direct API and our own Webhook.
+        // pp_system_default automatically approves the payment when completeCartWorkflow is called.
+        if (data.payment_method === "credit_card") providerId = "pp_system_default"
+        else if (data.payment_method === "havale") providerId = "pp_bank-transfer_bank-transfer"
+        else if (data.payment_method === "cash_on_delivery" || data.payment_method === "cod_cc") providerId = "pp_cash-on-delivery_cash-on-delivery"
 
         logToFile("Initiating payment session with providerId: " + providerId);
         await sdk.store.payment.initiatePaymentSession(cart as any, { provider_id: providerId }, {}, headers)
@@ -246,7 +250,7 @@ export async function processQuickCheckout(data: QuickCheckoutFormData) {
            // Fallback to old naming without pp_ prefix just in case
            const { cart } = await sdk.store.cart.retrieve(targetCartId);
            let fallbackId = "manual";
-           if (data.payment_method === "credit_card") fallbackId = "paytr"
+           if (data.payment_method === "credit_card") fallbackId = "pp_system_default"
            else if (data.payment_method === "havale") fallbackId = "bank_transfer"
            else if (data.payment_method === "cash_on_delivery" || data.payment_method === "cod_cc") fallbackId = "cod_cash"
            
