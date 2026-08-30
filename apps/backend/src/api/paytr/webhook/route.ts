@@ -75,7 +75,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
             const fs = require("fs")
             const path = require("path")
             const LOGS_FILE_PATH = path.join(process.cwd(), "uploads", "paytr-error.log")
-            const errorMsg = `[${new Date().toISOString()}] Error for cart ${cart_id}: ${err.message}\nStack: ${err.stack}\n\n`
+            const errorMsg = `[${new Date().toISOString()}] Error for cart ${merchant_oid}: ${err.message}\nStack: ${err.stack}\n\n`
             fs.appendFileSync(LOGS_FILE_PATH, errorMsg)
         } catch(fileErr) {
             console.error("Could not write to error log file", fileErr)
