@@ -53,15 +53,15 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
         // Complete the cart using Medusa's placeOrderWorkflow or Cart completion logic
         // Since we are in a custom webhook and need to complete the cart safely:
         // @ts-ignore
-        const { placeOrderWorkflow } = await import("@medusajs/medusa/core-flows")
+        const { completeCartWorkflow } = await import("@medusajs/core-flows")
         
         // We stripped "cart_" and appended a timestamp for PayTR uniqueness.
         // We only need the first 26 characters (Medusa's ULID length).
         const original_id = merchant_oid.substring(0, 26)
         const cart_id = "cart_" + original_id
 
-        // Execute placeOrderWorkflow
-        await placeOrderWorkflow(req.scope).run({
+        // Execute completeCartWorkflow
+        await completeCartWorkflow(req.scope).run({
           input: { id: cart_id }
         })
         

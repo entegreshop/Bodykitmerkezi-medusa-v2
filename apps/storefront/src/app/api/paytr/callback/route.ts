@@ -18,9 +18,31 @@ async function handleCallback(request: Request) {
     const proto = request.headers.get("x-forwarded-proto") || "https"
     const origin = `${proto}://${host}`
 
-    if (status === "success") {
-        // Redirect to checkout review step. 
-        // Medusa's frontend will see the cart is paid/completed and redirect to the order confirmation page automatically.
+    if (status === "success" && cartId) {
+        // Try to complete the cart redundantly to get the order ID.
+        // Medusa's complete action is idempotent, so it will just return the existing order if the webhook already completed it!
+        let orderId = null;
+        try {
+            const { sdk } = await import("@lib/config");
+            const { getAuthHeaders, removeCartId } = await import("@lib/data/cookies");
+            
+            const headers = await getAuthHeaders();
+            const res = await sdk.store.cart.complete(cartId, {}, headers);
+            if (res.type === "order") {
+                orderId = res.order.id;
+                await removeCartId(); // Clear the cart cookie
+            }
+        } catch (e: any) {
+            console.error("Storefront PayTR callback failed to complete cart:", e);
+            // It might fail if cart was completed by webhook and now it returns 404. Wait, docs said it's idempotent.
+            // If it DOES fail, we can't easily get the order ID without a backend route.
+        }
+
+        if (orderId) {
+            return NextResponse.redirect(`${origin}/tr/order/${orderId}/confirmed`, 302)
+        }
+        
+        // Fallback if we couldn't get the order ID
         return NextResponse.redirect(`${origin}/tr/checkout?step=review&payment_status=success`, 302)
     }
 
