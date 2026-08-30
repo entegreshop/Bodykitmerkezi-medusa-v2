@@ -25,10 +25,28 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
               additional_fee: parsed.card_on_delivery?.adjustment_value,
               min_amount: parsed.card_on_delivery?.min_total
           }
+          // Default to payment settings threshold if shipping settings not found
           settings.shipping_settings = {
               standard_rate: 60,
               free_shipping_limit: parsed.free_shipping_threshold,
               free_shipping_enabled: true
+          }
+      } catch (err) {}
+  }
+
+  // Read shipping settings from JSON
+  const shippingConfigPath = path.join(process.cwd(), "uploads", "shipping-settings.json")
+  if (fs.existsSync(shippingConfigPath)) {
+      try {
+          const content = fs.readFileSync(shippingConfigPath, "utf-8")
+          const parsed = JSON.parse(content)
+          
+          // Override shipping settings with values from the custom Kargo Ayarları panel
+          settings.shipping_settings = {
+              ...settings.shipping_settings, // keep fallback values if any
+              standard_rate: parsed.standardShippingFee !== undefined ? parsed.standardShippingFee : 60,
+              free_shipping_limit: parsed.freeShippingThreshold !== undefined ? parsed.freeShippingThreshold : settings.shipping_settings?.free_shipping_limit,
+              free_shipping_enabled: parsed.freeShippingEnabled !== undefined ? parsed.freeShippingEnabled : true
           }
       } catch (err) {}
   }
