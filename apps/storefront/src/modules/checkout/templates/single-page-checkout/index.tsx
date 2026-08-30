@@ -562,7 +562,19 @@ export default function SinglePageCheckout({
       })
 
       // 2. Select shipping method
-      const selectedOptionId = shippingMethodId || (shippingMethods && shippingMethods[0]?.id)
+      let selectedOptionId = shippingMethodId || (shippingMethods && shippingMethods[0]?.id)
+      if (!selectedOptionId) {
+        // If no shipping method was pre-selected (usually because address was empty initially),
+        // fetch the available shipping options now that we have updated the address!
+        const { shipping_options } = await sdk.client.fetch<{ shipping_options: HttpTypes.StoreCartShippingOption[] }>(
+            "/store/shipping-options",
+            { query: { cart_id: cart.id }, cache: "no-store" }
+        )
+        if (shipping_options && shipping_options.length > 0) {
+          selectedOptionId = shipping_options[0].id
+        }
+      }
+      
       if (selectedOptionId) {
         await setShippingMethod({ cartId: cart.id, shippingMethodId: selectedOptionId })
       }
