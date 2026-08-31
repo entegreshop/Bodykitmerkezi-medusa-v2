@@ -636,7 +636,7 @@ export default function QuickCheckoutModal({
                         )}
                         <div className="flex justify-between text-[#6b7280]">
                            <span>Kargo</span>
-                           <span>60,00 TL</span>
+                           <span>{kargoFiyati === 0 ? "Ücretsiz" : `${kargoFiyati.toLocaleString("tr-TR", {minimumFractionDigits: 2, maximumFractionDigits: 2})} TL`}</span>
                         </div>
                         {isCodActive && codSettings.additional_fee > 0 && (
                            <div className="flex justify-between text-[#6b7280]">
