@@ -246,8 +246,20 @@ export async function processQuickCheckout(data: QuickCheckoutFormData) {
         logToFile("Retrieving cart...");
         const { cart } = await sdk.client.fetch<{ cart: HttpTypes.StoreCart }>(
             `/store/carts/${targetCartId}`,
-            { headers, cache: "no-store" }
+            { query: { fields: "*shipping_methods" }, headers, cache: "no-store" }
         );
+
+        if (!cart.shipping_methods || cart.shipping_methods.length === 0) {
+            throw new Error("Kargo yöntemi sepetinize eklenemedi. Lütfen adresinizi kontrol edip tekrar deneyin.");
+        }
+        
+        if (cart.shipping_total === null || cart.shipping_total === undefined) {
+            throw new Error("Kargo ücreti hesaplanamadı.");
+        }
+
+        if (cart.total === null || cart.total === undefined || cart.total <= 0) {
+            throw new Error("Sepet tutarı geçersiz.");
+        }
         
         // 4. Payment Session Başlat
         logToFile("4. Payment session baslatiliyor");

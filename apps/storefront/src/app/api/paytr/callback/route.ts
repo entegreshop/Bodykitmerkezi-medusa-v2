@@ -19,24 +19,34 @@ async function handleCallback(request: Request) {
     const origin = `${proto}://${host}`
 
     if (status === "success" && cartId) {
-        // Try to complete the cart redundantly to get the order ID.
-        // Medusa's complete action is idempotent, so it will just return the existing order if the webhook already completed it!
         let orderId = null;
         try {
             const { sdk } = await import("@lib/config");
             const { getAuthHeaders, removeCartId } = await import("@lib/data/cookies");
             
             const headers = await getAuthHeaders();
-            const res = await sdk.store.cart.complete(cartId, {}, headers);
-            if (res.type === "order") {
-                orderId = res.order.id;
-                await removeCartId(); // Clear the cart cookie
+            
+            // Poll up to 10 seconds for the order to be created by the webhook
+            for (let i = 0; i < 10; i++) {
+                try {
+                    const { orders } = await sdk.client.fetch<{ orders: any[] }>(`/store/orders`, {
+                        query: { cart_id: cartId },
+                        headers,
+                        cache: "no-store"
+                    });
+                    
+                    if (orders && orders.length > 0) {
+                        orderId = orders[0].id;
+                        await removeCartId();
+                        break;
+                    }
+                } catch(err) {
+                    console.log("Polling for order...", err);
+                }
+                await new Promise(r => setTimeout(r, 1000));
             }
         } catch (e: any) {
-            console.error("Storefront PayTR callback failed to complete cart:", e);
-            // It might fail if cart was completed by webhook and now it returns 404. Wait, docs said it's idempotent.
-            // If it DOES fail, we can't easily get the order ID without a backend route.
-            return NextResponse.redirect(`${origin}/tr/checkout?error=${encodeURIComponent(e.message || "Cart completion failed")}`, 302)
+            console.error("Storefront PayTR callback failed to poll order:", e);
         }
 
         if (orderId) {
@@ -44,7 +54,7 @@ async function handleCallback(request: Request) {
         }
         
         // Fallback if we couldn't get the order ID
-        return NextResponse.redirect(`${origin}/tr/checkout?error=${encodeURIComponent("Sipariş alınırken bir hata oluştu. Lütfen yöneticinizle iletişime geçin.")}`, 302)
+        return NextResponse.redirect(`${origin}/tr/checkout?error=${encodeURIComponent("SipariYiniz alnd, ancak ynlendirme tamamlanamad. LǬtfen sipariYlerim sayfasn kontrol edin.")}`, 302)
     }
 
     // Try to get fail_message from POST body

@@ -13,47 +13,13 @@ type OrderCompletedTemplateProps = {
 export default async function OrderCompletedTemplate({
   order,
 }: OrderCompletedTemplateProps) {
-  const metadata = (order.metadata || {}) as any
-  const backendUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000"
-  const publishableKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
-  const fetchOptions = { headers: { "x-publishable-api-key": publishableKey }, next: { revalidate: 300 } }
+  const metadata: any = order.metadata || {};
   
-  let dynamicShippingCost = 6000 // default 60 TL
-  let dynamicCodFee = 7000 // default 70 TL
-  let freeShippingLimit = 300000 // default 3000 TL
-  let isFreeShippingEnabled = false
+  const finalShippingAmount = order.shipping_total ?? 0;
+  const isFreeShipping = finalShippingAmount === 0;
   
-  try {
-     const [shipRes, codRes] = await Promise.all([
-        fetch(`${backendUrl}/store/custom/shipping-settings`, fetchOptions),
-        fetch(`${backendUrl}/store/custom/payment-cod-cc`, fetchOptions)
-     ])
-     const shipData = await shipRes.json()
-     if (shipData?.settings?.shipping_settings) {
-         const ss = shipData.settings.shipping_settings;
-         if (ss.standard_rate) dynamicShippingCost = parseFloat(ss.standard_rate) * 100
-         if (ss.free_shipping_limit) freeShippingLimit = parseFloat(ss.free_shipping_limit) * 100
-         isFreeShippingEnabled = ss.free_shipping_enabled
-     }
-     const codData = await codRes.json()
-     if (codData?.settings?.payment_cod_cc?.additional_fee) {
-         dynamicCodFee = parseFloat(codData.settings.payment_cod_cc.additional_fee) * 100
-     }
-  } catch (e) {}
-
-  const isQuickCheckout = !!metadata.payment_option;
-  const numericalPrice = (order.item_subtotal ?? 0) - (order.discount_total ?? 0);
-  
-  // Determine final shipping cost based on free shipping criteria
-  const isFreeShipping = isFreeShippingEnabled && numericalPrice >= freeShippingLimit;
-  const finalShippingAmount = isQuickCheckout ? (isFreeShipping ? 0 : dynamicShippingCost) : (order.shipping_total ?? 0);
-
-  // Determine final COD fee based on payment method
-  const isCod = metadata.payment_option === 'cash_on_delivery' || metadata.payment_option === 'card_on_delivery'
-  const finalCodFeeAmount = isQuickCheckout && isCod ? dynamicCodFee : 0
-
-  // Calculate overall grand total
-  const finalGrandTotal = isQuickCheckout ? (numericalPrice + finalShippingAmount + finalCodFeeAmount) : (order.total ?? 0);
+  // Note: order.total already includes item_subtotal, shipping_total, taxes, etc.
+  const finalGrandTotal = order.total ?? 0;
 
   const formatAddress = (addr: any) => {
     if (!addr) return null
@@ -154,20 +120,6 @@ export default async function OrderCompletedTemplate({
                 <span>Kargo</span>
                 <span>{isFreeShipping ? "Ücretsiz" : convertToLocale({ amount: finalShippingAmount, currency_code: order.currency_code })}</span>
               </div>
-
-              {metadata.payment_option === 'card_on_delivery' && (
-                <div className="flex justify-between font-bold text-gray-800">
-                  <span>Kapıda Kredi Kartı Ödemesi</span>
-                  <span>+ {convertToLocale({ amount: finalCodFeeAmount, currency_code: order.currency_code })}</span>
-                </div>
-              )}
-
-              {metadata.payment_option === 'cash_on_delivery' && (
-                <div className="flex justify-between font-bold text-gray-800">
-                  <span>Kapıda Nakit Ödeme</span>
-                  <span>+ {convertToLocale({ amount: finalCodFeeAmount, currency_code: order.currency_code })}</span>
-                </div>
-              )}
 
               <div className="flex justify-between font-bold text-gray-900 mt-2 text-base border-t pt-2">
                 <span>Genel Toplam</span>

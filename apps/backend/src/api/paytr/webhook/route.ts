@@ -50,17 +50,40 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
       console.log(`PayTR Webhook: Payment SUCCESS for cart/order: ${merchant_oid}`)
       
       try {
-        // Complete the cart using Medusa's placeOrderWorkflow or Cart completion logic
-        // Since we are in a custom webhook and need to complete the cart safely:
-        // @ts-ignore
-        const { completeCartWorkflow } = await import("@medusajs/core-flows")
-        
-        // We stripped "cart_" and appended a timestamp for PayTR uniqueness.
-        // We only need the first 26 characters (Medusa's ULID length).
         const original_id = merchant_oid.substring(0, 26)
         const cart_id = "cart_" + original_id
 
-        // Execute completeCartWorkflow
+        const query = req.scope.resolve("query")
+        const { data: carts } = await query.graph({
+          entity: "cart",
+          fields: ["id", "total", "completed_at"],
+          filters: { id: cart_id }
+        })
+        const cart = carts[0]
+
+        if (!cart) {
+          console.error(`PayTR Webhook: Cart ${cart_id} not found.`)
+          return res.status(200).send("OK")
+        }
+
+        if (cart.completed_at) {
+          console.log(`PayTR Webhook: Cart ${cart_id} already completed (Idempotent).`)
+          return res.status(200).send("OK")
+        }
+
+        // Amount verification
+        // PayTR sends total_amount as integer kurus. cart.total is also integer minor units.
+        const expectedTotal = Number(cart.total)
+        const receivedTotal = Number(total_amount)
+        if (expectedTotal !== receivedTotal) {
+          console.error(`PayTR Webhook: Amount mismatch! Cart total: ${expectedTotal}, PayTR: ${receivedTotal}`)
+          return res.status(200).send("OK")
+        }
+
+        // Complete the cart using Medusa's completeCartWorkflow
+        // @ts-ignore
+        const { completeCartWorkflow } = await import("@medusajs/core-flows")
+        
         await completeCartWorkflow(req.scope).run({
           input: { id: cart_id }
         })

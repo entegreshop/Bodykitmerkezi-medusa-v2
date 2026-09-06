@@ -23,13 +23,25 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     const query = req.scope.resolve("query")
     const { data: carts } = await query.graph({
       entity: "cart",
-      fields: ["id", "email", "total", "shipping_address.*", "billing_address.*", "items.*", "region.*"],
+      fields: ["id", "email", "total", "shipping_total", "shipping_address.*", "billing_address.*", "items.*", "region.*"],
       filters: { id: cart_id }
     })
 
     const cart = carts[0] as any
     if (!cart) {
       return res.status(404).json({ success: false, error: "Sepet bulunamadı" })
+    }
+
+    if (!cart.items || cart.items.length === 0) {
+      return res.status(400).json({ success: false, error: "Sepetiniz boş." })
+    }
+
+    if (!cart.shipping_total && cart.shipping_total !== 0) {
+      return res.status(400).json({ success: false, error: "Kargo yöntemi seçilmemiş." })
+    }
+
+    if (Number(cart.total) <= 0) {
+      return res.status(400).json({ success: false, error: "Sepet tutarı 0'dan büyük olmalıdır." })
     }
 
     // 2. Fetch PayTR Keys from Settings directly using fs
@@ -82,6 +94,15 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
        (Number(item.unit_price) / 100).toFixed(2),
        item.quantity
     ])
+    
+    // Add shipping to the basket if applicable so PayTR receives the full total representation
+    if (cart.shipping_total && Number(cart.shipping_total) > 0) {
+       user_basket.push([
+           "Kargo Bedeli",
+           (Number(cart.shipping_total) / 100).toFixed(2),
+           1
+       ])
+    }
     const user_basket_str = Buffer.from(JSON.stringify(user_basket)).toString("base64")
     
     const storeUrl = process.env.STORE_URL || (process.env.STORE_CORS ? process.env.STORE_CORS.split(",")[0] : "https://bodykitmerkezi.com")

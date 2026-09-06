@@ -98,6 +98,7 @@ export default function QuickCheckoutModal({
   let numericalPrice = 0;
   let cartSubtotal = 0;
   let cartDiscount = 0;
+  let kargoFiyatiStr = "Sonraki Adımda Hesaplanacak";
   
   if (mode === "product" && product) {
      const v = product.variants?.find((vx: any) => vx.id === variantId) || product.variants?.[0] as any
@@ -105,20 +106,22 @@ export default function QuickCheckoutModal({
      priceStr = v?.calculated_price?.calculated_amount ? `${(numericalPrice).toLocaleString("tr-TR", {minimumFractionDigits: 2, maximumFractionDigits: 2})} TL` : "Detaylı Ücret Seçilmedi"
   } else if (mode === "cart" && cart) {
      numericalPrice = (cart.total || 0) / 100;
-     cartSubtotal = ((cart.item_subtotal || 0) + (cart.tax_total || 0)) / 100; // Ara toplam ve vergi (indirimsiz tutarı görebilmek için)
+     cartSubtotal = (cart.item_subtotal || 0) / 100; // Ara toplam
      cartDiscount = (cart.discount_total || cart.discount_subtotal || 0) / 100;
-     // Eğer indirim varsa Sepet fiyatı kısmında asıl fiyatı gösterelim, aşağıda indirimi düşeriz.
-     priceStr = `${(cartDiscount > 0 ? (numericalPrice + cartDiscount) : numericalPrice).toLocaleString("tr-TR", {minimumFractionDigits: 2, maximumFractionDigits: 2})} TL`
+     
+     if (cart.shipping_total !== null && cart.shipping_total !== undefined) {
+         kargoFiyatiStr = cart.shipping_total === 0 ? "Ücretsiz" : `${(cart.shipping_total / 100).toLocaleString("tr-TR", {minimumFractionDigits: 2, maximumFractionDigits: 2})} TL`;
+     }
+     
+     priceStr = `${numericalPrice.toLocaleString("tr-TR", {minimumFractionDigits: 2, maximumFractionDigits: 2})} TL`;
   }
 
-  let kargoFiyati = shippingSettings.standard_rate;
-  if (shippingSettings.free_shipping_enabled && numericalPrice >= shippingSettings.free_shipping_limit) {
-      kargoFiyati = 0;
-  }
-  
   const isCodActive = formData.payment_method === "cash_on_delivery";
   const isCodCcActive = formData.payment_method === "cod_cc";
-  const finalValue = numericalPrice > 0 ? numericalPrice + kargoFiyati + (isCodActive ? codSettings.additional_fee : (isCodCcActive ? codCcSettings.additional_fee : 0)) : 0;
+  const codFee = isCodActive ? codSettings.additional_fee : (isCodCcActive ? codCcSettings.additional_fee : 0);
+  
+  // Do not fake the final value, use canonical Medusa + COD fee if not yet added to cart
+  const finalValue = numericalPrice > 0 ? numericalPrice + codFee : 0;
   const totalWithShippingStr = numericalPrice > 0 ? `${finalValue.toLocaleString("tr-TR", {minimumFractionDigits: 2, maximumFractionDigits: 2})} TL` : priceStr;
 
   useEffect(() => {
@@ -493,10 +496,10 @@ export default function QuickCheckoutModal({
                      <span className="text-[15px] font-medium text-black">Standart Kargo</span>
                    </label>
                    <span className="text-[15px] font-bold text-gray-900">
-                     {kargoFiyati === 0 ? "Ücretsiz" : `₺${kargoFiyati.toLocaleString("tr-TR", {minimumFractionDigits: 2})}`}
+                     {kargoFiyatiStr}
                    </span>
                  </div>
-                 {shippingSettings.free_shipping_enabled && kargoFiyati > 0 && numericalPrice > 0 && (
+                 {shippingSettings.free_shipping_enabled && numericalPrice > 0 && numericalPrice < shippingSettings.free_shipping_limit && (
                     <div className="bg-gray-50 p-3 border-t border-gray-200 text-sm text-gray-600 font-medium text-center">
                        {`₺${(shippingSettings.free_shipping_limit - numericalPrice).toLocaleString("tr-TR", {minimumFractionDigits: 2})} daha alışveriş yapın, kargonuz ücretsiz olsun!`}
                     </div>
@@ -636,7 +639,7 @@ export default function QuickCheckoutModal({
                         )}
                         <div className="flex justify-between text-[#6b7280]">
                            <span>Kargo</span>
-                           <span>{kargoFiyati === 0 ? "Ücretsiz" : `${kargoFiyati.toLocaleString("tr-TR", {minimumFractionDigits: 2, maximumFractionDigits: 2})} TL`}</span>
+                           <span>{kargoFiyatiStr}</span>
                         </div>
                         {isCodActive && codSettings.additional_fee > 0 && (
                            <div className="flex justify-between text-[#6b7280]">
