@@ -109,10 +109,6 @@ export default function QuickCheckoutModal({
      cartSubtotal = (cart.item_subtotal || 0) / 100; // Ara toplam
      cartDiscount = (cart.discount_total || cart.discount_subtotal || 0) / 100;
      
-     if (cart.shipping_total !== null && cart.shipping_total !== undefined) {
-         kargoFiyatiStr = cart.shipping_total === 0 ? "Ücretsiz" : `${(cart.shipping_total / 100).toLocaleString("tr-TR", {minimumFractionDigits: 2, maximumFractionDigits: 2})} TL`;
-     }
-     
      priceStr = `${numericalPrice.toLocaleString("tr-TR", {minimumFractionDigits: 2, maximumFractionDigits: 2})} TL`;
   }
 
@@ -120,8 +116,23 @@ export default function QuickCheckoutModal({
   const isCodCcActive = formData.payment_method === "cod_cc";
   const codFee = isCodActive ? codSettings.additional_fee : (isCodCcActive ? codCcSettings.additional_fee : 0);
   
+  let calculatedShipping = 0;
+  if (cart?.shipping_total && cart.shipping_total > 0) {
+      calculatedShipping = cart.shipping_total / 100;
+  } else if (shippingSettings.free_shipping_enabled && numericalPrice >= shippingSettings.free_shipping_limit) {
+      calculatedShipping = 0;
+  } else {
+      calculatedShipping = shippingSettings.standard_rate;
+  }
+  
+  if (calculatedShipping === 0) {
+      kargoFiyatiStr = "Ücretsiz";
+  } else {
+      kargoFiyatiStr = `${calculatedShipping.toLocaleString("tr-TR", {minimumFractionDigits: 2, maximumFractionDigits: 2})} TL`;
+  }
+  
   // Do not fake the final value, use canonical Medusa + COD fee if not yet added to cart
-  const finalValue = numericalPrice > 0 ? numericalPrice + codFee : 0;
+  const finalValue = numericalPrice > 0 ? numericalPrice + codFee + calculatedShipping : 0;
   const totalWithShippingStr = numericalPrice > 0 ? `${finalValue.toLocaleString("tr-TR", {minimumFractionDigits: 2, maximumFractionDigits: 2})} TL` : priceStr;
 
   useEffect(() => {
