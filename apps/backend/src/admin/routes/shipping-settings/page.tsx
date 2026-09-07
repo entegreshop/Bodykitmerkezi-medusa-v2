@@ -221,11 +221,11 @@ export default function ShippingSettingsPage() {
       })
       const data = await res.json()
       if (data && data.success) {
-        setToastMessage("Kargo ayarları başarıyla kaydedildi! ✔")
+        setToastMessage("Kargo ayarları başarıyla kaydedildi! 🎉")
         setConfig(data.config)
         setTimeout(() => setToastMessage(""), 4000)
       } else {
-        alert("Kaydedilirken hata oluştu.")
+        alert(`Kaydedilirken hata oluştu: ${data?.message || "Bilinmeyen hata"}`)
       }
     } catch (err) {
       console.error("Save config error:", err)
