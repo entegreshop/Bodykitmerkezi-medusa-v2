@@ -132,7 +132,8 @@ export default function QuickCheckoutModal({
   }
   
   // Do not fake the final value, use canonical Medusa + COD fee if not yet added to cart
-  const finalValue = numericalPrice > 0 ? numericalPrice + codFee + calculatedShipping : 0;
+  const shippingAlreadyInTotal = mode === "cart" && Boolean(cart?.shipping_total && cart.shipping_total > 0);
+  const finalValue = numericalPrice > 0 ? numericalPrice + codFee + (shippingAlreadyInTotal ? 0 : calculatedShipping) : 0;
   const totalWithShippingStr = numericalPrice > 0 ? `${finalValue.toLocaleString("tr-TR", {minimumFractionDigits: 2, maximumFractionDigits: 2})} TL` : priceStr;
 
   useEffect(() => {

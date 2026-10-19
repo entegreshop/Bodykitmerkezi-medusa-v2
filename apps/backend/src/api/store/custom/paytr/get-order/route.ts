@@ -13,7 +13,7 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
     try {
       const { data: carts } = await query.graph({
         entity: "cart",
-        fields: ["id", "order.*"], // Using * just to be safe if order.id isn't directly exposed
+        fields: ["id", "order.*"],
         filters: { id: cartId }
       })
 
@@ -27,15 +27,15 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
 
     // Fallback: search orders by cart_id directly if possible
     try {
-        const { data: ordersByCart } = await query.graph({
-            entity: "order",
-            fields: ["id", "cart_id"],
-            filters: { cart_id: cartId } as any
-        })
-        if (ordersByCart && ordersByCart.length > 0) {
-            return res.json({ success: true, order_id: ordersByCart[0].id })
-        }
-    } catch(e) {}
+      const { data: ordersByCart } = await query.graph({
+        entity: "order",
+        fields: ["id", "cart_id"],
+        filters: { cart_id: cartId } as any
+      })
+      if (ordersByCart && ordersByCart.length > 0) {
+        return res.json({ success: true, order_id: ordersByCart[0].id })
+      }
+    } catch (e) {}
 
     return res.json({ success: false, error: "Sipariş henüz bulunamadı" })
 
