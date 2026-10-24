@@ -276,17 +276,11 @@ export async function processQuickCheckout(data: QuickCheckoutFormData) {
     } catch(e: any) {
         logToFile("Payment session hatasi 1: " + e.message);
         try {
-           // Fallback to old naming without pp_ prefix just in case
            const { cart } = await sdk.client.fetch<{ cart: HttpTypes.StoreCart }>(
                `/store/carts/${targetCartId}`,
                { headers, cache: "no-store" }
            );
-           let fallbackId = "manual";
-           if (data.payment_method === "credit_card") fallbackId = "pp_system_default"
-           else if (data.payment_method === "havale") fallbackId = "bank_transfer"
-           else if (data.payment_method === "cash_on_delivery" || data.payment_method === "cod_cc") fallbackId = "cod_cash"
-           
-           await sdk.store.payment.initiatePaymentSession(cart as any, { provider_id: fallbackId }, {}, headers)
+           await sdk.store.payment.initiatePaymentSession(cart as any, { provider_id: "pp_system_default" }, {}, headers)
         } catch(fallbackErr: any) {
            console.error("Payment session hatasi 2:", fallbackErr.message)
            throw new Error(`Ödeme başlatılamadı (Ana Hata): ${e.message} | (Yedek Hata): ${fallbackErr.message}`)

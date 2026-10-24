@@ -78,17 +78,18 @@ export default function QuickCheckoutModal({
   };
 
   // COD Settings
-  const [codSettings, setCodSettings] = useState({ is_active: true, additional_fee: 70, min_amount: 3000 });
-  const [codCcSettings, setCodCcSettings] = useState({ is_active: false, additional_fee: 70, min_amount: 3000 });
+  const [codSettings, setCodSettings] = useState({ is_active: false, additional_fee: 40, min_amount: 10000 });
+  const [codCcSettings, setCodCcSettings] = useState({ is_active: false, additional_fee: 40, min_amount: 10000 });
   const [paymentSettings, setPaymentSettings] = useState({
      bank_active: true,
+     bank_instructions: "",
      paytr_active: true,
   });
   const hasTrackedPaymentRef = useRef(false);
 
   // Shipping Settings
   const [shippingSettings, setShippingSettings] = useState({
-     standard_rate: 60,
+     standard_rate: 100,
      free_shipping_limit: 3000,
      free_shipping_enabled: true
   });
@@ -105,11 +106,11 @@ export default function QuickCheckoutModal({
      numericalPrice = ((v?.calculated_price?.calculated_amount || 0) / 100) * quantity;
      priceStr = v?.calculated_price?.calculated_amount ? `${(numericalPrice).toLocaleString("tr-TR", {minimumFractionDigits: 2, maximumFractionDigits: 2})} TL` : "Detaylı Ücret Seçilmedi"
   } else if (mode === "cart" && cart) {
-     numericalPrice = (cart.total || 0) / 100;
-     cartSubtotal = (cart.item_subtotal || 0) / 100; // Ara toplam
-     cartDiscount = (cart.discount_total || cart.discount_subtotal || 0) / 100;
+     cartSubtotal = (cart.item_subtotal ?? cart.subtotal ?? 0) / 100;
+     cartDiscount = (cart.discount_total ?? cart.discount_subtotal ?? 0) / 100;
+     numericalPrice = Math.max(0, cartSubtotal - cartDiscount);
      
-     priceStr = `${numericalPrice.toLocaleString("tr-TR", {minimumFractionDigits: 2, maximumFractionDigits: 2})} TL`;
+     priceStr = `${cartSubtotal.toLocaleString("tr-TR", {minimumFractionDigits: 2, maximumFractionDigits: 2})} TL`;
   }
 
   const isCodActive = formData.payment_method === "cash_on_delivery";
@@ -117,9 +118,7 @@ export default function QuickCheckoutModal({
   const codFee = isCodActive ? codSettings.additional_fee : (isCodCcActive ? codCcSettings.additional_fee : 0);
   
   let calculatedShipping = 0;
-  if (cart?.shipping_total && cart.shipping_total > 0) {
-      calculatedShipping = cart.shipping_total / 100;
-  } else if (shippingSettings.free_shipping_enabled && numericalPrice >= shippingSettings.free_shipping_limit) {
+  if (shippingSettings.free_shipping_enabled && numericalPrice >= shippingSettings.free_shipping_limit) {
       calculatedShipping = 0;
   } else {
       calculatedShipping = shippingSettings.standard_rate;
@@ -131,9 +130,7 @@ export default function QuickCheckoutModal({
       kargoFiyatiStr = `${calculatedShipping.toLocaleString("tr-TR", {minimumFractionDigits: 2, maximumFractionDigits: 2})} TL`;
   }
   
-  // Do not fake the final value, use canonical Medusa + COD fee if not yet added to cart
-  const shippingAlreadyInTotal = mode === "cart" && Boolean(cart?.shipping_total && cart.shipping_total > 0);
-  const finalValue = numericalPrice > 0 ? numericalPrice + codFee + (shippingAlreadyInTotal ? 0 : calculatedShipping) : 0;
+  const finalValue = numericalPrice > 0 ? numericalPrice + codFee + calculatedShipping : 0;
   const totalWithShippingStr = numericalPrice > 0 ? `${finalValue.toLocaleString("tr-TR", {minimumFractionDigits: 2, maximumFractionDigits: 2})} TL` : priceStr;
 
   useEffect(() => {
@@ -153,7 +150,7 @@ export default function QuickCheckoutModal({
           .then(data => {
              if (data?.settings) {
                 setCodSettings({
-                   is_active: data.settings.is_active,
+                   is_active: Boolean(data.settings.is_active),
                    additional_fee: parseFloat(data.settings.additional_fee) || 0,
                    min_amount: parseFloat(data.settings.min_amount) || Infinity
                 })
@@ -173,20 +170,29 @@ export default function QuickCheckoutModal({
                   }
                   
                   setPaymentSettings({
-                     bank_active: data.settings.payment_bank?.active !== false, // default true if undefined
+                     bank_active: data.settings.payment_bank?.active !== false,
+                     bank_instructions: data.settings.payment_bank?.instructions || "",
                      paytr_active: data.settings.payment_paytr?.active !== false,
                   });
+                  if (data.settings.payment_cod) {
+                     setCodSettings({
+                        is_active: Boolean(data.settings.payment_cod.is_active),
+                        additional_fee: parseFloat(data.settings.payment_cod.additional_fee) || 0,
+                        min_amount: parseFloat(data.settings.payment_cod.min_amount) || Infinity
+                     });
+                  }
                   if (data.settings.payment_cod_cc) {
                      setCodCcSettings({
-                        is_active: data.settings.payment_cod_cc.is_active ?? false,
+                        is_active: Boolean(data.settings.payment_cod_cc.is_active),
                         additional_fee: parseFloat(data.settings.payment_cod_cc.additional_fee) || 0,
                         min_amount: parseFloat(data.settings.payment_cod_cc.min_amount) || Infinity
                      });
                   }
                   
                   if (data.settings.shipping_settings) {
+                     const parsedRate = parseFloat(data.settings.shipping_settings.standard_rate);
                      setShippingSettings({
-                        standard_rate: parseFloat(data.settings.shipping_settings.standard_rate) || 60,
+                        standard_rate: Number.isFinite(parsedRate) ? parsedRate : 100,
                         free_shipping_limit: parseFloat(data.settings.shipping_settings.free_shipping_limit) || 3000,
                         free_shipping_enabled: data.settings.shipping_settings.free_shipping_enabled !== false
                      });
@@ -525,7 +531,12 @@ export default function QuickCheckoutModal({
             <div className="pt-2">
               <h2 className="text-2xl font-bold mb-6">Ödeme</h2>
               <div className="space-y-4">
-                 {["havale:Havale / EFT", "credit_card:Kredi / Banka Kartı (PayTR)"].map(m => {
+                 {[
+                    "credit_card:Kredi / Banka Kartı (PayTR)",
+                    "havale:Havale / EFT",
+                    "cash_on_delivery:Kapıda Ödeme (Nakit)",
+                    "cod_cc:Kapıda Ödeme (Kredi Kartı)"
+                 ].map(m => {
                     const [val, label] = m.split(":")
                     if (val === 'cash_on_delivery' && (!codSettings.is_active || numericalPrice > codSettings.min_amount)) {
                         return null;
@@ -551,6 +562,12 @@ export default function QuickCheckoutModal({
                             <span className="text-[15px] text-black tracking-wide">{label}</span>
                           </label>
                           
+                          {isSelected && val === "havale" && paymentSettings.bank_instructions && (
+                              <div className="p-4 pt-0 text-xs text-gray-700 whitespace-pre-line leading-relaxed font-medium bg-gray-50 border-t border-gray-200">
+                                 {paymentSettings.bank_instructions}
+                              </div>
+                          )}
+
                           {isSelected && val === "credit_card" && (
                               <div className="p-4 pt-0 space-y-3.5 bg-gray-50">
                                  <input type="text" name="cc_owner" required placeholder="Kart Üzerindeki İsim" className="w-full border border-gray-300 p-3.5 text-sm rounded-md bg-white outline-none focus:border-black" value={formData.cc_owner} onChange={handleInputChange} />

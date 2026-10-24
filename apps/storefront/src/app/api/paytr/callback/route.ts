@@ -41,9 +41,10 @@ async function handleCallback(request: Request) {
                         orderId = orders[0].id;
                     }
 
-                    // Method 2: Custom PayTR API (works for guests)
+                    // Method 2: Custom PayTR API (works for guests, and completes cart if webhook hasn't arrived after 3s)
                     if (!orderId) {
-                        const customRes = await fetch(`${backendUrl}/store/custom/paytr/get-order?cart_id=${cartId}`, {
+                        const completeParam = i >= 3 ? "&complete_if_needed=1" : "";
+                        const customRes = await fetch(`${backendUrl}/store/custom/paytr/get-order?cart_id=${cartId}${completeParam}`, {
                             headers: { "x-publishable-api-key": process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "" },
                             cache: "no-store"
                         }).catch(() => null);

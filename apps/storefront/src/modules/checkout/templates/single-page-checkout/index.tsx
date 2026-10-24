@@ -377,11 +377,11 @@ export default function SinglePageCheckout({
     const selectedMethod = cart.shipping_methods?.at(-1)
     const original = cart.shipping_subtotal ?? 0
     
-    if (shippingSettings?.standardShippingEnabled && selectedMethod) {
-      const name = selectedMethod.name || ""
-      if (name.toLowerCase().includes("standard") || name.toLowerCase().includes("standart")) {
-        return shippingSettings.standardShippingFee * 100
-      }
+    if (shippingSettings?.standardShippingEnabled) {
+      return Math.round(Number(shippingSettings.standardShippingFee || 0) * 100)
+    }
+    if (selectedMethod) {
+      return original
     }
     return original
   }, [isFreeShipping, cart.shipping_methods, cart.shipping_subtotal, shippingSettings])
@@ -397,7 +397,6 @@ export default function SinglePageCheckout({
       return {
         isPaytrAvailable: true,
         isBankTransferAvailable: true,
-        isCashOnDeliveryAvailable: true,
         isCashOnDeliveryAvailable: false,
         isCardOnDeliveryAvailable: false
       }
@@ -409,10 +408,10 @@ export default function SinglePageCheckout({
     const cc = paymentSettings.card_on_delivery
 
     return {
-      isPaytrAvailable: paytr?.active && subtotalAmount >= (paytr.min_total ?? 0) && subtotalAmount <= (paytr.max_total ?? 1000000),
-      isBankTransferAvailable: bt?.active && subtotalAmount >= (bt.min_total ?? 0) && subtotalAmount <= (bt.max_total ?? 1000000),
-      isCashOnDeliveryAvailable: false,
-      isCardOnDeliveryAvailable: false
+      isPaytrAvailable: Boolean(paytr?.active && subtotalAmount >= (paytr.min_total ?? 0) && subtotalAmount <= (paytr.max_total ?? 1000000)),
+      isBankTransferAvailable: Boolean(bt?.active && subtotalAmount >= (bt.min_total ?? 0) && subtotalAmount <= (bt.max_total ?? 1000000)),
+      isCashOnDeliveryAvailable: Boolean(cod?.active && subtotalAmount >= (cod.min_total ?? 0) && subtotalAmount <= (cod.max_total ?? 1000000)),
+      isCardOnDeliveryAvailable: Boolean(cc?.active && subtotalAmount >= (cc.min_total ?? 0) && subtotalAmount <= (cc.max_total ?? 1000000))
     }
   }, [paymentSettings, subtotalAmount])
 
@@ -564,8 +563,6 @@ export default function SinglePageCheckout({
       // 2. Select shipping method
       let selectedOptionId = shippingMethodId || (shippingMethods && shippingMethods[0]?.id)
       if (!selectedOptionId) {
-        // If no shipping method was pre-selected (usually because address was empty initially),
-        // fetch the available shipping options now that we have updated the address!
         const { shipping_options } = await sdk.client.fetch<{ shipping_options: HttpTypes.StoreCartShippingOption[] }>(
             "/store/shipping-options",
             { query: { cart_id: cart.id }, cache: "no-store" }
@@ -579,18 +576,63 @@ export default function SinglePageCheckout({
         await setShippingMethod({ cartId: cart.id, shippingMethodId: selectedOptionId })
       }
 
-      // 3. Initiate payment session
+      // 3. Initiate payment session (with fallback to pp_system_default)
       let providerId = "pp_system_default"
-      if (paymentMethod === "paytr") providerId = "pp_system_default" // We handle PayTR completely externally
+      if (paymentMethod === "paytr") providerId = "pp_system_default"
       else if (paymentMethod === "bank_transfer") providerId = "pp_bank-transfer_bank-transfer"
-      else if (paymentMethod === "cash_on_delivery") providerId = "pp_cash-on-delivery_cash-on-delivery"
-      else if (paymentMethod === "card_on_delivery") providerId = "pp_card-on-delivery_card-on-delivery"
+      else if (paymentMethod === "cash_on_delivery" || paymentMethod === "card_on_delivery") providerId = "pp_cash-on-delivery_cash-on-delivery"
 
-      await initiatePaymentSession(updatedCart || cart, {
-        provider_id: providerId
-      })
+      try {
+        await initiatePaymentSession(updatedCart || cart, {
+          provider_id: providerId
+        })
+      } catch (sessionErr) {
+        await initiatePaymentSession(updatedCart || cart, {
+          provider_id: "pp_system_default"
+        })
+      }
 
-      // 4. Place order
+      // 4. If PayTR is selected, invoke PayTR Direct API and redirect via client POST to 3D Secure
+      if (paymentMethod === "paytr") {
+        const MEDUSA_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000"
+        const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
+        const directRes = await fetch(`${MEDUSA_URL}/store/custom/paytr/direct`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-publishable-api-key": PUBLISHABLE_KEY
+          },
+          body: JSON.stringify({
+            cart_id: cart.id,
+            cc_owner: cardName,
+            cc_number: cardNumber.replace(/\s/g, ""),
+            cc_month: cardMonth,
+            cc_year: cardYear.slice(-2),
+            cc_cvv: cardCvv
+          })
+        })
+        const directData = await directRes.json()
+        if (directData?.success && directData.requiresClientPost && directData.formParams && directData.postUrl) {
+          const form = document.createElement("form")
+          form.method = "POST"
+          form.action = directData.postUrl
+          form.style.display = "none"
+          Object.entries(directData.formParams).forEach(([key, value]) => {
+            const input = document.createElement("input")
+            input.type = "hidden"
+            input.name = key
+            input.value = String(value)
+            form.appendChild(input)
+          })
+          document.body.appendChild(form)
+          form.submit()
+          return
+        } else {
+          throw new Error(directData?.error || "Banka ile iletişim kurulamadı. Lütfen kart bilgilerinizi kontrol edin.")
+        }
+      }
+
+      // 5. Place order for non-PayTR methods
       await placeOrder(cart.id)
 
     } catch (err: any) {
@@ -888,8 +930,8 @@ export default function SinglePageCheckout({
                   
                   // Calculate dynamic option price
                   const basePrice = sm.amount ? (sm.amount / 100) : 0
-                  const optionPrice = (shippingSettings?.standardShippingEnabled && (sm.name.toLowerCase().includes("standard") || sm.name.toLowerCase().includes("standart")))
-                    ? shippingSettings.standardShippingFee
+                  const optionPrice = shippingSettings?.standardShippingEnabled
+                    ? Number(shippingSettings.standardShippingFee || 0)
                     : basePrice
                     
                   const displayPrice = isFreeShipping ? 0 : optionPrice

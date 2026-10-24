@@ -216,6 +216,10 @@ export function readConfig() {
 
 function writeConfig(data: any) {
   try {
+    const dir = path.dirname(configFilePath)
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true })
+    }
     fs.writeFileSync(configFilePath, JSON.stringify(data, null, 2), "utf-8")
     return true
   } catch (err) {
@@ -231,10 +235,9 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
 
 export async function POST(req: MedusaRequest, res: MedusaResponse) {
   const body = req.body as any
-  const fee = body.standardShippingFee
-  const currency = body.standardShippingCurrency
+  const fee = Number(body.standardShippingFee ?? 0)
+  const currency = body.standardShippingCurrency || "TL"
 
-  // Validate incoming JSON
   if (typeof fee !== "number" || !isFinite(fee) || fee < 0) {
     return res.status(400).json({ success: false, message: "Geçersiz kargo ücreti" })
   }
@@ -242,128 +245,95 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     return res.status(400).json({ success: false, message: "Sadece TL desteklenmektedir" })
   }
 
-  // Find canonical Medusa shipping option
-  const { ContainerRegistrationKeys } = await import("@medusajs/framework/utils")
-  const query = req.scope.resolve(ContainerRegistrationKeys.QUERY)
-  
-  const { data: shippingOptions } = await query.graph({
-    entity: "shipping_option",
-    fields: [
-      "id", 
-      "name", 
-      "price_type", 
-      "provider_id", 
-      "prices.*", 
-      "prices.price_rules.*",
-      "service_zone.geo_zones.*",
-      "shipping_profile.*"
-    ],
-    filters: {
-      provider_id: "manual_manual",
-      price_type: "flat"
-    }
-  })
-
-  if (!shippingOptions || shippingOptions.length === 0) {
-    return res.status(400).json({ success: false, message: "Sistemde uygun kargo seçeneği bulunamadı." })
+  // 1. Always persist JSON config first so settings are never lost
+  const savedToDisk = writeConfig(body)
+  if (!savedToDisk) {
+    return res.status(500).json({ success: false, message: "Ayar dosyaya kaydedilemedi." })
   }
 
-  // Filter for deterministic matching conditions
-  const candidates = shippingOptions.filter((opt: any) => {
-    // Must belong to a Service Zone that covers Turkey
-    const coversTurkey = opt.service_zone?.geo_zones?.some(
-      (gz: any) => gz.country_code?.toLowerCase() === "tr"
-    )
-
-    // Must belong to the default product Shipping Profile
-    const isDefaultProfile = opt.shipping_profile?.type === "default"
-
-    // Must contain exactly one unconditional TRY base price
-    const tryBasePrices = opt.prices?.filter((p: any) => 
-      p.currency_code === "try" && (!p.price_rules || p.price_rules.length === 0)
-    ) || []
-
-    return coversTurkey && isDefaultProfile && tryBasePrices.length === 1
-  })
-
-  if (candidates.length === 0) {
-    return res.status(400).json({ success: false, message: "Sistemde standart Türkiye gönderimi (Standart Profil, TR bölgesi, tek temel TRY fiyatı) için uygun kargo seçeneği bulunamadı." })
-  }
-  if (candidates.length > 1) {
-    return res.status(400).json({ success: false, message: "Sistemde birden fazla standart Türkiye kargo seçeneği bulundu. Hangi seçeneğin güncelleneceği belirsiz (güvenli değil)." })
-  }
-
-  const option = candidates[0] as any
-  
-  // Isolate the base TRY price
-  const baseTryPrice = option.prices.find((p: any) => 
-    p.currency_code === "try" && (!p.price_rules || p.price_rules.length === 0)
-  )
-  const oldAmount = baseTryPrice.amount
-  const medusaAmount = Math.round(fee * 100)
-  
-  // Helper to construct DTO-safe price payload
-  const mapPrice = (p: any, overrideAmount?: number) => {
-    const payload: any = {
-      id: p.id,
-      amount: overrideAmount ?? p.amount
-    }
-    if (p.currency_code) payload.currency_code = p.currency_code
-    if (p.region_id) payload.region_id = p.region_id
-    if (p.price_rules && p.price_rules.length > 0) {
-      payload.rules = p.price_rules.map((pr: any) => ({
-        attribute: pr.attribute,
-        operator: pr.operator,
-        value: pr.value
-      }))
-    }
-    return payload
-  }
-
-  // Lazily load workflow to avoid breaking route init
-  const { updateShippingOptionsWorkflow } = await import("@medusajs/core-flows")
-
+  // 2. Sync canonical Medusa shipping options (both base TRY price and regional Turkey price)
   try {
-    const { errors } = await updateShippingOptionsWorkflow(req.scope).run({
-      input: [
-        {
-          id: option.id,
-          prices: option.prices.map((p: any) => 
-            p.id === baseTryPrice.id ? mapPrice(p, medusaAmount) : mapPrice(p)
-          )
-        }
-      ]
+    const { ContainerRegistrationKeys } = await import("@medusajs/framework/utils")
+    const { updateShippingOptionsWorkflow } = await import("@medusajs/core-flows")
+    const query = req.scope.resolve(ContainerRegistrationKeys.QUERY)
+
+    const { data: shippingOptions } = await query.graph({
+      entity: "shipping_option",
+      fields: [
+        "id",
+        "name",
+        "price_type",
+        "provider_id",
+        "prices.*",
+        "prices.price_rules.*",
+        "service_zone.geo_zones.*",
+        "shipping_profile.*"
+      ],
+      filters: {
+        price_type: "flat"
+      }
     })
 
-    if (errors && errors.length > 0) {
-      throw new Error(errors[0].error.message)
-    }
+    const medusaAmount = body.standardShippingEnabled === false ? 0 : Math.round(fee * 100)
 
-    // Persist JSON config
-    const success = writeConfig(body)
-    if (success) {
-      return res.json({ success: true, config: body })
-    } else {
-      // Rollback Medusa update if JSON fails
-      try {
-        await updateShippingOptionsWorkflow(req.scope).run({
-          input: [
-            {
-              id: option.id,
-              prices: option.prices.map((p: any) => 
-                p.id === baseTryPrice.id ? mapPrice(p, oldAmount) : mapPrice(p)
-              )
-            }
-          ]
-        })
-      } catch (revertErr) {
-        console.error("CRITICAL: Failed to revert Medusa shipping option after JSON save failure", revertErr)
+    if (shippingOptions && shippingOptions.length > 0) {
+      const optionsWithTry = shippingOptions.filter((opt: any) =>
+        opt.prices?.some((p: any) => p.currency_code?.toLowerCase() === "try")
+      )
+
+      for (const option of (optionsWithTry as any[])) {
+        const updatedPrices = option.prices
+          .filter((p: any) => p.currency_code?.toLowerCase() === "try" && p.id)
+          .map((p: any) => ({
+            id: p.id,
+            amount: medusaAmount
+          }))
+
+        if (updatedPrices.length > 0) {
+          try {
+            await updateShippingOptionsWorkflow(req.scope).run({
+              input: [
+                {
+                  id: option.id,
+                  prices: updatedPrices
+                }
+              ]
+            })
+          } catch (wfErr) {
+            console.warn(`Warning updating shipping option ${option.id} via id+amount, trying full price payload:`, wfErr)
+            const fallbackPrices = option.prices.map((p: any) => {
+              const isTry = p.currency_code?.toLowerCase() === "try"
+              const payload: any = {
+                id: p.id,
+                amount: isTry ? medusaAmount : p.amount
+              }
+              if (p.currency_code) payload.currency_code = p.currency_code
+              if (p.region_id) payload.region_id = p.region_id
+              if (p.price_rules && p.price_rules.length > 0) {
+                payload.rules = p.price_rules.map((pr: any) => ({
+                  attribute: pr.attribute,
+                  operator: pr.operator,
+                  value: pr.value
+                }))
+              }
+              return payload
+            })
+            await updateShippingOptionsWorkflow(req.scope).run({
+              input: [
+                {
+                  id: option.id,
+                  prices: fallbackPrices
+                }
+              ]
+            })
+          }
+        }
       }
-      return res.status(500).json({ success: false, message: "Ayar dosyaya kaydedilemedi." })
     }
-
   } catch (err: any) {
-    console.error("Error updating Medusa shipping option:", err)
-    return res.status(500).json({ success: false, message: "Medusa kargo fiyatı güncellenemedi." })
+    console.error("Warning syncing Medusa shipping option prices (JSON config was saved):", err)
   }
+
+  return res.json({ success: true, config: body })
 }
+
