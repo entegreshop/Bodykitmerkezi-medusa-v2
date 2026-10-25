@@ -4,14 +4,15 @@ import Hero from "@modules/home/components/hero"
 import PromoBanners from "@modules/home/components/promo-banners"
 import TrustBadges from "@modules/home/components/trust-badges"
 import CategoryTabs from "@modules/home/components/category-tabs"
-import ProductPreview from "@modules/products/components/product-preview"
-import InteractiveLink from "@modules/common/components/interactive-link"
 import { Text } from "@medusajs/ui"
 import InfiniteProducts from "@modules/store/components/infinite-products"
 import { listCollections } from "@lib/data/collections"
 import { getRegion } from "@lib/data/regions"
 import { getDictionary } from "@lib/util/get-dictionary"
-import { getCategoryByHandle } from "@lib/data/categories"
+import {
+  normalizeCategorySlug,
+  resolveCategoriesByHandle,
+} from "@lib/data/categories"
 import { listProducts } from "@lib/data/products"
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -75,10 +76,11 @@ export default async function Home(props: {
     fields: "id, handle, title",
   })
 
-  if (!collections || !region) {
+  if (!region) {
     return null
   }
 
+  const safeCollections = collections || []
   const dict = await getDictionary(countryCode)
   const config = await getHeroConfig()
 
@@ -86,21 +88,22 @@ export default async function Home(props: {
   const repeatedText = marqueeText ? Array(8).fill(marqueeText).join("\u00A0\u00A0\u00A0\u00A0\u00A0•\u00A0\u00A0\u00A0\u00A0\u00A0") + "\u00A0\u00A0\u00A0\u00A0\u00A0•\u00A0\u00A0\u00A0\u00A0\u00A0" : ""
 
   const categoryQuery = searchParams.category || "yeni-gelenler"
+  const normCategoryQuery = normalizeCategorySlug(categoryQuery)
   
   let products: any[] = []
   let count = 0
-  let sectionTitle = "Yeni Gelenler"
-  let viewAllLink = "/store"
-  let activeCategoryId: string | undefined = undefined
+  let activeCategoryId: string | string[] | undefined = undefined
   let activeCollectionId: string | undefined = undefined
 
-  if (categoryQuery === "yeni-gelenler") {
-    const defaultCollection = collections.find(
-      (c) => c.handle === "yeni-gelenler"
-    ) || collections[0]
-    
+  if (normCategoryQuery === "yenigelenler" || normCategoryQuery === "news") {
+    const defaultCollection = safeCollections.find(
+      (c) =>
+        normalizeCategorySlug(c.handle || "") === "yenigelenler" ||
+        normalizeCategorySlug(c.handle || "") === "news" ||
+        normalizeCategorySlug(c.title || "") === "yenigelenler"
+    )
+
     if (defaultCollection) {
-      activeCollectionId = defaultCollection.id
       const res = await listProducts({
         regionId: region.id,
         queryParams: {
@@ -109,27 +112,126 @@ export default async function Home(props: {
           limit: 12,
         },
       })
-      products = res.response.products
-      count = res.response.count
-      sectionTitle = defaultCollection.title
-      viewAllLink = `/collections/${defaultCollection.handle}`
+      if (res.response.products.length > 0) {
+        activeCollectionId = defaultCollection.id
+        products = res.response.products
+        count = res.response.count
+      }
     }
-  } else {
-    const categoryObj = await getCategoryByHandle([categoryQuery])
-    if (categoryObj) {
-      activeCategoryId = categoryObj.id
+
+    if (products.length === 0) {
+      const fallbackRes = await listProducts({
+        regionId: region.id,
+        queryParams: {
+          fields: "*variants.calculated_price",
+          limit: 12,
+          order: "-created_at",
+        } as any,
+      })
+      products = fallbackRes.response.products
+      count = fallbackRes.response.count
+    }
+  } else if (normCategoryQuery === "coksatanlar") {
+    const bestSellerCollection = safeCollections.find(
+      (c) =>
+        normalizeCategorySlug(c.handle || "") === "coksatanlar" ||
+        normalizeCategorySlug(c.title || "") === "coksatanlar"
+    )
+
+    if (bestSellerCollection) {
       const res = await listProducts({
         regionId: region.id,
         queryParams: {
-          category_id: [categoryObj.id],
+          collection_id: [bestSellerCollection.id],
           fields: "*variants.calculated_price",
           limit: 12,
         },
       })
-      products = res.response.products
-      count = res.response.count
-      sectionTitle = categoryObj.name
-      viewAllLink = `/categories/${categoryObj.handle}`
+      if (res.response.products.length > 0) {
+        activeCollectionId = bestSellerCollection.id
+        products = res.response.products
+        count = res.response.count
+      }
+    }
+
+    if (products.length === 0) {
+      const fallbackRes = await listProducts({
+        regionId: region.id,
+        queryParams: {
+          fields: "*variants.calculated_price",
+          limit: 12,
+          order: "title",
+        } as any,
+      })
+      products = fallbackRes.response.products
+      count = fallbackRes.response.count
+    }
+  } else {
+    const matchedCategories = await resolveCategoriesByHandle(categoryQuery)
+    if (matchedCategories.length > 0) {
+      const catIds = matchedCategories.map((c) => c.id)
+      activeCategoryId = catIds.length === 1 ? catIds[0] : catIds
+
+      if (normCategoryQuery === "aydinlatma") {
+        // Fetch category products and prioritize lighting/exterior trim items first
+        const res = await listProducts({
+          regionId: region.id,
+          queryParams: {
+            category_id: catIds,
+            fields: "*variants.calculated_price",
+            limit: 60,
+          },
+        })
+        const allCatProducts = res.response.products || []
+        const lightingRegex = /far|stop|led|sinyal|sis|aydınlatma|aydinlatma|lamba|çakar|cakar|moonvisor|vizör|vizor|panjur|vent/i
+        const prioritized = [
+          ...allCatProducts.filter((p) => lightingRegex.test(p.title || "")),
+          ...allCatProducts.filter((p) => !lightingRegex.test(p.title || "")),
+        ]
+        products = prioritized.slice(0, 12)
+        count = res.response.count
+      } else {
+        const res = await listProducts({
+          regionId: region.id,
+          queryParams: {
+            category_id: catIds,
+            fields: "*variants.calculated_price",
+            limit: 12,
+          },
+        })
+        products = res.response.products
+        count = res.response.count
+      }
+    }
+
+    // Keyword search fallback if no category matched or category has 0 products
+    if (products.length === 0) {
+      const searchRes = await listProducts({
+        regionId: region.id,
+        queryParams: {
+          q: categoryQuery.replace(/-/g, " "),
+          fields: "*variants.calculated_price",
+          limit: 12,
+        } as any,
+      }).catch(() => null)
+
+      if (searchRes && searchRes.response.products.length > 0) {
+        products = searchRes.response.products
+        count = searchRes.response.count
+      }
+    }
+
+    // Final safety fallback so a tab never displays empty
+    if (products.length === 0) {
+      const fallbackRes = await listProducts({
+        regionId: region.id,
+        queryParams: {
+          fields: "*variants.calculated_price",
+          limit: 12,
+        },
+      })
+      products = fallbackRes.response.products
+      count = fallbackRes.response.count
     }
   }
 
@@ -181,6 +283,7 @@ export default async function Home(props: {
 
           {products && products.length > 0 ? (
             <InfiniteProducts
+              key={categoryQuery}
               initialProducts={products}
               count={count}
               region={region}

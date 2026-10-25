@@ -68,7 +68,7 @@ export const listProducts = async ({
         },
         headers,
         next,
-        cache: "force-cache",
+        cache: "no-store",
       }
     )
     .then(({ products, count }) => {
@@ -130,7 +130,7 @@ export const listProductsWithSort = async ({
       products: paginatedProducts,
       count,
     },
-    nextPage,
+    nextPage: nextPage,
     queryParams,
   }
 }
