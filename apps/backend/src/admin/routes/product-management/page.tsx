@@ -76,7 +76,7 @@ const IkasProductsPage = () => {
   const [tags, setTags] = useState("")
 
   // --- Variant Options ---
-  const [isVariantProduct, setIsVariantProduct] = useState(true)
+  const [isVariantProduct, setIsVariantProduct] = useState(false)
   const [selectedColors, setSelectedColors] = useState<string[]>([])
   const [selectedSizes, setSelectedSizes] = useState<string[]>([])
   const [variantsTable, setVariantsTable] = useState<SelectedVariant[]>([])
@@ -354,7 +354,7 @@ const IkasProductsPage = () => {
     setAvailableSizes(INITIAL_SIZES)
     setVariantsTable([])
     setCheckedIndices([])
-    setIsVariantProduct(true)
+    setIsVariantProduct(false)
     setEditingProductId(null)
     setView("create")
   }
@@ -405,7 +405,8 @@ const IkasProductsPage = () => {
       return merged
     })
 
-    setIsVariantProduct(prod.options?.length > 0)
+    const hasRealOpts = colors.some((c: string) => c.toLowerCase() !== "standart" && c.toLowerCase() !== "default title") || sizes.some((s: string) => s.toLowerCase() !== "standart" && s.toLowerCase() !== "default title");
+    setIsVariantProduct((prod.variants?.length || 0) > 1 || hasRealOpts)
 
     // Load variants details
     const loadedVariants: SelectedVariant[] = prod.variants?.map((v: any) => {
@@ -488,7 +489,8 @@ const IkasProductsPage = () => {
           title: `${v.color} / ${v.size}`,
           sku: v.sku,
           barcode: v.barcode || undefined,
-          manage_inventory: true,
+          manage_inventory: false,
+          allow_backorder: true,
           options: {
             "Renk": v.color,
             "Beden": v.size
@@ -503,12 +505,14 @@ const IkasProductsPage = () => {
         }))
       } else {
         // Simple product has no options, single default variant
-        payload.options = []
+        payload.options = [{ title: "Title", values: ["Default Title"] }]
         payload.variants = [
           {
             title: "Standart",
+            options: { "Title": "Default Title" },
             sku: `${slugify(productName)}-STD`.toUpperCase(),
-            manage_inventory: true,
+            manage_inventory: false,
+          allow_backorder: true,
             prices: [
               { currency_code: "try", amount: parseFloat(generalPrice || "0") * 100 }
             ],
@@ -586,7 +590,8 @@ const IkasProductsPage = () => {
                 title: `${v.color} / ${v.size}`,
                 sku: v.sku,
                 barcode: v.barcode || undefined,
-                manage_inventory: true,
+                manage_inventory: false,
+          allow_backorder: true,
                 options: {
                   "Renk": v.color,
                   "Beden": v.size
@@ -602,14 +607,21 @@ const IkasProductsPage = () => {
             })
           }
         } else {
+          await fetch(`/admin/products/${editingProductId}/options`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ title: "Title", values: ["Default Title"] })
+          })
           // Simple product default variant
           await fetch(`/admin/products/${editingProductId}/variants`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               title: "Standart",
+              options: { "Title": "Default Title" },
               sku: `${slugify(productName)}-STD`.toUpperCase(),
-              manage_inventory: true,
+              manage_inventory: false,
+          allow_backorder: true,
               prices: [
                 { currency_code: "try", amount: parseFloat(generalPrice || "0") * 100 }
               ],

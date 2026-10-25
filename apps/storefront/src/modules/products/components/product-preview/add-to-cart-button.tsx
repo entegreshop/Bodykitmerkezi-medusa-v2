@@ -10,6 +10,7 @@ import OptionSelect from "@modules/products/components/product-actions/option-se
 import X from "@modules/common/icons/x"
 import { isEqual } from "lodash"
 import { trackAddToCart } from "@lib/util/tracking"
+import { isSimpleProduct, isDefaultOptionValue } from "@lib/util/product"
 
 type AddToCartButtonProps = {
   product: HttpTypes.StoreProduct
@@ -98,21 +99,29 @@ export default function AddToCartButton({ product, region }: AddToCartButtonProp
     if (!matchedVariant && product.variants) {
       matchedVariant = product.variants[0]
     }
-    return matchedVariant ? optionsAsKeymap(matchedVariant.options) : {}
+    return matchedVariant ? optionsAsKeymap(matchedVariant.options) || {} : {}
   }
 
   const [options, setOptions] = useState<Record<string, string | undefined>>(() => getInitialOptions())
 
+  const isSimple = useMemo(() => isSimpleProduct(product), [product])
+
   const selectedVariant = useMemo(() => {
     if (!product.variants || product.variants.length === 0) {
-      return
+      return undefined
     }
 
-    return product.variants.find((v) => {
-      const variantOptions = optionsAsKeymap(v.options)
-      return isEqual(variantOptions, options)
-    })
-  }, [product.variants, options])
+    if (product.variants.length === 1 || isSimple) {
+      return product.variants[0]
+    }
+
+    return (
+      product.variants.find((v) => {
+        const variantOptions = optionsAsKeymap(v.options)
+        return isEqual(variantOptions, options)
+      }) || product.variants[0]
+    )
+  }, [product.variants, options, isSimple])
 
   const setOptionValue = (optionId: string, value: string) => {
     setOptions((prev) => ({
@@ -122,9 +131,6 @@ export default function AddToCartButton({ product, region }: AddToCartButtonProp
   }
 
   const inStock = useMemo(() => {
-    // In Medusa V2, inventory_quantity on storefront might not always reflect properly
-    // depending on sales channel stock location links.
-    // Rely on the backend API to reject if genuinely out of stock.
     return true
   }, [selectedVariant])
 
@@ -161,12 +167,13 @@ export default function AddToCartButton({ product, region }: AddToCartButtonProp
     e.preventDefault()
     e.stopPropagation()
 
-    if (loading || !selectedVariant?.id) return
+    const targetVariant = selectedVariant || product.variants?.[0]
+    if (loading || !targetVariant?.id) return
 
     setLoading(true)
     try {
       await addToCart({
-        variantId: selectedVariant.id,
+        variantId: targetVariant.id,
         quantity: 1,
         countryCode,
       })
@@ -185,7 +192,7 @@ export default function AddToCartButton({ product, region }: AddToCartButtonProp
       setTimeout(() => {
         setSuccess(false)
         setIsOpen(false)
-      }, 1000)
+      }, 1200)
     } catch (err) {
       console.error("Cart addition failed:", err)
     } finally {
@@ -193,156 +200,170 @@ export default function AddToCartButton({ product, region }: AddToCartButtonProp
     }
   }
 
-  const hasVariants = product.variants && product.variants.length > 1
+  const visibleOptions = useMemo(() => {
+    if (isSimple) return []
+    return (product.options || []).filter((opt) => {
+      const vals = opt.values || []
+      return vals.length > 0 && !vals.every((v) => isDefaultOptionValue(v?.value))
+    })
+  }, [product.options, isSimple])
+
+  const shouldOpenModal = !isSimple && visibleOptions.length > 0
 
   return (
     <>
       <button
-        onClick={handleOpenModal}
+        onClick={shouldOpenModal ? handleOpenModal : handleAddToCart}
         disabled={loading}
-        className="w-full py-3 mt-3 rounded-none font-bold text-xs uppercase tracking-widest bg-black text-white hover:bg-zinc-800 shadow-sm active:scale-[0.98] transition-all duration-300"
+        className={`w-full py-3 mt-3 rounded-none font-bold text-xs uppercase tracking-widest transition-all duration-300 ${
+          success
+            ? "bg-emerald-600 text-white"
+            : "bg-black text-white hover:bg-zinc-800 shadow-sm active:scale-[0.98]"
+        }`}
       >
-        SEPETE EKLE
+        {loading ? "EKLENİYOR..." : success ? "SEPETE EKLENDİ ✔" : "SEPETE EKLE"}
       </button>
 
-      <Transition appear show={isOpen} as={Fragment}>
-        <Dialog as="div" className="relative z-[100]" onClose={() => setIsOpen(false)}>
-          <Transition.Child
-            as={Fragment}
-            enter="ease-out duration-300"
-            enterFrom="opacity-0"
-            enterTo="opacity-100"
-            leave="ease-in duration-200"
-            leaveFrom="opacity-100"
-            leaveTo="opacity-0"
-          >
-            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" />
-          </Transition.Child>
+      {shouldOpenModal && (
+        <Transition appear show={isOpen} as={Fragment}>
+          <Dialog as="div" className="relative z-[100]" onClose={() => setIsOpen(false)}>
+            <Transition.Child
+              as={Fragment}
+              enter="ease-out duration-300"
+              enterFrom="opacity-0"
+              enterTo="opacity-100"
+              leave="ease-in duration-200"
+              leaveFrom="opacity-100"
+              leaveTo="opacity-0"
+            >
+              <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" />
+            </Transition.Child>
 
-          <div className="fixed inset-0 overflow-y-auto">
-            <div className="flex min-h-full items-center justify-center p-4 text-center">
-              <Transition.Child
-                as={Fragment}
-                enter="ease-out duration-300"
-                enterFrom="opacity-0 scale-95"
-                enterTo="opacity-100 scale-100"
-                leave="ease-in duration-200"
-                leaveFrom="opacity-100 scale-100"
-                leaveTo="opacity-0 scale-95"
-              >
-                <Dialog.Panel className="w-full max-w-3xl transform overflow-hidden bg-white p-6 md:p-8 text-left align-middle shadow-2xl transition-all rounded-none relative">
-                  <button
-                    onClick={() => setIsOpen(false)}
-                    className="absolute top-4 right-4 text-zinc-400 hover:text-zinc-600 transition-colors z-10"
-                  >
-                    <X size={24} />
-                  </button>
+            <div className="fixed inset-0 overflow-y-auto">
+              <div className="flex min-h-full items-center justify-center p-4 text-center">
+                <Transition.Child
+                  as={Fragment}
+                  enter="ease-out duration-300"
+                  enterFrom="opacity-0 scale-95"
+                  enterTo="opacity-100 scale-100"
+                  leave="ease-in duration-200"
+                  leaveFrom="opacity-100 scale-100"
+                  leaveTo="opacity-0 scale-95"
+                >
+                  <Dialog.Panel className="w-full max-w-3xl transform overflow-hidden bg-white p-6 md:p-8 text-left align-middle shadow-2xl transition-all rounded-none relative">
+                    <button
+                      onClick={() => setIsOpen(false)}
+                      className="absolute top-4 right-4 text-zinc-400 hover:text-zinc-600 transition-colors z-10"
+                    >
+                      <X size={24} />
+                    </button>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
-                    {/* Product Image */}
-                    <div className="relative w-full aspect-[3/4] bg-zinc-50 overflow-hidden flex items-center justify-center border border-zinc-100">
-                      {activeImage ? (
-                        <img
-                          src={activeImage}
-                          alt={product.title || ""}
-                          className="object-cover w-full h-full"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-zinc-100 flex items-center justify-center text-zinc-400">
-                          Görsel Yok
-                        </div>
-                      )}
-                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
+                      {/* Product Image */}
+                      <div className="relative w-full aspect-[3/4] bg-zinc-50 overflow-hidden flex items-center justify-center border border-zinc-100">
+                        {activeImage ? (
+                          <img
+                            src={activeImage}
+                            alt={product.title || ""}
+                            className="object-cover w-full h-full"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-zinc-100 flex items-center justify-center text-zinc-400">
+                            Görsel Yok
+                          </div>
+                        )}
+                      </div>
 
-                    {/* Product Details & Selection */}
-                    <div className="flex flex-col justify-between">
-                      <div>
-                        <div className="pr-8">
-                          <Dialog.Title as="h3" className="text-xl font-semibold text-zinc-950 leading-tight">
-                            {product.title}
-                          </Dialog.Title>
-                        </div>
+                      {/* Product Details & Selection */}
+                      <div className="flex flex-col justify-between">
+                        <div>
+                          <div className="pr-8">
+                            <Dialog.Title as="h3" className="text-xl font-semibold text-zinc-950 leading-tight">
+                              {product.title}
+                            </Dialog.Title>
+                          </div>
 
-                        {/* Price */}
-                        <div className="mt-4">
-                          {displayPrice ? (
-                            displayPrice.price_type === "sale" ? (
-                              <div className="flex items-center gap-x-2">
-                                <div className="bg-[#15803d] text-white font-bold text-[13px] px-2 py-0.5 rounded-sm">
-                                  %{displayPrice.percentage_diff}
+                          {/* Price */}
+                          <div className="mt-4">
+                            {displayPrice ? (
+                              displayPrice.price_type === "sale" ? (
+                                <div className="flex items-center gap-x-2">
+                                  <div className="bg-[#15803d] text-white font-bold text-[13px] px-2 py-0.5 rounded-sm">
+                                    %{displayPrice.percentage_diff}
+                                  </div>
+                                  <div className="flex flex-col items-start leading-none justify-center">
+                                    <span className="line-through text-[#15803d] text-[13px] font-medium">
+                                      {displayPrice.original_price}
+                                    </span>
+                                    <span className="text-[#15803d] font-bold text-[18px] mt-0.5">
+                                      {displayPrice.calculated_price}
+                                    </span>
+                                  </div>
                                 </div>
-                                <div className="flex flex-col items-start leading-none justify-center">
-                                  <span className="line-through text-[#15803d] text-[13px] font-medium">
-                                    {displayPrice.original_price}
-                                  </span>
-                                  <span className="text-[#15803d] font-bold text-[18px] mt-0.5">
+                              ) : (
+                                <div>
+                                  <span className="text-zinc-950 font-bold text-[18px]">
                                     {displayPrice.calculated_price}
                                   </span>
                                 </div>
-                              </div>
-                            ) : (
-                              <div>
-                                <span className="text-zinc-950 font-bold text-[18px]">
-                                  {displayPrice.calculated_price}
-                                </span>
-                              </div>
-                            )
-                          ) : null}
+                              )
+                            ) : null}
+                          </div>
+
+                          <div className="h-px bg-zinc-200 my-6" />
+
+                          {/* Options List */}
+                          <div className="flex flex-col gap-y-6">
+                            {visibleOptions.map((option) => {
+                              return (
+                                <OptionSelect
+                                  key={option.id}
+                                  option={option}
+                                  current={options[option.id]}
+                                  updateOption={setOptionValue}
+                                  title={option.title || ""}
+                                  disabled={loading}
+                                  product={product}
+                                />
+                              )
+                            })}
+                          </div>
                         </div>
 
-                        <div className="h-px bg-zinc-200 my-6" />
-
-                        {/* Options List */}
-                        <div className="flex flex-col gap-y-6">
-                          {(product.options || []).map((option) => {
-                            return (
-                              <OptionSelect
-                                key={option.id}
-                                option={option}
-                                current={options[option.id]}
-                                updateOption={setOptionValue}
-                                title={option.title || ""}
-                                disabled={loading}
-                                product={product}
-                              />
-                            )
-                          })}
+                        {/* Add to Cart Action */}
+                        <div className="mt-8">
+                          {selectedVariant ? (
+                            <button
+                              onClick={handleAddToCart}
+                              disabled={loading || !inStock}
+                              className={`w-full py-4 rounded-none font-bold text-sm uppercase tracking-widest transition-all duration-300 ${
+                                success
+                                  ? "bg-emerald-600 text-white"
+                                  : !inStock
+                                  ? "bg-zinc-200 text-zinc-400 cursor-not-allowed"
+                                  : "bg-black text-white hover:bg-zinc-800 shadow-sm active:scale-[0.98]"
+                              }`}
+                            >
+                              {loading ? "EKLENİYOR..." : success ? "EKLENDİ ✔" : !inStock ? "TÜKENDİ" : "SEPETE EKLE"}
+                            </button>
+                          ) : (
+                            <button
+                              disabled
+                              className="w-full py-4 rounded-none font-bold text-sm uppercase tracking-widest bg-zinc-200 text-zinc-400 cursor-not-allowed"
+                            >
+                              Varyant Seçiniz
+                            </button>
+                          )}
                         </div>
-                      </div>
-
-                      {/* Add to Cart Action */}
-                      <div className="mt-8">
-                        {selectedVariant ? (
-                          <button
-                            onClick={handleAddToCart}
-                            disabled={loading || !inStock}
-                            className={`w-full py-4 rounded-none font-bold text-sm uppercase tracking-widest transition-all duration-300 ${
-                              success
-                                ? "bg-emerald-600 text-white"
-                                : !inStock
-                                ? "bg-zinc-200 text-zinc-400 cursor-not-allowed"
-                                : "bg-black text-white hover:bg-zinc-800 shadow-sm active:scale-[0.98]"
-                            }`}
-                          >
-                            {loading ? "EKLENİYOR..." : success ? "EKLENDİ ✔" : !inStock ? "TÜKENDİ" : "SEPETE EKLE"}
-                          </button>
-                        ) : (
-                          <button
-                            disabled
-                            className="w-full py-4 rounded-none font-bold text-sm uppercase tracking-widest bg-zinc-200 text-zinc-400 cursor-not-allowed"
-                          >
-                            Varyant Seçiniz
-                          </button>
-                        )}
                       </div>
                     </div>
-                  </div>
-                </Dialog.Panel>
-              </Transition.Child>
+                  </Dialog.Panel>
+                </Transition.Child>
+              </div>
             </div>
-          </div>
-        </Dialog>
-      </Transition>
+          </Dialog>
+        </Transition>
+      )}
     </>
   )
 }

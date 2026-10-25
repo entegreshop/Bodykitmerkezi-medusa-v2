@@ -189,9 +189,6 @@ export async function POST(
       }));
 
       const variantsInput = xmlVariants.map((v, idx) => {
-         // Resolve variant specific fields using mappings
-         // We fallback to main product if not found in variant
-         
          const skuRaw = resolvePath(v, tag_mappings["Ürün Kodu"] || "code") || resolvePath(item, tag_mappings["Ürün Kodu"] || "code") || item.ws_code || item.code || Math.random().toString();
          const sku = String(skuRaw) + (idx > 0 ? `-${idx}` : "");
          
@@ -204,8 +201,8 @@ export async function POST(
          const barcodeRaw = resolvePath(v, tag_mappings["Barkod"] || "barcode") || resolvePath(item, tag_mappings["Barkod"] || "barcode") || v.barcode || "";
          const barcode = String(barcodeRaw);
          
-         const stockRaw = resolvePath(v, tag_mappings["Stok"] || "stockAmount") || resolvePath(item, tag_mappings["Stok"] || "stockAmount") || v.stock || item.stock || "0";
-         const stock = parseInt(String(stockRaw), 10);
+         const stockRaw = resolvePath(v, tag_mappings["Stok"] || "stockAmount") || resolvePath(item, tag_mappings["Stok"] || "stockAmount") || v.stock || item.stock || "100";
+         const stock = parseInt(String(stockRaw), 10) || 100;
 
          const variantOptions: Record<string, string> = {};
          if (optionNames.has("Renk")) variantOptions["Renk"] = String(v.type1 || "Standart");
@@ -213,11 +210,11 @@ export async function POST(
          if (optionNames.has("Title")) variantOptions["Title"] = "Default Title";
 
          return {
-            title: isVariantless ? "Default Variant" : sku,
+            title: isVariantless ? "Standart" : sku,
             sku: sku,
             barcode: barcode,
-            manage_inventory: true,
-            allow_backorder: false,
+            manage_inventory: false,
+            allow_backorder: true,
             inventory_quantity: stock,
             prices: [
                {

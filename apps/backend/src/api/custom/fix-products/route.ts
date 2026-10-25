@@ -3,10 +3,11 @@ import { updateProductsWorkflow } from "@medusajs/core-flows"
 
 export async function GET(req: MedusaRequest, res: MedusaResponse) {
   try {
-    const productModuleService = req.scope.resolve("product")
+    const productModuleService = req.scope.resolve("product") as any
     const products = await productModuleService.listProducts({}, { take: 5000, relations: ["options", "variants"] })
     
     const productsToUpdate: any[] = [];
+    let fixedVariantsCount = 0;
     
     for (const p of products) {
       let updateData: any = { id: p.id };
@@ -18,8 +19,29 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
         changed = true;
       }
 
-      // 2. We can't easily change options/variants via standard update API without complex nested object diffing. 
-      // It's much safer to recommend re-import for variants.
+      // 2. Ensure all variants allow ordering without stock errors
+      for (const v of p.variants || []) {
+        if (v.manage_inventory || !v.allow_backorder) {
+          try {
+            await productModuleService.updateProductVariants(v.id, {
+              manage_inventory: false,
+              allow_backorder: true,
+            })
+            fixedVariantsCount++
+          } catch {
+            try {
+              await productModuleService.updateProductVariants([
+                {
+                  id: v.id,
+                  manage_inventory: false,
+                  allow_backorder: true,
+                },
+              ])
+              fixedVariantsCount++
+            } catch {}
+          }
+        }
+      }
       
       if (changed) {
         productsToUpdate.push(updateData);
@@ -34,7 +56,11 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
       });
     }
 
-    res.json({ success: true, message: `${productsToUpdate.length} ürünün açıklaması güncellendi. Varyantların (Varyantsız olması) düzelmesi için ürünleri silip yeniden XML ile içe aktarmanız tavsiye edilir.` })
+    res.json({
+      success: true,
+      fixedVariantsCount,
+      message: `${productsToUpdate.length} ürünün açıklaması ve ${fixedVariantsCount} varyantın stok ayarı güncellendi.`
+    })
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message })
   }

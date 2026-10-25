@@ -1,5 +1,6 @@
 import { HttpTypes } from "@medusajs/types"
 import { Text } from "@medusajs/ui"
+import { isDefaultOptionValue } from "@lib/util/product"
 
 type LineItemOptionsProps = {
   variant: HttpTypes.StoreProductVariant | undefined
@@ -12,7 +13,11 @@ const LineItemOptions = ({
   "data-testid": dataTestid,
   "data-value": dataValue,
 }: LineItemOptionsProps) => {
-  if (!variant?.title || variant.title.toLowerCase() === "standart" || variant.title.toLowerCase() === "default variant") {
+  if (
+    !variant?.title ||
+    isDefaultOptionValue(variant.title) ||
+    (variant.sku && variant.title.trim().toLowerCase() === variant.sku.trim().toLowerCase())
+  ) {
     return null
   }
 

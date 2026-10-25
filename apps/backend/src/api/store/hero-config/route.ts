@@ -1,8 +1,10 @@
 import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
+import { Modules } from "@medusajs/framework/utils"
 import fs from "fs"
 import path from "path"
 
 const configFilePath = path.join(process.cwd(), "uploads", "hero-config-bodykit.json")
+let inventoryAutoFixed = false
 
 const defaultCategories = [
   {
@@ -77,7 +79,7 @@ const defaultData = {
   subtitle: "Medusa V2 altyapısıyla güçlendirilen yeni 2026 koleksiyonumuzu keşfedin",
   btn_text: "Şimdi Alışverişe Başla",
   btn_link: "/store",
-  media_type: "image", // "image" or "video"
+  media_type: "image",
   media_url: "",
   categories: defaultCategories,
   banners: defaultBanners,
@@ -93,7 +95,6 @@ const defaultData = {
   scrolling_text_product_enabled: true,
   scrolling_text_product_bg: "#FFD700",
   scrolling_text_product_text_color: "#000000",
-  // Button Settings
   buy_now_enabled: true,
   buy_now_bg: "#E50000",
   buy_now_text_color: "#ffffff",
@@ -125,8 +126,39 @@ function readConfig() {
 }
 
 export async function GET(req: MedusaRequest, res: MedusaResponse) {
+  if (!inventoryAutoFixed) {
+    inventoryAutoFixed = true
+    ;(async () => {
+      try {
+        const productModuleService = req.scope.resolve(Modules.PRODUCT) as any
+        const variants = await productModuleService.listProductVariants(
+          { manage_inventory: true },
+          { take: 5000, select: ["id"] }
+        )
+        for (const v of variants || []) {
+          try {
+            await productModuleService.updateProductVariants(v.id, {
+              manage_inventory: false,
+              allow_backorder: true,
+            })
+          } catch {
+            try {
+              await productModuleService.updateProductVariants([
+                {
+                  id: v.id,
+                  manage_inventory: false,
+                  allow_backorder: true,
+                },
+              ])
+            } catch {}
+          }
+        }
+      } catch (e) {
+        console.error("Background inventory auto-fix error:", e)
+      }
+    })()
+  }
+
   const config = readConfig()
   res.json({ config })
 }
-
-

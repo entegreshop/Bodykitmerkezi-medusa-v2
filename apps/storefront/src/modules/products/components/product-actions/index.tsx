@@ -11,6 +11,7 @@ import { getProductPrice } from "@lib/util/get-product-price"
 import { convertToLocale } from "@lib/util/money"
 import MobileActions from "./mobile-actions"
 import { trackViewContent, trackAddToCart } from "@lib/util/tracking"
+import { isSimpleProduct, isDefaultOptionValue } from "@lib/util/product"
 
 type ProductActionsProps = {
   product: HttpTypes.StoreProduct
@@ -85,7 +86,6 @@ export default function ProductActions({
   useEffect(() => {
     const calculateTimeLeft = () => {
       const now = new Date();
-      // Tarih ayarlanmışsa kullan, yoksa gün sonu (gece yarısı)
       const endDateStr = (product.metadata?.coupon_badge as any)?.end_date;
       let targetDate = new Date(now);
       
@@ -174,7 +174,8 @@ export default function ProductActions({
     setActiveAccordion((prev) => (prev === tab ? null : tab))
   }
 
-  const countryCode = useParams().countryCode as string
+  const params = useParams()
+  const countryCode = (params?.countryCode as string) || "tr"
 
   // Wishlist state
   useEffect(() => {
@@ -198,6 +199,8 @@ export default function ProductActions({
     setViewerCount(initialCount)
   }, [product.id])
 
+  const isSimple = useMemo(() => isSimpleProduct(product), [product])
+
   // Initialize options on mount or searchParams change
   useEffect(() => {
     if (!product.variants || product.variants.length === 0) {
@@ -220,13 +223,12 @@ export default function ProductActions({
     const renkOption = getOptionByTitle("RENK")
     const bedenOption = getOptionByTitle("BEDEN")
 
-    const urlRenk = searchParams.get("RENK") || searchParams.get("renk")
-    const urlBeden = searchParams.get("BEDEN") || searchParams.get("beden")
+    const urlRenk = searchParams?.get("RENK") || searchParams?.get("renk")
+    const urlBeden = searchParams?.get("BEDEN") || searchParams?.get("beden")
 
     let matchedVariant: any = null
 
-    // If there is a v_id in URL, try to match it first
-    const urlVId = searchParams.get("v_id")
+    const urlVId = searchParams?.get("v_id")
     if (urlVId) {
       matchedVariant = product.variants.find((v) => v.id === urlVId)
     }
@@ -247,14 +249,11 @@ export default function ProductActions({
       })
     }
 
-    // If no variant matches the URL params, or URL params not specified
     if (!matchedVariant) {
-      // Try to find first variant in stock
       matchedVariant = product.variants.find((v) => {
         const inStock = !v.manage_inventory || v.allow_backorder || (v.inventory_quantity || 0) > 0
         return inStock
       })
-      // Fallback to first variant
       if (!matchedVariant) {
         matchedVariant = product.variants[0]
       }
@@ -273,14 +272,20 @@ export default function ProductActions({
 
   const selectedVariant = useMemo(() => {
     if (!product.variants || product.variants.length === 0) {
-      return
+      return undefined
     }
 
-    return product.variants.find((v) => {
-      const variantOptions = optionsAsKeymap(v.options)
-      return isEqual(variantOptions, options)
-    })
-  }, [product.variants, options])
+    if (product.variants.length === 1 || isSimple) {
+      return product.variants[0]
+    }
+
+    return (
+      product.variants.find((v) => {
+        const variantOptions = optionsAsKeymap(v.options)
+        return isEqual(variantOptions, options)
+      }) || product.variants[0]
+    )
+  }, [product.variants, options, isSimple])
 
   // update the options when a variant is selected
   const setOptionValue = (optionId: string, value: string) => {
@@ -290,18 +295,25 @@ export default function ProductActions({
     }))
   }
 
-  //check if the selected options produce a valid variant
+  // check if the selected options produce a valid variant
   const isValidVariant = useMemo(() => {
-    return product.variants?.some((v) => {
+    if (!product.variants || product.variants.length === 0) {
+      return false
+    }
+    if (product.variants.length === 1 || isSimple) {
+      return true
+    }
+    return product.variants.some((v) => {
       const variantOptions = optionsAsKeymap(v.options)
       return isEqual(variantOptions, options)
     })
-  }, [product.variants, options])
+  }, [product.variants, options, isSimple])
 
   useEffect(() => {
-    const params = new URLSearchParams(searchParams.toString())
+    if (!searchParams || !pathname) return
+    const currentParams = new URLSearchParams(searchParams.toString())
 
-    params.delete("v_id")
+    currentParams.delete("v_id")
 
     const renkOption = product.options?.find((o) => {
       const t = (o.title || "").toLowerCase()
@@ -312,40 +324,36 @@ export default function ProductActions({
       return t === "beden" || t === "size"
     })
 
-    if (product.variants && product.variants.length > 1) {
+    if (!isSimple && product.variants && product.variants.length > 1) {
       if (renkOption && options[renkOption.id]) {
-        params.set("RENK", options[renkOption.id]!)
-        params.delete("renk")
+        currentParams.set("RENK", options[renkOption.id]!)
+        currentParams.delete("renk")
       } else {
-        params.delete("RENK")
-        params.delete("renk")
+        currentParams.delete("RENK")
+        currentParams.delete("renk")
       }
 
       if (bedenOption && options[bedenOption.id]) {
-        params.set("BEDEN", options[bedenOption.id]!)
-        params.delete("beden")
+        currentParams.set("BEDEN", options[bedenOption.id]!)
+        currentParams.delete("beden")
       } else {
-        params.delete("BEDEN")
-        params.delete("beden")
+        currentParams.delete("BEDEN")
+        currentParams.delete("beden")
       }
     } else {
-      params.delete("RENK")
-      params.delete("renk")
-      params.delete("BEDEN")
-      params.delete("beden")
+      currentParams.delete("RENK")
+      currentParams.delete("renk")
+      currentParams.delete("BEDEN")
+      currentParams.delete("beden")
     }
 
-    const newSearch = params.toString()
+    const newSearch = currentParams.toString()
     if (searchParams.toString() !== newSearch) {
-      router.replace(pathname + "?" + newSearch, { scroll: false })
+      router.replace(newSearch ? `${pathname}?${newSearch}` : pathname, { scroll: false })
     }
-  }, [selectedVariant, isValidVariant, options, product.options, searchParams, pathname, router])
+  }, [selectedVariant, isValidVariant, options, product.options, searchParams, pathname, router, isSimple])
 
-  // check if the selected variant is in stock
   const inStock = useMemo(() => {
-    // In Medusa V2, inventory_quantity on storefront might not always reflect properly
-    // depending on sales channel stock location links.
-    // Rely on the backend API to reject if genuinely out of stock.
     return true
   }, [selectedVariant])
 
@@ -354,13 +362,14 @@ export default function ProductActions({
 
   // add the selected variant to the cart
   const handleAddToCart = async () => {
-    if (!selectedVariant?.id) return null
+    const targetVariant = selectedVariant || product.variants?.[0]
+    if (!targetVariant?.id) return null
 
     setIsAdding(true)
 
     try {
       await addToCart({
-        variantId: selectedVariant.id,
+        variantId: targetVariant.id,
         quantity: 1,
         countryCode,
       })
@@ -385,10 +394,8 @@ export default function ProductActions({
         })
       }
 
-      // Automatic kupon olduğu için sepete eklendiğinde Medusa kendisi uygulayacak.
       setIsAdded(true)
       
-      // Fire confetti if gift is added
       if (selectedGiftVariantId) {
         const confetti = (await import("canvas-confetti")).default
         confetti({
@@ -411,13 +418,14 @@ export default function ProductActions({
 
   // Buy Now
   const handleBuyNow = async () => {
-    if (!selectedVariant?.id) return null
+    const targetVariant = selectedVariant || product.variants?.[0]
+    if (!targetVariant?.id) return null
 
     setIsBuyingNow(true)
 
     try {
       await addToCart({
-        variantId: selectedVariant.id,
+        variantId: targetVariant.id,
         quantity: 1,
         countryCode,
       })
@@ -431,8 +439,6 @@ export default function ProductActions({
           quantity: 1
         })
       }
-
-      // Automatic kupon olduğu için sepete eklendiğinde Medusa kendisi uygulayacak.
 
       router.push(`/${countryCode}/cart`)
     } catch (e: any) {
@@ -450,7 +456,6 @@ export default function ProductActions({
 
   const selectedPrice = selectedVariant ? price.variantPrice : price.cheapestPrice
 
-  // Hesaplanan yeni fiyat için değişkenler
   let finalPriceNumber = selectedPrice?.calculated_price_number || 0
   let hasActiveCoupon = false
   
@@ -460,7 +465,6 @@ export default function ProductActions({
     if (couponInfo.type === "percent") {
       finalPriceNumber = finalPriceNumber * (1 - Number(couponInfo.amount) / 100)
     } else {
-      // Amount (e.g. 50 TL) needs to be multiplied by 100 to match cents
       finalPriceNumber = Math.max(0, finalPriceNumber - Number(couponInfo.amount) * 100)
     }
   }
@@ -496,6 +500,14 @@ export default function ProductActions({
   const whatsappUrl = `https://wa.me/${btnConfig.whatsapp_number}?text=${encodeURIComponent(
     `Merhaba, ${product.title} ürününü satın almak istiyorum.`
   )}`
+
+  const visibleOptions = useMemo(() => {
+    if (isSimple) return []
+    return (product.options || []).filter((opt) => {
+      const vals = opt.values || []
+      return vals.length > 0 && !vals.every((v) => isDefaultOptionValue(v?.value))
+    })
+  }, [product.options, isSimple])
 
   return (
     <>
@@ -601,7 +613,6 @@ export default function ProductActions({
         {product.metadata?.coupon_badge && (product.metadata.coupon_badge as any).active && (
           <div className="flex flex-col gap-y-2 mt-2">
             <div className="relative mt-4">
-              {/* Countdown badge */}
               <div className="absolute -top-3 left-3 bg-[#b90000] text-white text-[10px] font-bold px-2 py-0.5 rounded flex items-center gap-1 z-10 shadow-sm border border-white">
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="12" cy="12" r="10"></circle>
@@ -610,7 +621,6 @@ export default function ProductActions({
                 {couponTimeLeft}
               </div>
               <div className="flex items-center gap-4 bg-[#fdf5f2] border border-[#f5dcd2] rounded-lg p-3 pt-4 w-max max-w-full relative">
-                {/* Left side */}
                 <div className="flex flex-col gap-1 pr-6 border-r border-[#f5dcd2] border-dashed">
                   <span className="text-[#000] text-center font-semibold text-xl tracking-tight">
                     {(product.metadata.coupon_badge as any).type === "percent" ? "%" : ""}{(product.metadata.coupon_badge as any).amount}
@@ -627,7 +637,6 @@ export default function ProductActions({
                     Kazan
                   </button>
                 </div>
-                {/* Right side */}
                 <div className="flex flex-col text-[13px] text-gray-700 justify-center">
                   <span className="flex items-center gap-1.5 font-medium text-[#b90000]">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -648,11 +657,11 @@ export default function ProductActions({
           </div>
         )}
 
-        {/* Options Selection */}
-        <div>
-          {(product.variants?.length ?? 0) > 1 && (
+        {/* Options Selection (Hidden for simple / variantless products) */}
+        {visibleOptions.length > 0 && (
+          <div>
             <div className="flex flex-col gap-y-6">
-              {(product.options || []).map((option) => {
+              {visibleOptions.map((option) => {
                 return (
                   <div key={option.id}>
                     <OptionSelect
@@ -668,8 +677,8 @@ export default function ProductActions({
                 )
               })}
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Scrolling Announcement Marquee for Product Details */}
         {scrollingTextEnabled && scrollingText && (
@@ -778,7 +787,6 @@ export default function ProductActions({
             WHATSAPP İLE SİPARİŞ
           </a>
           )}
-
 
           {/* Secure / Shipping Info */}
           <div className="flex items-center justify-center gap-x-6 mt-4 opacity-70">
