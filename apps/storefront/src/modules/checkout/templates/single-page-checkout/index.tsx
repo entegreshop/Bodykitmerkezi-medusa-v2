@@ -957,7 +957,7 @@ export default function SinglePageCheckout({
                           </span>
                         </div>
                         <span className="text-sm font-bold text-zinc-900">
-                          {displayPrice === 0 ? "Ücretsiz" : `₺${displayPrice.toFixed(2)}`}
+                          {displayPrice === 0 ? "Karşı Ödemeli" : `₺${displayPrice.toFixed(2)}`}
                         </span>
                       </div>
                     </div>

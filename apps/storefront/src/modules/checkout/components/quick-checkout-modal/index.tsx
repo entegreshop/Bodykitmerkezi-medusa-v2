@@ -125,7 +125,7 @@ export default function QuickCheckoutModal({
   }
   
   if (calculatedShipping === 0) {
-      kargoFiyatiStr = "Ücretsiz";
+      kargoFiyatiStr = "Karşı Ödemeli";
   } else {
       kargoFiyatiStr = `${calculatedShipping.toLocaleString("tr-TR", {minimumFractionDigits: 2, maximumFractionDigits: 2})} TL`;
   }

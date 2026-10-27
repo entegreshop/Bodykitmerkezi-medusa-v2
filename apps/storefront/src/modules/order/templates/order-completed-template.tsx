@@ -118,7 +118,7 @@ export default async function OrderCompletedTemplate({
 
               <div className="flex justify-between font-bold text-gray-800">
                 <span>Kargo</span>
-                <span>{isFreeShipping ? "Ücretsiz" : convertToLocale({ amount: finalShippingAmount, currency_code: order.currency_code })}</span>
+                <span>{isFreeShipping ? "Karşı Ödemeli" : convertToLocale({ amount: finalShippingAmount, currency_code: order.currency_code })}</span>
               </div>
 
               <div className="flex justify-between font-bold text-gray-900 mt-2 text-base border-t pt-2">

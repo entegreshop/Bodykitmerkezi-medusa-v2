@@ -40,7 +40,7 @@ const CartTotals: React.FC<CartTotalsProps> = ({ totals }) => {
             {shipping_subtotal === null || shipping_subtotal === undefined
               ? "Sonraki adımda hesaplanacak"
               : shipping_subtotal === 0 
-                ? "Ücretsiz" 
+                ? "Karşı Ödemeli" 
                 : convertToLocale({ amount: shipping_subtotal ?? 0, currency_code })}
           </span>
         </div>
