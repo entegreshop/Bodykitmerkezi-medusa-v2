@@ -11,8 +11,13 @@ import { listProducts } from "@lib/data/products"
 async function CartSpecialOffersInline({ cart }: { cart?: HttpTypes.StoreCart }) {
   if (!cart?.region?.id) return null
 
+  const backendUrl =
+    process.env.MEDUSA_BACKEND_URL ||
+    process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL ||
+    "https://api.bodykitmerkezi.com"
+
   // Fetch special offers from backend API to avoid pg import in Next.js edge/server runtime
-  const res = await fetch("http://localhost:9000/store/special-offers", { 
+  const res = await fetch(`${backendUrl}/store/special-offers`, { 
     headers: {
       "x-publishable-api-key": process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
     },

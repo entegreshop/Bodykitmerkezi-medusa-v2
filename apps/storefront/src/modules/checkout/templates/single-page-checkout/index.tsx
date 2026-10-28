@@ -171,14 +171,20 @@ export default function SinglePageCheckout({
 
   // Fetch payment settings from backend
   useEffect(() => {
-    sdk.client.fetch<{ config: PaymentConfig }>("/store/payment-settings")
+    const MEDUSA_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "https://api.bodykitmerkezi.com"
+    const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
+    fetch(`${MEDUSA_URL}/store/payment-settings`, {
+      headers: { "x-publishable-api-key": PUBLISHABLE_KEY },
+      cache: "no-store",
+    })
+      .then((res) => res.json())
       .then((res) => {
         if (res && res.config) {
           setPaymentSettings(res.config)
         }
       })
       .catch((err) => {
-        console.error("Error loading payment settings:", err)
+        console.warn("Error loading payment settings:", err)
       })
   }, [])
 
@@ -199,14 +205,20 @@ export default function SinglePageCheckout({
 
   // Fetch shipping settings from backend
   useEffect(() => {
-    sdk.client.fetch<{ config: ShippingConfig }>("/store/shipping-settings")
+    const MEDUSA_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "https://api.bodykitmerkezi.com"
+    const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
+    fetch(`${MEDUSA_URL}/store/shipping-settings`, {
+      headers: { "x-publishable-api-key": PUBLISHABLE_KEY },
+      cache: "no-store",
+    })
+      .then((res) => res.json())
       .then((res) => {
         if (res && res.config) {
           setShippingSettings(res.config)
         }
       })
       .catch((err) => {
-        console.error("Error loading shipping settings:", err)
+        console.warn("Error loading shipping settings:", err)
       })
   }, [])
 
@@ -321,7 +333,7 @@ export default function SinglePageCheckout({
         }
       })
     } catch (e) {
-      console.error("Background address save failed:", e)
+      console.warn("Background address save failed:", e)
     }
   }
 
@@ -330,7 +342,7 @@ export default function SinglePageCheckout({
     try {
       await setShippingMethod({ cartId: cart.id, shippingMethodId: id })
     } catch (e) {
-      console.error("Failed to set shipping method:", e)
+      console.warn("Failed to set shipping method:", e)
     }
   }
 
@@ -594,7 +606,7 @@ export default function SinglePageCheckout({
 
       // 4. If PayTR is selected, invoke PayTR Direct API and redirect via client POST to 3D Secure
       if (paymentMethod === "paytr") {
-        const MEDUSA_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000"
+        const MEDUSA_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "https://api.bodykitmerkezi.com"
         const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
         const directRes = await fetch(`${MEDUSA_URL}/store/custom/paytr/direct`, {
           method: "POST",

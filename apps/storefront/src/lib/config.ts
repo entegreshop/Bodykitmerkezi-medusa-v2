@@ -1,12 +1,10 @@
 import { getLocaleHeader } from "@lib/util/get-locale-header"
 import Medusa, { FetchArgs, FetchInput } from "@medusajs/js-sdk"
 
-// Defaults to standard port for Medusa server
-let MEDUSA_BACKEND_URL = "http://localhost:9000"
-
-if (process.env.MEDUSA_BACKEND_URL) {
-  MEDUSA_BACKEND_URL = process.env.MEDUSA_BACKEND_URL
-}
+const MEDUSA_BACKEND_URL =
+  process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL ||
+  process.env.MEDUSA_BACKEND_URL ||
+  "https://api.bodykitmerkezi.com"
 
 export const sdk = new Medusa({
   baseUrl: MEDUSA_BACKEND_URL,
@@ -22,10 +20,13 @@ sdk.client.fetch = async <T>(
 ): Promise<T> => {
   const headers = init?.headers ?? {}
   let localeHeader: Record<string, string | null> | undefined
-  try {
-    localeHeader = await getLocaleHeader()
-    headers["x-medusa-locale"] ??= localeHeader["x-medusa-locale"]
-  } catch {}
+
+  if (typeof window === "undefined") {
+    try {
+      localeHeader = await getLocaleHeader()
+      headers["x-medusa-locale"] ??= localeHeader["x-medusa-locale"]
+    } catch {}
+  }
 
   const newHeaders = {
     "x-publishable-api-key": process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "",
