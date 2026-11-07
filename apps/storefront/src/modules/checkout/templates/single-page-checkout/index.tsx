@@ -368,30 +368,32 @@ export default function SinglePageCheckout({
   // Kargo ayarlarından gelen veya ödeme ayarlarından fallback olan ücretsiz kargo limiti
   const freeShippingThreshold = useMemo(() => {
     if (shippingSettings) {
-      return shippingSettings.freeShippingEnabled ? shippingSettings.freeShippingThreshold : 1000000
+      return shippingSettings.freeShippingEnabled ? shippingSettings.freeShippingThreshold : Infinity
     }
     if (paymentSettings) {
-      return paymentSettings.free_shipping_threshold
+      return paymentSettings.free_shipping_threshold || Infinity
     }
-    return 500 // fallback default
+    return Infinity
   }, [shippingSettings, paymentSettings])
 
   const neededForFreeShipping = freeShippingThreshold - subtotalAmount
 
   const isFreeShipping = useMemo(() => {
+    if (shippingSettings && shippingSettings.standardShippingEnabled === false) {
+      return true
+    }
     return subtotalAmount >= freeShippingThreshold
-  }, [subtotalAmount, freeShippingThreshold])
+  }, [subtotalAmount, freeShippingThreshold, shippingSettings])
 
   // Kargo seçeneğinin güncellenmiş ücreti (cents bazında)
   const shippingSubtotalCents = useMemo(() => {
     if (isFreeShipping) return 0
-    
-    const selectedMethod = cart.shipping_methods?.at(-1)
-    const original = cart.shipping_subtotal ?? 0
-    
-    if (shippingSettings?.standardShippingEnabled) {
+    if (shippingSettings) {
+      if (shippingSettings.standardShippingEnabled === false) return 0
       return Math.round(Number(shippingSettings.standardShippingFee || 0) * 100)
     }
+    const selectedMethod = cart.shipping_methods?.at(-1)
+    const original = cart.shipping_subtotal ?? 0
     if (selectedMethod) {
       return original
     }
@@ -586,6 +588,22 @@ export default function SinglePageCheckout({
       
       if (selectedOptionId) {
         await setShippingMethod({ cartId: cart.id, shippingMethodId: selectedOptionId })
+      }
+
+      // 2.5 Sync shipping method amount & COD fees in DB before initiating payment
+      try {
+        const MEDUSA_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "https://api.bodykitmerkezi.com"
+        const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
+        await fetch(`${MEDUSA_URL}/store/custom/payment-cod/apply`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-publishable-api-key": PUBLISHABLE_KEY
+          },
+          body: JSON.stringify({ cart_id: cart.id, method_id: paymentMethod })
+        })
+      } catch (syncErr) {
+        console.warn("Shipping/COD sync warning:", syncErr)
       }
 
       // 3. Initiate payment session (with fallback to pp_system_default)
@@ -942,8 +960,8 @@ export default function SinglePageCheckout({
                   
                   // Calculate dynamic option price
                   const basePrice = sm.amount ? (sm.amount / 100) : 0
-                  const optionPrice = shippingSettings?.standardShippingEnabled
-                    ? Number(shippingSettings.standardShippingFee || 0)
+                  const optionPrice = shippingSettings
+                    ? (shippingSettings.standardShippingEnabled === false ? 0 : Number(shippingSettings.standardShippingFee || 0))
                     : basePrice
                     
                   const displayPrice = isFreeShipping ? 0 : optionPrice
@@ -978,7 +996,7 @@ export default function SinglePageCheckout({
               </div>
 
               {/* Free shipping banner */}
-              {neededForFreeShipping > 0 && (
+              {shippingSettings?.freeShippingEnabled && shippingSettings?.standardShippingEnabled !== false && neededForFreeShipping > 0 && isFinite(neededForFreeShipping) && (
                 <div className="mt-3 bg-zinc-50 border border-zinc-200 p-3 text-xs text-zinc-700 font-medium text-center">
                   ₺{neededForFreeShipping.toFixed(2)} daha alışveriş yapın, kargonuz ücretsiz olsun!
                 </div>

@@ -3,6 +3,7 @@ import crypto from "crypto"
 import fs from "fs"
 import path from "path"
 import { readConfig as readPaymentConfig } from "../../admin/payment-settings/route"
+import { syncCartShippingMethods } from "../../admin/shipping-settings/route"
 
 export async function POST(req: MedusaRequest, res: MedusaResponse) {
   try {
@@ -61,6 +62,9 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
           return res.status(200).send("OK")
         }
 
+        // Ensure cart shipping methods amount matches shipping-settings before creating order
+        await syncCartShippingMethods(req.scope, cart_id)
+
         const expectedTotal = Number(cart.total)
         const receivedTotal = Number(total_amount)
         if (expectedTotal !== receivedTotal) {
@@ -100,4 +104,3 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     return res.status(200).send("OK")
   }
 }
-

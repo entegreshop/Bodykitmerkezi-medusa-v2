@@ -24,7 +24,7 @@ const Summary = ({ cart }: SummaryProps) => {
   } | null>(null)
 
   useEffect(() => {
-    const MEDUSA_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000"
+    const MEDUSA_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "https://api.bodykitmerkezi.com"
     const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
     fetch(`${MEDUSA_URL}/store/custom/settings`, {
       headers: { "x-publishable-api-key": PUBLISHABLE_KEY }

@@ -89,9 +89,9 @@ export default function QuickCheckoutModal({
 
   // Shipping Settings
   const [shippingSettings, setShippingSettings] = useState({
-     standard_rate: 100,
+     standard_rate: 0,
      free_shipping_limit: 3000,
-     free_shipping_enabled: true
+     free_shipping_enabled: false
   });
 
   // --- PRICE PRE-CALCULATION FOR META EVENTS ---
@@ -138,7 +138,7 @@ export default function QuickCheckoutModal({
     
     // Dynamic Shipping & COD Fetch
     if (isOpen) {
-       const MEDUSA_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
+       const MEDUSA_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "https://api.bodykitmerkezi.com";
        const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "";
        
        const fetchOptions = {
@@ -631,7 +631,6 @@ export default function QuickCheckoutModal({
                                     </div>
                                     <div className="space-y-0.5 text-center px-0.5">
                                        <p className="text-[12px] text-[#6b7280] truncate font-medium">{priceStr}</p>
-                                       <p className="text-[11px] text-[#8c8c8c]">Variant: {product.variants?.find((v:any) => v.id === preselectedVariantId)?.title?.split(" ")?.[0] || "Standart"}</p>
                                     </div>
                                  </div>
                               )}
@@ -646,7 +645,6 @@ export default function QuickCheckoutModal({
                                     </div>
                                     <div className="space-y-0.5 text-center px-0.5">
                                        <p className="text-[12px] text-[#6b7280] truncate font-medium">{((item.unit_price || 0) / 100).toLocaleString("tr-TR", {minimumFractionDigits: 2, maximumFractionDigits: 2})} TL</p>
-                                       <p className="text-[11px] text-[#8c8c8c]">Variant: {item.variant?.title?.split(" ")?.[0] || "Std"}</p>
                                     </div>
                                  </div>
                               ))}

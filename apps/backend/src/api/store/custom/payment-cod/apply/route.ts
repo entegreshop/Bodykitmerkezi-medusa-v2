@@ -2,6 +2,7 @@ import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import { Modules } from "@medusajs/framework/utils"
 import { ICartModuleService } from "@medusajs/framework/types"
 import { readConfig as readPaymentConfig } from "../../../../admin/payment-settings/route"
+import { syncCartShippingMethods } from "../../../../admin/shipping-settings/route"
 
 export async function POST(req: MedusaRequest, res: MedusaResponse) {
   try {
@@ -70,9 +71,11 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
       }
     }
 
-    res.json({ success: true })
+    // 4. Sync cart shipping methods amount with effective shipping settings (0 if disabled or free threshold met)
+    const effectiveShippingKurus = await syncCartShippingMethods(req.scope, body.cart_id)
+
+    res.json({ success: true, effective_shipping_kurus: effectiveShippingKurus })
   } catch (error: any) {
     res.status(400).json({ success: false, error: error.message })
   }
 }
-

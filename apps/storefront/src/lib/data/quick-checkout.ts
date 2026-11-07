@@ -210,7 +210,7 @@ export async function processQuickCheckout(data: QuickCheckoutFormData) {
     // Kapıda ödeme bedelini sepete işle (Eğer COD seçilmişse ve limiti geçmiyorsa)
     try {
         logToFile("Fetching payment-cod/apply...");
-        const backendUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000"
+        const backendUrl = process.env.MEDUSA_BACKEND_URL || process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "https://api.bodykitmerkezi.com"
         await fetchWithTimeout(`${backendUrl}/store/custom/payment-cod/apply`, {
             method: "POST",
             headers: { 
@@ -294,7 +294,7 @@ export async function processQuickCheckout(data: QuickCheckoutFormData) {
         logToFile("Kredi Kartı (PayTR) seçildi, Direct API çağrısı yapılıyor...");
         
         try {
-            const backendUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
+            const backendUrl = process.env.MEDUSA_BACKEND_URL || process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "https://api.bodykitmerkezi.com";
             logToFile(`Fetching ${backendUrl}/store/custom/paytr/direct...`);
             const directApiRes = await fetchWithTimeout(`${backendUrl}/store/custom/paytr/direct`, {
                 method: 'POST',

@@ -1,7 +1,11 @@
 import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import crypto from "crypto"
 import { readConfig as readPaymentConfig } from "../../../../admin/payment-settings/route"
-import { readConfig as readShippingConfig } from "../../../../admin/shipping-settings/route"
+import {
+  readConfig as readShippingConfig,
+  calculateEffectiveShippingKurus,
+  syncCartShippingMethods
+} from "../../../../admin/shipping-settings/route"
 
 export async function POST(req: MedusaRequest, res: MedusaResponse) {
   try {
@@ -18,6 +22,9 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     if (!cart_id || !cc_number) {
       return res.status(400).json({ success: false, error: "Eksik parametre" })
     }
+
+    // 0. Sync cart shipping method amounts in DB first
+    await syncCartShippingMethods(req.scope, cart_id)
 
     // 1. Fetch Cart
     const query = req.scope.resolve("query")
@@ -66,15 +73,9 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     const rawShippingKurus = Number(cart.shipping_total || 0)
     const itemsNetKurus = Math.max(0, rawTotalKurus - rawShippingKurus)
 
-    let effectiveShippingKurus = rawShippingKurus
-    if (shippingConfig) {
-      const itemsNetTl = itemsNetKurus / 100
-      if (shippingConfig.freeShippingEnabled && itemsNetTl >= Number(shippingConfig.freeShippingThreshold || 0)) {
-        effectiveShippingKurus = 0
-      } else if (shippingConfig.standardShippingEnabled !== false && shippingConfig.standardShippingFee !== undefined) {
-        effectiveShippingKurus = Math.round(Number(shippingConfig.standardShippingFee) * 100)
-      }
-    }
+    const effectiveShippingKurus = shippingConfig
+      ? calculateEffectiveShippingKurus(itemsNetKurus, shippingConfig)
+      : rawShippingKurus
 
     const finalTotalKurus = itemsNetKurus + effectiveShippingKurus
     if (finalTotalKurus <= 0) {
@@ -179,4 +180,3 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     return res.status(400).json({ success: false, error: error.message || "Bilinmeyen bir hata oluştu" })
   }
 }
-

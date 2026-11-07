@@ -3,7 +3,9 @@ import { Modules } from "@medusajs/framework/utils"
 import fs from "fs"
 import path from "path"
 import { readConfig as readPaymentConfig } from "../../../admin/payment-settings/route"
-import { readConfig as readShippingConfig } from "../../../admin/shipping-settings/route"
+import { readConfig as readShippingConfig, syncMedusaShippingOptionPrices } from "../../../admin/shipping-settings/route"
+
+let hasSyncedShippingFromSettings = false
 
 export async function GET(req: MedusaRequest, res: MedusaResponse) {
   const storeModule = req.scope.resolve(Modules.STORE)
@@ -45,6 +47,10 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
   // Read shipping settings (with defaults if file not yet written)
   try {
     const shippingParsed = readShippingConfig()
+    if (!hasSyncedShippingFromSettings) {
+      hasSyncedShippingFromSettings = true
+      syncMedusaShippingOptionPrices(req.scope, shippingParsed).catch(() => {})
+    }
     settings.shipping_settings = {
       ...settings.shipping_settings,
       standard_rate: shippingParsed.standardShippingEnabled === false
@@ -75,4 +81,3 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
 
   res.json({ settings })
 }
-
