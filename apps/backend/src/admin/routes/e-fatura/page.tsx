@@ -72,6 +72,14 @@ export interface EfaturaConfig {
   storeWebUrl: string
 }
 
+export interface TrendyolCreditInfo {
+  remainingCredit: number
+  totalCredit: number
+  usedCredit: number
+  packageName: string
+  status: string
+}
+
 function numberToTurkishWords(amount: number): string {
   const ones = ["", "BİR", "İKİ", "ÜÇ", "DÖRT", "BEŞ", "ALTI", "YEDİ", "SEKİZ", "DOKUZ"]
   const tens = ["", "ON", "YİRMİ", "OTUZ", "KIRK", "ELLİ", "ALTMIŞ", "YETMİŞ", "SEKSEN", "DOKSAN"]
@@ -490,13 +498,15 @@ const EfaturaPage = () => {
   const [saving, setSaving] = useState(false)
   const [testing, setTesting] = useState(false)
   const [creatingInvoice, setCreatingInvoice] = useState(false)
-  const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null)
+  const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(
+    null
+  )
 
   const [invoices, setInvoices] = useState<EfaturaInvoiceRecord[]>([])
+  const [creditInfo, setCreditInfo] = useState<TrendyolCreditInfo | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [docTypeFilter, setDocTypeFilter] = useState<"ALL" | "EARSIV" | "EFATURA">("ALL")
 
-  // Order picker modal for manual invoice creation
   const [showOrderModal, setShowOrderModal] = useState(false)
   const [ordersList, setOrdersList] = useState<any[]>([])
   const [selectedOrderForInvoice, setSelectedOrderForInvoice] = useState<string>("")
@@ -533,6 +543,7 @@ const EfaturaPage = () => {
         const data = await res.json()
         if (data.config) setConfig(data.config)
         if (Array.isArray(data.invoices)) setInvoices(data.invoices)
+        if (data.creditInfo) setCreditInfo(data.creditInfo)
       }
     } catch (e) {
       console.error("Failed to fetch e-fatura data:", e)
@@ -594,7 +605,7 @@ const EfaturaPage = () => {
     }
   }
 
-  const handleTestConnection = async () => {
+  const handleTestAndSync = async () => {
     setTesting(true)
     setFeedback(null)
     try {
@@ -605,12 +616,28 @@ const EfaturaPage = () => {
       })
       const data = await res.json()
       if (res.ok && data.success) {
-        if (data.companyId && data.companyId !== "-") {
+        if (data.config) {
+          setConfig(data.config)
+        } else if (data.companyId && data.companyId !== "-") {
           setConfig((prev) => ({ ...prev, companyId: String(data.companyId) }))
         }
+        if (data.creditInfo) {
+          setCreditInfo(data.creditInfo)
+        }
+        if (Array.isArray(data.invoices)) {
+          setInvoices(data.invoices)
+        }
+        const creditSummary = data.creditInfo
+          ? ` • Kalan Kontör: ${data.creditInfo.remainingCredit} / ${data.creditInfo.totalCredit}`
+          : ""
+        const invSummary = Array.isArray(data.invoices)
+          ? ` • Toplam Belge: ${data.invoices.length} Adet`
+          : ""
         setFeedback({
           type: "success",
-          message: `${data.message} (Şirket Kodu: ${data.companyId || "-"})`,
+          message: `${data.message} (Şirket ID: ${data.companyId || "-"} | Kullanıcı ID: ${
+            data.userId || "-"
+          }${creditSummary}${invSummary})`,
         })
       } else {
         setFeedback({
@@ -623,6 +650,29 @@ const EfaturaPage = () => {
     } finally {
       setTesting(false)
     }
+  }
+
+  const handlePrintOrDownloadInvoice = async (inv: EfaturaInvoiceRecord) => {
+    if (inv.source === "TRENDYOL_API" && inv.uuid) {
+      try {
+        const res = await fetch("/admin/efatura", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "download",
+            uuid: inv.uuid,
+            documentType: inv.documentType,
+            fileExtension: "pdf",
+          }),
+        })
+        const data = await res.json().catch(() => null)
+        if (res.ok && data?.downloadUrl) {
+          window.open(data.downloadUrl, "_blank")
+          return
+        }
+      } catch {}
+    }
+    openGibInvoicePrintWindow([inv], config)
   }
 
   const handleCreateInvoiceFromOrder = async () => {
@@ -714,6 +764,11 @@ const EfaturaPage = () => {
     }
   }, [invoices])
 
+  const creditPercentage = useMemo(() => {
+    if (!creditInfo || !creditInfo.totalCredit) return 0
+    return Math.min(100, Math.round((creditInfo.remainingCredit / creditInfo.totalCredit) * 100))
+  }, [creditInfo])
+
   return (
     <div className="bg-zinc-50 min-h-screen text-zinc-800 font-sans pb-16">
       <ErpTopNav />
@@ -731,7 +786,9 @@ const EfaturaPage = () => {
                   Trendyol E-Faturam & E-Arşiv Entegrasyonu
                 </h1>
                 <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-orange-50 text-orange-600 border border-orange-200">
-                  {config.environment === "stage" ? "Test Ortamı (Stage)" : "Canlı Ortam (Production)"}
+                  {config.environment === "stage"
+                    ? "Test Ortamı (Stage)"
+                    : "Canlı Ortam (Production)"}
                 </span>
                 <span
                   className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
@@ -740,16 +797,29 @@ const EfaturaPage = () => {
                       : "bg-amber-50 text-amber-700 border-amber-200"
                   }`}
                 >
-                  {config.email ? "API Hesabı Tanımlı" : "GİB UBL Hazır (API Bilgisi Bekleniyor)"}
+                  {config.email ? `API Aktif (${config.email})` : "GİB UBL Hazır"}
                 </span>
+                {config.companyId && (
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                    Şirket Kodu: {config.companyId}
+                  </span>
+                )}
               </div>
               <p className="text-xs text-zinc-500 mt-1">
-                Siparişleriniz için tek tıkla <b>Trendyol E-Faturam (trendyolefaturam.com / trendyolecozum.com)</b> üzerinden GİB uyumlu E-Arşiv ve E-Fatura kesin, yazdırın veya PDF olarak indirin.
+                <b>{config.supplierName}</b> (VKN: <b>{config.supplierVkn}</b>) • Trendyol E-Faturam hesabınızdaki kalan kontörler ve kesilen faturalar otomatik senkronize edilir.
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <button
+              onClick={handleTestAndSync}
+              disabled={testing}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-sm flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <ArrowPath className="w-4 h-4" />
+              <span>{testing ? "Senkronize Ediliyor..." : "Kontör & Faturaları Senkronize Et"}</span>
+            </button>
             <button
               onClick={() => setShowOrderModal(true)}
               className="bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-sm flex items-center gap-1.5 transition-colors cursor-pointer"
@@ -785,34 +855,91 @@ const EfaturaPage = () => {
           </div>
         )}
 
-        {/* STATS CARDS */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* STATS CARDS (INCLUDING KALAN KONTÖR CARD) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          {/* KALAN KONTÖR CARD */}
+          <div className="bg-white border-2 border-emerald-200 rounded-xl p-4 shadow-sm flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-extrabold text-emerald-700 uppercase">
+                Kalan Kontör Adedi
+              </span>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                {creditInfo?.packageName || "Trendyol Kontör"}
+              </span>
+            </div>
+            <div className="text-2xl font-black text-zinc-900 mt-1">
+              {creditInfo ? (
+                <>
+                  <span className="text-emerald-600">{creditInfo.remainingCredit}</span>
+                  <span className="text-sm font-bold text-zinc-400">
+                    {" "}
+                    / {creditInfo.totalCredit}
+                  </span>
+                </>
+              ) : (
+                <span className="text-sm font-bold text-zinc-400">
+                  Şifre girip senkronize edin
+                </span>
+              )}
+            </div>
+            <div className="mt-2">
+              <div className="w-full h-2 bg-zinc-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-emerald-500 rounded-full transition-all"
+                  style={{ width: `${creditInfo ? creditPercentage : 0}%` }}
+                />
+              </div>
+              <div className="text-[10px] text-zinc-500 font-semibold mt-1 flex justify-between">
+                <span>
+                  {creditInfo
+                    ? `${creditInfo.usedCredit} / ${creditInfo.totalCredit} Kontör Kullanıldı`
+                    : "Trendyol E-Faturam Paketi"}
+                </span>
+                {creditInfo && <span>%{creditPercentage}</span>}
+              </div>
+            </div>
+          </div>
+
           <div className="bg-white border border-zinc-200 rounded-xl p-4 shadow-sm">
-            <span className="text-[11px] font-bold text-zinc-400 uppercase">Toplam Kesilen Belge</span>
+            <span className="text-[11px] font-bold text-zinc-400 uppercase">
+              Toplam Kesilen Belge
+            </span>
             <div className="text-2xl font-black text-zinc-900 mt-1">{stats.totalCount} Adet</div>
             <span className="text-[11px] text-emerald-600 font-semibold">Resmileşen E-Belge</span>
           </div>
+
           <div className="bg-white border border-zinc-200 rounded-xl p-4 shadow-sm">
-            <span className="text-[11px] font-bold text-zinc-400 uppercase">E-Arşiv / E-Fatura Dağılımı</span>
+            <span className="text-[11px] font-bold text-zinc-400 uppercase">
+              E-Arşiv / E-Fatura Dağılımı
+            </span>
             <div className="text-2xl font-black text-zinc-900 mt-1">
-              {stats.eArchiveCount} <span className="text-xs font-bold text-zinc-400">E-Arşiv</span> /{" "}
-              {stats.eInvoiceCount} <span className="text-xs font-bold text-zinc-400">E-Fatura</span>
+              {stats.eArchiveCount} <span className="text-xs font-bold text-zinc-400">E-Arşiv</span>{" "}
+              / {stats.eInvoiceCount}{" "}
+              <span className="text-xs font-bold text-zinc-400">E-Fatura</span>
             </div>
             <span className="text-[11px] text-zinc-500 font-semibold">Bireysel & Kurumsal</span>
           </div>
+
           <div className="bg-white border border-zinc-200 rounded-xl p-4 shadow-sm">
-            <span className="text-[11px] font-bold text-zinc-400 uppercase">Faturalanan Toplam Tutar</span>
+            <span className="text-[11px] font-bold text-zinc-400 uppercase">
+              Faturalanan Toplam Tutar
+            </span>
             <div className="text-2xl font-black text-zinc-900 mt-1">
               {stats.totalRevenue.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} TL
             </div>
             <span className="text-[11px] text-zinc-500 font-semibold">KDV Dahil Genel Toplam</span>
           </div>
+
           <div className="bg-white border border-zinc-200 rounded-xl p-4 shadow-sm">
-            <span className="text-[11px] font-bold text-zinc-400 uppercase">Hesaplanan Toplam KDV</span>
+            <span className="text-[11px] font-bold text-zinc-400 uppercase">
+              Hesaplanan Toplam KDV
+            </span>
             <div className="text-2xl font-black text-orange-600 mt-1">
               {stats.totalVat.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} TL
             </div>
-            <span className="text-[11px] text-zinc-500 font-semibold">Varsayılan KDV: %{config.defaultVatRate}</span>
+            <span className="text-[11px] text-zinc-500 font-semibold">
+              Varsayılan KDV: %{config.defaultVatRate}
+            </span>
           </div>
         </div>
 
@@ -826,7 +953,7 @@ const EfaturaPage = () => {
                 : "border-transparent text-zinc-500 hover:text-zinc-800"
             }`}
           >
-             Kesilen E-Fatura & E-Arşiv Belgeleri ({invoices.length})
+            📄 Kesilen E-Fatura & E-Arşiv Belgeleri ({invoices.length})
           </button>
           <button
             onClick={() => setActiveTab("settings")}
@@ -863,24 +990,29 @@ const EfaturaPage = () => {
                 </select>
               </div>
               <button
-                onClick={fetchEfaturaData}
+                onClick={handleTestAndSync}
+                disabled={testing}
                 className="bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 font-bold text-xs px-3.5 py-2 rounded-xl flex items-center gap-1.5 cursor-pointer"
               >
                 <ArrowPath className="w-3.5 h-3.5" />
-                <span>Yenile</span>
+                <span>{testing ? "Senkronize Ediliyor..." : "Trendyol'dan Yenile"}</span>
               </button>
             </div>
 
             {loading ? (
               <div className="p-12 text-center text-xs font-bold text-zinc-400">
-                Fatura kayıtları yükleniyor...
+                Fatura kayıtları ve kontör bilgileri yükleniyor...
               </div>
             ) : filteredInvoices.length === 0 ? (
               <div className="p-14 text-center flex flex-col items-center gap-3">
                 <DocumentText className="w-10 h-10 text-zinc-300" />
-                <div className="text-sm font-bold text-zinc-700">Henüz kesilmiş e-Fatura veya e-Arşiv kaydı bulunmuyor.</div>
+                <div className="text-sm font-bold text-zinc-700">
+                  Henüz kesilmiş e-Fatura veya e-Arşiv kaydı bulunmuyor.
+                </div>
                 <p className="text-xs text-zinc-400 max-w-md">
-                  Siparişler sayfasındaki <b>e-Fatura</b> butonuna tıklayarak veya yukarıdaki <b>&ldquo;Siparişten Yeni Fatura Kes&rdquo;</b> butonunu kullanarak hemen fatura oluşturabilirsiniz.
+                  Siparişler sayfasındaki <b>e-Fatura</b> butonuna tıklayarak veya yukarıdaki{" "}
+                  <b>&ldquo;Siparişten Yeni Fatura Kes&rdquo;</b> butonunu kullanarak hemen fatura
+                  oluşturabilirsiniz.
                 </p>
               </div>
             ) : (
@@ -890,7 +1022,7 @@ const EfaturaPage = () => {
                     <tr className="bg-zinc-50 border-b border-zinc-200 text-[11px] font-extrabold text-zinc-600 uppercase">
                       <th className="py-3 px-4">Fatura No / ETTN</th>
                       <th className="py-3 px-4">Belge Türü</th>
-                      <th className="py-3 px-4">Sipariş</th>
+                      <th className="py-3 px-4">Sipariş / Ref</th>
                       <th className="py-3 px-4">Alıcı Bilgileri (VKN / TCKN)</th>
                       <th className="py-3 px-4">KDV</th>
                       <th className="py-3 px-4">Genel Toplam</th>
@@ -904,7 +1036,9 @@ const EfaturaPage = () => {
                       <tr key={inv.id} className="hover:bg-zinc-50/80 transition-colors">
                         <td className="py-3 px-4">
                           <div className="font-extrabold text-zinc-900">{inv.invoiceNumber}</div>
-                          <div className="text-[10px] font-mono text-zinc-400 mt-0.5">{inv.uuid}</div>
+                          <div className="text-[10px] font-mono text-zinc-400 mt-0.5">
+                            {inv.uuid}
+                          </div>
                         </td>
                         <td className="py-3 px-4">
                           <span
@@ -916,19 +1050,26 @@ const EfaturaPage = () => {
                           >
                             {inv.documentType === "EFATURA" ? "e-FATURA" : "e-ARŞİV"}
                           </span>
-                          <div className="text-[10px] text-zinc-400 mt-0.5">{inv.invoiceScenario}</div>
+                          <div className="text-[10px] text-zinc-400 mt-0.5">
+                            {inv.invoiceScenario}
+                          </div>
                         </td>
-                        <td className="py-3 px-4 font-bold text-blue-600">#{inv.orderDisplayId}</td>
+                        <td className="py-3 px-4 font-bold text-blue-600">
+                          #{inv.orderDisplayId}
+                        </td>
                         <td className="py-3 px-4">
                           <div className="font-bold text-zinc-800">{inv.buyerName}</div>
                           <div className="text-[11px] text-zinc-500">
-                            {inv.buyerIdentifier?.length === 10 ? "VKN" : "TCKN"}: {inv.buyerIdentifier}
+                            {inv.buyerIdentifier?.length === 10 ? "VKN" : "TCKN"}:{" "}
+                            {inv.buyerIdentifier}
                             {inv.buyerTaxOffice ? ` • VD: ${inv.buyerTaxOffice}` : ""}
                           </div>
                         </td>
                         <td className="py-3 px-4 font-semibold text-zinc-700">
                           {inv.vatAmount.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} TL
-                          <span className="block text-[10px] text-zinc-400">%{inv.vatRate} KDV</span>
+                          <span className="block text-[10px] text-zinc-400">
+                            %{inv.vatRate} KDV
+                          </span>
                         </td>
                         <td className="py-3 px-4 font-extrabold text-zinc-900">
                           {inv.totalAmount.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} TL
@@ -959,7 +1100,7 @@ const EfaturaPage = () => {
                         <td className="py-3 px-4 text-right">
                           <div className="flex items-center justify-end gap-1.5">
                             <button
-                              onClick={() => openGibInvoicePrintWindow([inv], config)}
+                              onClick={() => handlePrintOrDownloadInvoice(inv)}
                               className="bg-zinc-900 hover:bg-zinc-800 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg cursor-pointer"
                             >
                               🖨️ PDF / Yazdır
@@ -999,22 +1140,29 @@ const EfaturaPage = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[11px] font-bold text-zinc-600 mb-1">Çalışma Ortamı</label>
+                  <label className="block text-[11px] font-bold text-zinc-600 mb-1">
+                    Çalışma Ortamı
+                  </label>
                   <select
                     value={config.environment}
                     onChange={(e) =>
-                      setConfig({ ...config, environment: e.target.value as "stage" | "production" })
+                      setConfig({
+                        ...config,
+                        environment: e.target.value as "stage" | "production",
+                      })
                     }
                     className="w-full border border-zinc-300 rounded-xl px-3 py-2 text-xs font-bold text-zinc-800 bg-white"
                   >
                     <option value="production">Canlı Ortam (apigateway.trendyolecozum.com)</option>
-                    <option value="stage">Test Ortamı (stage-apigateway.trendyolefaturam.com)</option>
+                    <option value="stage">
+                      Test Ortamı (stage-apigateway.trendyolefaturam.com)
+                    </option>
                   </select>
                 </div>
 
                 <div>
                   <label className="block text-[11px] font-bold text-zinc-600 mb-1">
-                    Şirket ID / Firma Kodu (Opsiyonel)
+                    Şirket ID / Firma Kodu (Otomatik Algılanır)
                   </label>
                   <input
                     type="text"
@@ -1033,7 +1181,7 @@ const EfaturaPage = () => {
                     type="text"
                     value={config.email}
                     onChange={(e) => setConfig({ ...config, email: e.target.value })}
-                    placeholder="ornek@bodykitmerkezi.com"
+                    placeholder="hakkisahin9@gmail.com"
                     className="w-full border border-zinc-300 rounded-xl px-3 py-2 text-xs font-semibold"
                   />
                 </div>
@@ -1089,7 +1237,9 @@ const EfaturaPage = () => {
                   </label>
                   <select
                     value={config.defaultVatRate}
-                    onChange={(e) => setConfig({ ...config, defaultVatRate: Number(e.target.value) })}
+                    onChange={(e) =>
+                      setConfig({ ...config, defaultVatRate: Number(e.target.value) })
+                    }
                     className="w-full border border-zinc-300 rounded-xl px-3 py-2 text-xs font-bold bg-white"
                   >
                     <option value={20}>%20 KDV (Genel / Oto Aksesuar)</option>
@@ -1115,11 +1265,13 @@ const EfaturaPage = () => {
 
               <div className="pt-2 flex items-center gap-3">
                 <button
-                  onClick={handleTestConnection}
+                  onClick={handleTestAndSync}
                   disabled={testing}
                   className="bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 font-bold text-xs px-4 py-2.5 rounded-xl transition-colors cursor-pointer"
                 >
-                  {testing ? "Test Ediliyor..." : "🔌 Trendyol E-Faturam Bağlantısını Test Et"}
+                  {testing
+                    ? "Test Ediliyor ve Kontör/Faturalar Çekiliyor..."
+                    : "🔌 Bağlantıyı Test Et ve Kontör / Faturaları Çek"}
                 </button>
               </div>
             </div>
@@ -1131,7 +1283,8 @@ const EfaturaPage = () => {
                   2. Satıcı Firma & Vergi Kimlik Bilgileri (Fatura Üst Bilgisi)
                 </h2>
                 <p className="text-xs text-zinc-500 mt-0.5">
-                  Kesilen e-Fatura ve e-Arşiv belgelerinde sol üst köşede yer alacak resmi şirket bilgileriniz.
+                  Kesilen e-Fatura ve e-Arşiv belgelerinde sol üst köşede yer alacak resmi şirket
+                  bilgileriniz.
                 </p>
               </div>
 
@@ -1173,7 +1326,9 @@ const EfaturaPage = () => {
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-zinc-600 mb-1">Mersis No</label>
+                  <label className="block text-[11px] font-bold text-zinc-600 mb-1">
+                    Mersis No
+                  </label>
                   <input
                     type="text"
                     value={config.supplierMersis}
@@ -1189,7 +1344,9 @@ const EfaturaPage = () => {
                   <input
                     type="text"
                     value={config.supplierTicaretSicil}
-                    onChange={(e) => setConfig({ ...config, supplierTicaretSicil: e.target.value })}
+                    onChange={(e) =>
+                      setConfig({ ...config, supplierTicaretSicil: e.target.value })
+                    }
                     className="w-full border border-zinc-300 rounded-xl px-3 py-2 text-xs font-semibold"
                   />
                 </div>
@@ -1215,7 +1372,9 @@ const EfaturaPage = () => {
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className="block text-[11px] font-bold text-zinc-600 mb-1">Açık Adres</label>
+                  <label className="block text-[11px] font-bold text-zinc-600 mb-1">
+                    Açık Adres
+                  </label>
                   <input
                     type="text"
                     value={config.supplierAddress}
@@ -1269,7 +1428,9 @@ const EfaturaPage = () => {
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md relative z-10 overflow-hidden">
             <div className="bg-orange-500 text-white px-5 py-4 flex items-center justify-between">
               <div>
-                <div className="text-[11px] font-semibold text-orange-100">Trendyol E-Faturam</div>
+                <div className="text-[11px] font-semibold text-orange-100">
+                  Trendyol E-Faturam
+                </div>
                 <div className="text-sm font-extrabold">Siparişten E-Fatura / E-Arşiv Kes</div>
               </div>
               <button onClick={() => setShowOrderModal(false)} className="text-white">
@@ -1279,7 +1440,9 @@ const EfaturaPage = () => {
 
             <div className="p-5 flex flex-col gap-4">
               <div>
-                <label className="block text-xs font-bold text-zinc-600 mb-1.5">Sipariş Seçin</label>
+                <label className="block text-xs font-bold text-zinc-600 mb-1.5">
+                  Sipariş Seçin
+                </label>
                 <select
                   value={selectedOrderForInvoice}
                   onChange={(e) => setSelectedOrderForInvoice(e.target.value)}
@@ -1310,7 +1473,9 @@ const EfaturaPage = () => {
                   onChange={(e) => setOverrideDocType(e.target.value as any)}
                   className="w-full border border-zinc-300 rounded-xl px-3 py-2.5 text-xs font-bold text-zinc-800 bg-white"
                 >
-                  <option value="">Otomatik Algıla (Bireysel → e-Arşiv / Kurumsal VKN → e-Fatura)</option>
+                  <option value="">
+                    Otomatik Algıla (Bireysel → e-Arşiv / Kurumsal VKN → e-Fatura)
+                  </option>
                   <option value="EARSIV">e-Arşiv Fatura (EARSIVFATURA)</option>
                   <option value="EFATURA">e-Fatura (TICARIFATURA)</option>
                 </select>
