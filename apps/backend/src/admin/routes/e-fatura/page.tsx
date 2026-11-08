@@ -131,16 +131,18 @@ export function openGibInvoicePrintWindow(
     return
   }
 
-  const supplierName = config.supplierName || "Bodykit Merkezi Otomotiv"
-  const supplierAddress = config.supplierAddress || "İkitelli OSB Oto Sanayi Sitesi"
-  const supplierDistrict = config.supplierDistrict || "Başakşehir"
+  const supplierName =
+    config.supplierName || "ÖZSE MODA TEKSTİL KAFE GIDA İNŞAAT SANAYİ TİCARET LİMİTED ŞİRKETİ"
+  const supplierAddress =
+    config.supplierAddress || "MERKEZ MAH. MUALLİM NACİ SK. MERVE NO: 9 GÜNGÖREN/ İSTANBUL"
+  const supplierDistrict = config.supplierDistrict || "Güngören"
   const supplierCity = config.supplierCity || "İstanbul"
-  const supplierTaxOffice = config.supplierTaxOffice || "İkitelli Vergi Dairesi"
-  const supplierVkn = config.supplierVkn || "1111111111"
-  const supplierPhone = config.supplierPhone || "0543 962 60 32"
-  const supplierEmail = config.supplierEmail || "info@bodykitmerkezi.com"
-  const supplierMersis = config.supplierMersis || "0111111111100001"
-  const supplierTicaretSicil = config.supplierTicaretSicil || "123456-5"
+  const supplierTaxOffice = config.supplierTaxOffice || "Güngören Vergi Dairesi Müdürlüğü"
+  const supplierVkn = config.supplierVkn || "7050600355"
+  const supplierPhone = config.supplierPhone || "0532 337 00 81"
+  const supplierEmail = config.supplierEmail || "hakkisahin9@gmail.com"
+  const supplierMersis = config.supplierMersis || "0705060035500001"
+  const supplierTicaretSicil = config.supplierTicaretSicil || "-"
   const storeWebUrl = config.storeWebUrl || "https://bodykitmerkezi.com"
 
   const pagesHtml = invoices
@@ -503,19 +505,19 @@ const EfaturaPage = () => {
   const [config, setConfig] = useState<EfaturaConfig>({
     active: true,
     environment: "production",
-    email: "",
+    email: "hakkisahin9@gmail.com",
     password: "",
     companyId: "",
-    supplierVkn: "1111111111",
-    supplierName: "Bodykit Merkezi Otomotiv",
-    supplierTaxOffice: "İkitelli Vergi Dairesi",
-    supplierAddress: "İkitelli OSB Oto Sanayi Sitesi",
+    supplierVkn: "7050600355",
+    supplierName: "ÖZSE MODA TEKSTİL KAFE GIDA İNŞAAT SANAYİ TİCARET LİMİTED ŞİRKETİ",
+    supplierTaxOffice: "Güngören Vergi Dairesi Müdürlüğü",
+    supplierAddress: "MERKEZ MAH. MUALLİM NACİ SK. MERVE NO: 9 GÜNGÖREN/ İSTANBUL",
     supplierCity: "İstanbul",
-    supplierDistrict: "Başakşehir",
-    supplierPhone: "0543 962 60 32",
-    supplierEmail: "info@bodykitmerkezi.com",
-    supplierMersis: "0111111111100001",
-    supplierTicaretSicil: "123456-5",
+    supplierDistrict: "Güngören",
+    supplierPhone: "0532 337 00 81",
+    supplierEmail: "hakkisahin9@gmail.com",
+    supplierMersis: "0705060035500001",
+    supplierTicaretSicil: "",
     earchivePrefix: "BKM",
     einvoicePrefix: "EFT",
     defaultVatRate: 20,
