@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react"
 import { defineRouteConfig } from "@medusajs/admin-sdk"
 import { ShoppingBag, Adjustments, CheckCircle, XMark, Plus, Trash, ArrowPath, Pencil } from "@medusajs/icons"
 import { PosModal } from "../routes/orders/components/pos-modal"
+import { openGibInvoicePrintWindow } from "../routes/e-fatura/page"
 
 // Custom inline SVG icons for print options and statuses
 const EInvoiceIcon = () => (
@@ -458,8 +459,8 @@ const SiparisYonetimiPage = () => {
           country_code: o.billing_address?.country_code || "tr",
           country_name: "Türkiye",
           phone: o.billing_address?.phone || "",
-          tc_no: o.metadata?.tc_no || "",
-          tax_no: o.metadata?.tax_no || "",
+          tc_no: o.metadata?.tc_no || o.metadata?.tckn || "",
+          tax_no: o.metadata?.tax_no || o.metadata?.vkn || "",
           tax_office: o.metadata?.tax_office || ""
         },
         items: itemsMapped,
@@ -477,7 +478,8 @@ const SiparisYonetimiPage = () => {
         integration_logs: o.metadata?.integration_logs || [],
         invoice_series: o.metadata?.invoice_series || "-",
         invoice_date: o.metadata?.invoice_date || "",
-        e_invoice_date: o.metadata?.e_invoice_date || ""
+        e_invoice_date: o.metadata?.e_invoice_date || "",
+        metadata: o.metadata || {}
       } as CustomOrder
     })
   }, [realOrders])
@@ -933,11 +935,60 @@ const SiparisYonetimiPage = () => {
     } catch (err) {}
   }
 
-  // Trigger Print popup simulation
-  const triggerPrintSimulation = (type: string, orderIdOrIds: string | string[]) => {
+  // Trigger Print popup & Trendyol E-Faturam integration
+  const triggerPrintSimulation = async (type: string, orderIdOrIds: string | string[]) => {
     const ids = Array.isArray(orderIdOrIds) ? orderIdOrIds : [orderIdOrIds]
     const ordersToPrint = currentOrders.filter(o => ids.includes(o.id))
     if (ordersToPrint.length === 0) return
+
+    const normalizedType = type.toLowerCase()
+    if (
+      normalizedType === "e-fatura" ||
+      normalizedType === "fatura" ||
+      normalizedType === "pdf"
+    ) {
+      try {
+        const res = await fetch("/admin/efatura", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "create",
+            order_ids: ids,
+          }),
+        })
+        const data = await res.json()
+        if (res.ok && data?.created?.length > 0) {
+          const createdMap = new Map(data.created.map((inv: any) => [inv.orderId, inv]))
+          setRealOrders(prev =>
+            prev.map(o => {
+              const inv: any = createdMap.get(o.id)
+              if (!inv) return o
+              const formattedDate = new Date(inv.issueDate).toLocaleString("tr-TR", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              })
+              return {
+                ...o,
+                metadata: {
+                  ...(o.metadata || {}),
+                  invoice_series: inv.invoiceNumber,
+                  invoice_date: formattedDate,
+                  e_invoice_date: formattedDate,
+                  efatura: inv,
+                },
+              }
+            })
+          )
+          openGibInvoicePrintWindow(data.created, data.config || {})
+          return
+        }
+      } catch (err) {
+        console.error("E-Fatura oluşturulurken hata:", err)
+      }
+    }
 
     const width = 800
     const height = 600
@@ -1836,8 +1887,8 @@ const SiparisYonetimiPage = () => {
                                 className="w-7 h-7 flex items-center justify-center rounded border border-zinc-300 bg-white hover:bg-zinc-50 relative shadow-sm"
                               >
                                 <span className="font-bold text-[14px] text-zinc-600 leading-none">e</span>
-                                {/* Example checkmark if printed */}
-                                {order.status === "teslim_edilen" && (
+                                {/* Checkmark if e-Fatura created */}
+                                {(Boolean(order.metadata?.efatura) || (order.invoice_series && order.invoice_series !== "-")) && (
                                   <div className="absolute -top-1.5 -right-1.5 bg-white rounded-full">
                                     <svg className="w-3.5 h-3.5 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
                                   </div>
@@ -2260,9 +2311,32 @@ const SiparisYonetimiPage = () => {
                             {activeOrderDetails.billing_address.address_1}
                           </p>
                           <div>{activeOrderDetails.billing_address.district} / {activeOrderDetails.billing_address.city} / {activeOrderDetails.billing_address.country_name}</div>
+                          {activeOrderDetails.metadata?.company_name && (
+                            <div className="font-semibold text-zinc-800">Firma: {activeOrderDetails.metadata.company_name}</div>
+                          )}
+                          {activeOrderDetails.billing_address.tax_no && (
+                            <div className="mt-0.5 font-medium text-zinc-800">
+                              VKN: {activeOrderDetails.billing_address.tax_no}
+                              {activeOrderDetails.billing_address.tax_office ? ` / VD: ${activeOrderDetails.billing_address.tax_office}` : ""}
+                            </div>
+                          )}
                           {activeOrderDetails.billing_address.tc_no && (
-                            <div className="mt-1">
+                            <div className="mt-0.5">
                               TCKN: {activeOrderDetails.billing_address.tc_no}
+                            </div>
+                          )}
+                          {activeOrderDetails.metadata?.efatura && (
+                            <div className="mt-2 p-2 rounded bg-orange-50 border border-orange-200 text-[11px] text-orange-800 flex items-center justify-between">
+                              <div>
+                                <span className="font-bold">{activeOrderDetails.metadata.efatura.documentType === "EFATURA" ? "e-Fatura" : "e-Arşiv"}:</span>{" "}
+                                <span className="font-mono font-bold">{activeOrderDetails.metadata.efatura.invoiceNumber}</span>
+                              </div>
+                              <button
+                                onClick={() => triggerPrintSimulation("e-Fatura", activeOrderDetails.id)}
+                                className="text-orange-700 font-bold underline cursor-pointer"
+                              >
+                                Görüntüle
+                              </button>
                             </div>
                           )}
                         </>
@@ -2609,10 +2683,14 @@ const SiparisYonetimiPage = () => {
               <div className="flex items-center gap-2">
                 <button 
                   onClick={() => triggerPrintSimulation("e-Fatura", activeOrderDetails.id)}
-                  className="bg-zinc-100 border border-zinc-200 hover:bg-zinc-200 text-zinc-700 font-semibold text-[12px] h-9 px-4 rounded flex items-center gap-1.5 transition-colors"
+                  className="bg-orange-50 border border-orange-200 hover:bg-orange-100 text-orange-800 font-bold text-[12px] h-9 px-4 rounded flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
-                  <span className="text-rose-600 font-bold">✕</span>
-                  <span>E-Fatura</span>
+                  {activeOrderDetails.metadata?.efatura || (activeOrderDetails.invoice_series && activeOrderDetails.invoice_series !== "-") ? (
+                    <span className="text-emerald-600 font-bold">✔</span>
+                  ) : (
+                    <span className="text-orange-600 font-bold">e</span>
+                  )}
+                  <span>Trendyol E-Fatura</span>
                 </button>
                 <button 
                   onClick={() => triggerPrintSimulation("Fatura", activeOrderDetails.id)}
