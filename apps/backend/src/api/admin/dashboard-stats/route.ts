@@ -1,5 +1,6 @@
 import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import { Pool } from "pg"
+import { getGaRealtimeStats } from "../pixel-settings/route"
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL || "postgres://postgres@localhost:5432/medusa_v2_ikinci"
@@ -201,7 +202,7 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
         SELECT 
           oli.product_title, 
           oli.variant_title, 
-          oli.thumbnail, 
+          COALESCE(NULLIF(oli.thumbnail, ''), p.thumbnail) as thumbnail, 
           oli.variant_sku as sku, 
           SUM(CAST(oi.quantity AS integer)) as quantity,
           AVG(CAST(oli.unit_price AS numeric)) / 100 as price,
@@ -210,10 +211,11 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
         JOIN order_line_item oli ON oli.id = oi.item_id
         JOIN "order" o ON o.id = oi.order_id
         LEFT JOIN "product_variant" pv ON pv.id = oli.variant_id
+        LEFT JOIN "product" p ON p.id = pv.product_id
         WHERE o.deleted_at IS NULL AND oi.deleted_at IS NULL AND oli.deleted_at IS NULL
           AND o.status != 'draft'
           AND o.created_at >= $1 AND o.created_at <= $2
-        GROUP BY oli.product_title, oli.variant_title, oli.thumbnail, oli.variant_sku, pv.metadata
+        GROUP BY oli.product_title, oli.variant_title, oli.thumbnail, p.thumbnail, oli.variant_sku, pv.metadata
         ORDER BY quantity DESC
         LIMIT 10
       `, [start.toISOString(), end.toISOString()])
@@ -451,9 +453,10 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
       console.error("Dashboard stats query error (active carts):", dbErr)
     }
 
-    const activeVisitorsCount = activeCartsCount
-    const desktopPercent = activeVisitorsCount > 0 ? 60 : 0
-    const mobilePercent = activeVisitorsCount > 0 ? 40 : 0
+    const gaRealtime = await getGaRealtimeStats(activeCartsCount)
+    const activeVisitorsCount = gaRealtime.count
+    const desktopPercent = gaRealtime.desktopPercent
+    const mobilePercent = gaRealtime.mobilePercent
 
     let conversionCarts = realCartsCount
     let conversionCheckout = realCartsWithEmailCount
@@ -485,7 +488,7 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
           iadeEdilen: iadeEdilenCount,
           circleCount: onayBekleyenCount + iadeEdilenCount,
           channels: [
-            { name: "Çizgibutik", count: realPendingCount + realPreparingCount },
+            { name: "bodykitmerkezi.com (Web Mağaza)", count: realOrderCount },
             { name: "N11", count: "-" },
             { name: "Hepsiburada", count: "-" },
             { name: "Trendyol", count: "-" }
@@ -510,7 +513,10 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
         activeVisitors: {
           count: activeVisitorsCount,
           desktopPercent,
-          mobilePercent
+          mobilePercent,
+          source: gaRealtime.source,
+          sessions: gaRealtime.sessions,
+          minuteHistory: gaRealtime.minuteHistory,
         },
         conversionRates: {
           overallRate: conversionOverallRate,
