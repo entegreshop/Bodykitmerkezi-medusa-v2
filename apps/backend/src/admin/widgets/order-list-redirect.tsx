@@ -956,9 +956,10 @@ const SiparisYonetimiPage = () => {
             order_ids: ids,
           }),
         })
-        const data = await res.json()
-        if (res.ok && data?.created?.length > 0) {
-          const createdMap = new Map(data.created.map((inv: any) => [inv.orderId, inv]))
+        const data = await res.json().catch(() => ({}))
+        const createdList = data?.created || data?.invoices || []
+        if (res.ok && createdList.length > 0) {
+          const createdMap = new Map(createdList.map((inv: any) => [inv.orderId, inv]))
           setRealOrders(prev =>
             prev.map(o => {
               const inv: any = createdMap.get(o.id)
@@ -972,6 +973,7 @@ const SiparisYonetimiPage = () => {
               })
               return {
                 ...o,
+                invoice_series: inv.invoiceNumber,
                 metadata: {
                   ...(o.metadata || {}),
                   invoice_series: inv.invoiceNumber,
@@ -982,11 +984,17 @@ const SiparisYonetimiPage = () => {
               }
             })
           )
-          openGibInvoicePrintWindow(data.created, data.config || {})
+          showSuccess(`Trendyol E-Fatura oluşturuldu: ${createdList[0].invoiceNumber}`)
+          openGibInvoicePrintWindow(createdList, data.config || {})
+          return
+        } else {
+          alert(data?.error || "Trendyol E-Faturam üzerinde fatura oluşturulamadı.")
           return
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error("E-Fatura oluşturulurken hata:", err)
+        alert(err?.message || "Trendyol E-Fatura bağlantı hatası.")
+        return
       }
     }
 
@@ -1888,7 +1896,7 @@ const SiparisYonetimiPage = () => {
                               >
                                 <span className="font-bold text-[14px] text-zinc-600 leading-none">e</span>
                                 {/* Checkmark if e-Fatura created */}
-                                {(Boolean(order.metadata?.efatura) || (order.invoice_series && order.invoice_series !== "-")) && (
+                                {order.metadata?.efatura?.source === "TRENDYOL_API" && (
                                   <div className="absolute -top-1.5 -right-1.5 bg-white rounded-full">
                                     <svg className="w-3.5 h-3.5 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
                                   </div>
@@ -2325,7 +2333,7 @@ const SiparisYonetimiPage = () => {
                               TCKN: {activeOrderDetails.billing_address.tc_no}
                             </div>
                           )}
-                          {activeOrderDetails.metadata?.efatura && (
+                          {activeOrderDetails.metadata?.efatura?.source === "TRENDYOL_API" && (
                             <div className="mt-2 p-2 rounded bg-orange-50 border border-orange-200 text-[11px] text-orange-800 flex items-center justify-between">
                               <div>
                                 <span className="font-bold">{activeOrderDetails.metadata.efatura.documentType === "EFATURA" ? "e-Fatura" : "e-Arşiv"}:</span>{" "}
@@ -2685,7 +2693,7 @@ const SiparisYonetimiPage = () => {
                   onClick={() => triggerPrintSimulation("e-Fatura", activeOrderDetails.id)}
                   className="bg-orange-50 border border-orange-200 hover:bg-orange-100 text-orange-800 font-bold text-[12px] h-9 px-4 rounded flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
-                  {activeOrderDetails.metadata?.efatura || (activeOrderDetails.invoice_series && activeOrderDetails.invoice_series !== "-") ? (
+                  {activeOrderDetails.metadata?.efatura?.source === "TRENDYOL_API" ? (
                     <span className="text-emerald-600 font-bold">✔</span>
                   ) : (
                     <span className="text-orange-600 font-bold">e</span>

@@ -1,30 +1,82 @@
 import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
-import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
+import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
+import * as fs from "fs"
+import * as os from "os"
+import * as path from "path"
 import * as crypto from "crypto"
-import {
-  EfaturaConfig,
-  EfaturaInvoiceRecord,
-  readEfaturaConfig,
-  readEfaturaInvoices,
-  saveEfaturaInvoice,
-  writeEfaturaConfig,
-} from "../efatura-settings/route"
 
-function getGatewayBaseUrl(env: "stage" | "production"): string {
-  return env === "stage"
-    ? "https://stage-apigateway.trendyolefaturam.com"
-    : "https://apigateway.trendyolecozum.com"
+export interface EfaturaConfig {
+  provider?: "trendyol_efaturam"
+  environment: "stage" | "prod" | "production"
+  active: boolean
+  email: string
+  password: string
+  companyId: string
+  supplierVkn: string
+  supplierName?: string
+  supplierTitle?: string
+  supplierTaxOffice: string
+  supplierAddress: string
+  supplierCity: string
+  supplierDistrict: string
+  supplierEmail: string
+  supplierPhone: string
+  supplierMersis?: string
+  supplierTicaretSicil?: string
+  earchivePrefix: string
+  einvoicePrefix: string
+  defaultVatRate: number
+  autoSend?: boolean
+  autoIssueOnOrderPaid?: boolean
+  sendEmailToCustomer?: boolean
+  storeWebUrl: string
+  updatedAt?: string
 }
 
-function decodeJwtPayload(token: string): Record<string, any> {
-  try {
-    const parts = token.split(".")
-    if (parts.length < 2) return {}
-    const payloadJson = Buffer.from(parts[1], "base64url").toString("utf8")
-    return JSON.parse(payloadJson)
-  } catch {
-    return {}
-  }
+export interface EfaturaInvoiceItem {
+  title: string
+  sku: string
+  quantity: number
+  unitPrice: number // KDV dahil birim fiyat (TL)
+  netUnitPrice: number // KDV hariç birim fiyat (TL)
+  vatRate: number
+  vatAmount: number // Toplam KDV (TL)
+  totalAmount: number // KDV dahil toplam (TL)
+}
+
+export interface EfaturaInvoiceRecord {
+  id: string
+  uuid: string
+  invoiceNumber: string
+  orderId: string
+  orderDisplayId: string
+  documentType: "EARSIV" | "EFATURA"
+  invoiceScenario: "EARSIVFATURA" | "TEMELFATURA" | "TICARIFATURA"
+  invoiceType: "SATIS" | "IADE"
+  status: "RESMILESTI" | "TASLAK" | "IPTAL" | "HATA"
+  source: "TRENDYOL_API" | "YEREL_UBL"
+  environment: "stage" | "prod" | "production"
+  issueDate: string
+  buyerName: string
+  buyerIdentifier: string // VKN (10) veya TCKN (11)
+  buyerTaxOffice: string
+  buyerAddress: string
+  buyerCity: string
+  buyerDistrict: string
+  buyerEmail: string
+  buyerPhone: string
+  currencyCode: string
+  subtotalAmount: number
+  vatRate: number
+  vatAmount: number
+  discountAmount: number
+  totalAmount: number
+  paymentMethod: string
+  carrierName: string
+  storeWebUrl: string
+  items: EfaturaInvoiceItem[]
+  trendyolResponse?: any
+  createdAt: string
 }
 
 export interface TrendyolAuthSession {
@@ -32,8 +84,7 @@ export interface TrendyolAuthSession {
   userId: string
   companyId: string
   taxId: string
-  corporateName?: string
-  jwtPayload?: Record<string, any>
+  corporateName: string
 }
 
 export interface TrendyolCreditInfo {
@@ -41,12 +92,176 @@ export interface TrendyolCreditInfo {
   totalCredit: number
   usedCredit: number
   packageName: string
-  status: string
+  remainingCredits: number
+  totalCredits: number
+  usedCredits: number
+  packageTitle: string
+  expiresAt?: string
+  raw?: any
+}
+
+const DATA_DIR = path.join(process.cwd(), "data")
+const UPLOADS_DIR = path.join(process.cwd(), "uploads")
+const CONFIG_FILES = [
+  path.join(UPLOADS_DIR, "efatura-settings.json"),
+  path.join(DATA_DIR, "efatura-config.json"),
+  path.join(os.tmpdir(), "bkm-medusa-efatura-settings.json"),
+]
+const INVOICES_FILES = [
+  path.join(UPLOADS_DIR, "efatura-invoices.json"),
+  path.join(DATA_DIR, "efatura-invoices.json"),
+  path.join(os.tmpdir(), "bkm-medusa-efatura-invoices.json"),
+]
+
+const DEFAULT_CONFIG: EfaturaConfig = {
+  provider: "trendyol_efaturam",
+  environment: "production",
+  active: true,
+  email: process.env.TRENDYOL_EFATURA_EMAIL || "hakkisahin9@gmail.com",
+  password: process.env.TRENDYOL_EFATURA_PASSWORD || "",
+  companyId: process.env.TRENDYOL_EFATURA_COMPANY_ID || "94727",
+  supplierVkn: process.env.TRENDYOL_EFATURA_VKN || "7050600355",
+  supplierName:
+    process.env.TRENDYOL_EFATURA_TITLE ||
+    "ÖZSE MODA TEKSTİL KAFE GIDA İNŞAAT SANAYİ TİCARET LİMİTED ŞİRKETİ",
+  supplierTitle:
+    process.env.TRENDYOL_EFATURA_TITLE ||
+    "ÖZSE MODA TEKSTİL KAFE GIDA İNŞAAT SANAYİ TİCARET LİMİTED ŞİRKETİ",
+  supplierTaxOffice:
+    process.env.TRENDYOL_EFATURA_TAX_OFFICE || "Güngören Vergi Dairesi Müdürlüğü",
+  supplierAddress:
+    process.env.TRENDYOL_EFATURA_ADDRESS ||
+    "MERKEZ MAH. MUALLİM NACİ SK. MERVE NO: 9 GÜNGÖREN/ İSTANBUL",
+  supplierCity: process.env.TRENDYOL_EFATURA_CITY || "İstanbul",
+  supplierDistrict: process.env.TRENDYOL_EFATURA_DISTRICT || "Güngören",
+  supplierEmail: process.env.TRENDYOL_EFATURA_SUPPLIER_EMAIL || "hakkisahin9@gmail.com",
+  supplierPhone: process.env.TRENDYOL_EFATURA_SUPPLIER_PHONE || "0532 337 00 81",
+  supplierMersis: "0705060035500001",
+  supplierTicaretSicil: "",
+  earchivePrefix: "BKM",
+  einvoicePrefix: "EFT",
+  defaultVatRate: 20,
+  autoSend: false,
+  autoIssueOnOrderPaid: false,
+  sendEmailToCustomer: true,
+  storeWebUrl: "https://bodykitmerkezi.com",
+}
+
+export function readEfaturaConfig(): EfaturaConfig {
+  let merged: EfaturaConfig = { ...DEFAULT_CONFIG }
+  for (const filePath of [...CONFIG_FILES].reverse()) {
+    try {
+      if (fs.existsSync(filePath)) {
+        const raw = fs.readFileSync(filePath, "utf-8")
+        const parsed = JSON.parse(raw)
+        merged = {
+          ...merged,
+          ...parsed,
+          password: parsed.password || merged.password || "",
+          email: parsed.email || merged.email || DEFAULT_CONFIG.email,
+          companyId: parsed.companyId || merged.companyId || DEFAULT_CONFIG.companyId,
+        }
+      }
+    } catch {}
+  }
+  return merged
+}
+
+export function writeEfaturaConfig(partial: Partial<EfaturaConfig>): EfaturaConfig {
+  const current = readEfaturaConfig()
+  const next: EfaturaConfig = {
+    ...current,
+    ...partial,
+    password:
+      partial.password !== undefined && partial.password !== ""
+        ? partial.password
+        : current.password,
+    supplierName: partial.supplierName || partial.supplierTitle || current.supplierName,
+    supplierTitle: partial.supplierTitle || partial.supplierName || current.supplierTitle,
+    updatedAt: new Date().toISOString(),
+  }
+  for (const filePath of CONFIG_FILES) {
+    try {
+      const dir = path.dirname(filePath)
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true })
+      }
+      fs.writeFileSync(filePath, JSON.stringify(next, null, 2), "utf-8")
+    } catch {}
+  }
+  return next
+}
+
+export function readEfaturaInvoices(): EfaturaInvoiceRecord[] {
+  for (const filePath of INVOICES_FILES) {
+    try {
+      if (fs.existsSync(filePath)) {
+        const raw = fs.readFileSync(filePath, "utf-8")
+        const list = JSON.parse(raw)
+        if (Array.isArray(list) && list.length > 0) {
+          return list
+        }
+      }
+    } catch {}
+  }
+  return []
+}
+
+export function writeEfaturaInvoices(list: EfaturaInvoiceRecord[]): EfaturaInvoiceRecord[] {
+  for (const filePath of INVOICES_FILES) {
+    try {
+      const dir = path.dirname(filePath)
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true })
+      }
+      fs.writeFileSync(filePath, JSON.stringify(list, null, 2), "utf-8")
+    } catch {}
+  }
+  return list
+}
+
+export function saveEfaturaInvoice(record: EfaturaInvoiceRecord): EfaturaInvoiceRecord[] {
+  const list = readEfaturaInvoices()
+  const idx = list.findIndex(
+    (x) =>
+      x.id === record.id ||
+      x.uuid === record.uuid ||
+      (x.orderId === record.orderId && x.status !== "IPTAL")
+  )
+  if (idx >= 0) {
+    list[idx] = record
+  } else {
+    list.unshift(record)
+  }
+  return writeEfaturaInvoices(list)
+}
+
+function getGatewayBaseUrl(env: "stage" | "prod" | "production") {
+  return env === "stage"
+    ? "https://stage-apigateway.trendyolefaturam.com"
+    : "https://apigateway.trendyolecozum.com"
+}
+
+function decodeJwtPayload(token: string): Record<string, any> {
+  try {
+    const clean = token.replace(/^Bearer\s+/i, "").trim()
+    const parts = clean.split(".")
+    if (parts.length < 2) return {}
+    const payloadBase64 = parts[1].replace(/-/g, "+").replace(/_/g, "/")
+    const padded = payloadBase64.padEnd(
+      payloadBase64.length + ((4 - (payloadBase64.length % 4)) % 4),
+      "="
+    )
+    const jsonStr = Buffer.from(padded, "base64").toString("utf-8")
+    return JSON.parse(jsonStr)
+  } catch {
+    return {}
+  }
 }
 
 async function signInTrendyolEfatura(config: EfaturaConfig): Promise<TrendyolAuthSession> {
   const baseUrl = getGatewayBaseUrl(config.environment)
-  const response = await fetch(`${baseUrl}/api/auth/signin`, {
+  const res = await fetch(`${baseUrl}/api/auth/signin`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -59,25 +274,19 @@ async function signInTrendyolEfatura(config: EfaturaConfig): Promise<TrendyolAut
   })
 
   const headerToken =
-    response.headers.get("x-access-token") ||
-    response.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ||
+    res.headers.get("x-access-token") ||
+    res.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ||
     ""
 
-  let bodyData: any = null
-  const rawText = await response.text().catch(() => "")
-  try {
-    bodyData = rawText ? JSON.parse(rawText) : null
-  } catch {
-    bodyData = rawText
-  }
+  const bodyData = await res.json().catch(() => ({}))
 
-  if (!response.ok) {
+  if (!res.ok) {
     const errMsg =
       bodyData?.detail ||
-      bodyData?.title ||
       bodyData?.message ||
       bodyData?.error ||
-      `Trendyol E-Faturam giriş hatası (HTTP ${response.status})`
+      bodyData?.title ||
+      `Kimlik doğrulama başarısız (HTTP ${res.status})`
     throw new Error(errMsg)
   }
 
@@ -90,97 +299,67 @@ async function signInTrendyolEfatura(config: EfaturaConfig): Promise<TrendyolAut
     ""
 
   if (!token) {
-    throw new Error("Trendyol E-Faturam API yanıtında x-access-token bulunamadı.")
+    throw new Error("Trendyol E-Faturam token bilgisi alınamadı.")
   }
 
-  const jwtPayload = decodeJwtPayload(token)
+  const jwtClaims = decodeJwtPayload(token)
+  const userObj = jwtClaims?.user || bodyData?.user || {}
+  const companiesArr = Array.isArray(userObj?.companies)
+    ? userObj.companies
+    : Array.isArray(bodyData?.companies)
+    ? bodyData.companies
+    : []
 
-  // In Trendyol E-Faturam signIn, response body is often the integer userId directly!
-  let userId = ""
-  if (typeof bodyData === "number" || (typeof bodyData === "string" && /^\d+$/.test(bodyData.trim()))) {
-    userId = String(bodyData).trim()
-  } else if (bodyData && typeof bodyData === "object") {
-    userId = String(bodyData.userId || bodyData.id || bodyData.user?.id || "")
-  }
-  if (!userId) {
-    userId = String(
-      jwtPayload.userId ||
-        jwtPayload.sub ||
-        jwtPayload.id ||
-        jwtPayload.user_id ||
-        jwtPayload.uid ||
-        ""
-    )
-  }
+  const matchedCompany =
+    companiesArr.find(
+      (c: any) =>
+        String(c?.taxId || c?.vkn || "") === String(config.supplierVkn || "").trim()
+    ) ||
+    companiesArr[0] ||
+    {}
 
-  let companyId = String(
-    config.companyId ||
-      jwtPayload.companyId ||
-      jwtPayload.company_id ||
-      jwtPayload.corporateId ||
-      jwtPayload.companies?.[0]?.id ||
-      (typeof bodyData === "object" ? bodyData?.companyId || bodyData?.user?.companyId : "") ||
+  const userId = String(
+    bodyData?.userId ||
+      bodyData?.id ||
+      userObj?.id ||
+      jwtClaims?.userId ||
+      jwtClaims?.sub ||
       ""
   )
 
-  let taxId = String(
-    config.supplierVkn ||
-      jwtPayload.taxId ||
-      jwtPayload.vkn ||
-      jwtPayload.tax_id ||
+  const companyId = String(
+    config.companyId?.trim() ||
+      bodyData?.companyId ||
+      bodyData?.corporateId ||
+      matchedCompany?.id ||
+      matchedCompany?.companyId ||
+      userObj?.companyId ||
+      jwtClaims?.companyId ||
       ""
-  ).trim()
+  )
 
-  let corporateName = config.supplierName
+  const taxId = String(
+    matchedCompany?.taxId ||
+      matchedCompany?.vkn ||
+      bodyData?.taxId ||
+      config.supplierVkn ||
+      ""
+  )
 
-  // Fetch corporate record from /api/invoice/corporates/by-current-user-id/{userId} if needed
-  const authHeaders = {
-    Accept: "application/json",
-    "Content-Type": "application/json",
-    "x-access-token": token,
-    Authorization: `Bearer ${token}`,
-  }
-
-  if (userId) {
-    for (const corpPath of [
-      `/api/invoice/corporates/by-current-user-id/${encodeURIComponent(userId)}`,
-      `/api/invoice/corporates/by-user-id/${encodeURIComponent(userId)}`,
-      `/api/invoice/corporates`,
-    ]) {
-      try {
-        const corpRes = await fetch(`${baseUrl}${corpPath}`, {
-          method: "GET",
-          headers: authHeaders,
-        })
-        if (corpRes.ok) {
-          const corpData = await corpRes.json()
-          const corp = Array.isArray(corpData)
-            ? corpData[0]
-            : corpData?.content?.[0] || corpData?.data || corpData
-          if (corp && typeof corp === "object") {
-            if (corp.id || corp.companyId || corp.corporateId) {
-              companyId = String(corp.id || corp.companyId || corp.corporateId)
-            }
-            if (corp.taxId || corp.vkn || corp.vknTckn) {
-              taxId = String(corp.taxId || corp.vkn || corp.vknTckn)
-            }
-            if (corp.name || corp.title || corp.companyName) {
-              corporateName = String(corp.name || corp.title || corp.companyName)
-            }
-            break
-          }
-        }
-      } catch {}
-    }
-  }
+  const corporateName = String(
+    matchedCompany?.name ||
+      matchedCompany?.title ||
+      bodyData?.companyName ||
+      config.supplierTitle ||
+      ""
+  )
 
   return {
     token,
     userId,
     companyId,
-    taxId: taxId || config.supplierVkn || "7050600355",
+    taxId,
     corporateName,
-    jwtPayload,
   }
 }
 
@@ -189,121 +368,93 @@ async function fetchTrendyolCredits(
   session: TrendyolAuthSession
 ): Promise<TrendyolCreditInfo | null> {
   const baseUrl = getGatewayBaseUrl(config.environment)
-  const headers = {
+  const vknToQuery = (session.taxId || config.supplierVkn || "").trim()
+  const headers: Record<string, string> = {
     Accept: "application/json",
     "Content-Type": "application/json",
     "x-access-token": session.token,
     Authorization: `Bearer ${session.token}`,
   }
 
-  let remainingCredit: number | null = null
-  let totalCredit: number | null = null
-  let usedCredit: number | null = null
-  let packageName = "Aktif Kontör Paketi"
-  let status = "SUFFICIENT"
-
-  const taxId = session.taxId || config.supplierVkn || "7050600355"
-  const userId = session.userId
-
-  // 1. Call /api/invoice/credits/remaining/users/{userId}/tax-ids/{taxId}
-  if (userId && taxId) {
+  if (vknToQuery) {
     try {
-      const remRes = await fetch(
-        `${baseUrl}/api/invoice/credits/remaining/users/${encodeURIComponent(
-          userId
-        )}/tax-ids/${encodeURIComponent(taxId)}`,
-        { method: "GET", headers }
+      const res = await fetch(
+        `${baseUrl}/api/Credit/balance/${encodeURIComponent(vknToQuery)}?applicationCode=E_TRANSFORMATION`,
+        {
+          method: "GET",
+          headers,
+        }
       )
-      if (remRes.ok) {
-        const remData = await remRes.json()
-        if (typeof remData === "number") {
-          remainingCredit = remData
-        } else if (remData && typeof remData === "object") {
-          if (remData.remainingCredit != null) remainingCredit = Number(remData.remainingCredit)
-          else if (remData.amount != null) remainingCredit = Number(remData.amount)
-          if (remData.remainingCreditStatus) status = String(remData.remainingCreditStatus)
+      if (res.ok) {
+        const data = await res.json()
+        const remaining = Number(
+          data?.totalRemainingCredit ??
+            data?.remainingCredit ??
+            data?.balance ??
+            data?.credit ??
+            0
+        )
+        const total = Number(
+          data?.totalCredit ?? data?.packageCredit ?? data?.initialCredit ?? remaining
+        )
+        const used = Number(data?.totalUsedCredit ?? Math.max(0, total - remaining))
+        const pkgName =
+          data?.packageName || data?.status || "Trendyol E-Dönüşüm Kontör Paketi"
+        return {
+          remainingCredit: remaining,
+          totalCredit: total || remaining,
+          usedCredit: used,
+          packageName: pkgName,
+          remainingCredits: remaining,
+          totalCredits: total || remaining,
+          usedCredits: used,
+          packageTitle: pkgName,
+          expiresAt: data?.expiryDate || data?.endDate || undefined,
+          raw: data,
         }
       }
     } catch (e) {
-      console.warn("[efatura] remaining credit fetch error:", e)
-    }
-
-    // 2. Call /api/invoice/credits/packages/usage/users/{userId}/tax-ids/{taxId}
-    try {
-      const pkgRes = await fetch(
-        `${baseUrl}/api/invoice/credits/packages/usage/users/${encodeURIComponent(
-          userId
-        )}/tax-ids/${encodeURIComponent(taxId)}`,
-        { method: "GET", headers }
-      )
-      if (pkgRes.ok) {
-        const pkgData = await pkgRes.json()
-        const item = Array.isArray(pkgData)
-          ? pkgData[0]
-          : pkgData?.content?.[0] || pkgData?.data || pkgData
-        if (item && typeof item === "object") {
-          const total =
-            item.totalCredit ??
-            item.packageCredit ??
-            item.creditAmount ??
-            item.totalAmount ??
-            item.limit ??
-            item.quota
-          const used =
-            item.usedCredit ??
-            item.usedAmount ??
-            item.spentCredit ??
-            item.consumedCredit
-          const rem =
-            item.remainingCredit ??
-            item.remainingAmount ??
-            item.availableCredit
-
-          if (rem != null && remainingCredit == null) remainingCredit = Number(rem)
-          if (total != null) totalCredit = Number(total)
-          if (used != null) usedCredit = Number(used)
-          if (item.packageName || item.name || item.title) {
-            packageName = String(item.packageName || item.name || item.title)
-          }
-        }
-      }
-    } catch (e) {
-      console.warn("[efatura] package usage fetch error:", e)
+      console.warn("[efatura] Credit/balance fetch error:", e)
     }
   }
 
-  // 3. Fallback partner remaining credit endpoint
-  if (remainingCredit == null) {
+  if (session.companyId) {
     try {
-      const partRes = await fetch(`${baseUrl}/api/invoice/partners/remaining-credit`, {
-        method: "GET",
-        headers,
-      })
-      if (partRes.ok) {
-        const partData = await partRes.json()
-        if (partData?.remainingCredit != null) {
-          remainingCredit = Number(partData.remainingCredit)
+      const subRes = await fetch(
+        `${baseUrl}/api/invoice/corporates/subscription/active-Hierarchy`,
+        {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ companyId: Number(session.companyId) || session.companyId }),
+        }
+      )
+      if (subRes.ok) {
+        const subData = await subRes.json()
+        const remaining = Number(
+          subData?.remainingCredit ??
+            subData?.totalRemainingCredit ??
+            subData?.creditBalance ??
+            0
+        )
+        const total = Number(subData?.totalCredit ?? subData?.limit ?? remaining)
+        const pkgName = subData?.packageName || "Aktif Kontör Paketi"
+        const used = Math.max(0, total - remaining)
+        return {
+          remainingCredit: remaining,
+          totalCredit: total,
+          usedCredit: used,
+          packageName: pkgName,
+          remainingCredits: remaining,
+          totalCredits: total,
+          usedCredits: used,
+          packageTitle: pkgName,
+          raw: subData,
         }
       }
     } catch {}
   }
 
-  if (remainingCredit == null && totalCredit == null) {
-    return null
-  }
-
-  const finalRemaining = remainingCredit ?? 0
-  const finalTotal =
-    totalCredit ?? (usedCredit != null ? finalRemaining + usedCredit : Math.max(finalRemaining, 500))
-  const finalUsed = usedCredit ?? Math.max(0, finalTotal - finalRemaining)
-
-  return {
-    remainingCredit: finalRemaining,
-    totalCredit: finalTotal,
-    usedCredit: finalUsed,
-    packageName: packageName || `${finalTotal} Kontör`,
-    status,
-  }
+  return null
 }
 
 function mapRemoteTrendyolDocToRecord(
@@ -311,38 +462,52 @@ function mapRemoteTrendyolDocToRecord(
   docType: "EARSIV" | "EFATURA",
   config: EfaturaConfig
 ): EfaturaInvoiceRecord {
-  const uuid = String(doc.invoiceUuid || doc.uuid || doc.documentUuid || crypto.randomUUID())
-  const invoiceNumber = String(
-    doc.invoiceId || doc.invoiceNumber || doc.documentId || `TY${new Date().getFullYear()}000000001`
-  )
-  // Amounts in Trendyol E-Faturam search responses are in kuruş (integers)
-  const rawTotal = Number(
-    doc.payableAmount ?? doc.taxInclusiveAmount ?? doc.price ?? doc.totalAmount ?? 0
-  )
-  const rawTax = Number(doc.taxAmount ?? doc.totalTaxAmount ?? 0)
-  const rawNet = Number(doc.taxExcludedPrice ?? doc.taxExclusiveAmount ?? rawTotal - rawTax)
-  const rawDiscount = Number(doc.discountAmount ?? doc.allowanceTotalAmount ?? 0)
+  const fromKurus = (val: any) => {
+    const num = Number(val)
+    if (!Number.isFinite(num)) return 0
+    return Number((num / 100).toFixed(2))
+  }
 
-  // Convert kuruş to TL
-  const totalAmount = Number((rawTotal / 100).toFixed(2))
-  const vatAmount = Number((rawTax / 100).toFixed(2))
-  const netAmount = Number((rawNet / 100).toFixed(2))
-  const discountAmount = Number((rawDiscount / 100).toFixed(2))
+  const uuid = String(
+    doc.invoiceUuid || doc.uuid || doc.documentUuid || doc.ettn || doc.id || crypto.randomUUID()
+  )
+  const invoiceNumber = String(
+    doc.invoiceId || doc.invoiceNumber || doc.documentNumber || doc.id || uuid.slice(0, 16)
+  )
+
+  const totalAmount =
+    doc.payableAmount !== undefined
+      ? fromKurus(doc.payableAmount)
+      : doc.taxInclusiveAmount !== undefined
+      ? fromKurus(doc.taxInclusiveAmount)
+      : doc.price !== undefined
+      ? fromKurus(doc.price)
+      : Number(doc.totalAmount || 0)
+
+  const vatAmount =
+    doc.taxAmount !== undefined ? fromKurus(doc.taxAmount) : Number(doc.vatAmount || 0)
+
+  const netAmount =
+    doc.taxExcludedPrice !== undefined
+      ? fromKurus(doc.taxExcludedPrice)
+      : Math.max(0, Number((totalAmount - vatAmount).toFixed(2)))
+
+  const discountAmount =
+    doc.discountAmount !== undefined ? fromKurus(doc.discountAmount) : 0
 
   const vatRate =
-    netAmount > 0 ? Math.round((vatAmount / netAmount) * 100) || config.defaultVatRate : config.defaultVatRate
+    netAmount > 0 ? Math.round((vatAmount / netAmount) * 100) : config.defaultVatRate || 20
 
   const buyerName =
-    String(
-      doc.receiverTitle ||
-        doc.recipientTitle ||
-        doc.targetTitle ||
-        doc.source ||
-        `${doc.receiverName || doc.recipientName || doc.name || ""} ${
-          doc.receiverSurname || doc.recipientSurname || doc.surname || ""
-        }`.trim() ||
-        "Alıcı Müşteri"
-    ).trim()
+    [
+      doc.receiverTitle,
+      doc.recipientTitle,
+      [doc.receiverName || doc.recipientName, doc.receiverSurname || doc.recipientSurname]
+        .filter(Boolean)
+        .join(" "),
+    ]
+      .map((s) => (s || "").trim())
+      .find((s) => s.length > 0) || "Müşteri"
 
   const buyerIdentifier = String(
     doc.receiverTaxId || doc.recipientTaxId || doc.taxId || "11111111111"
@@ -353,6 +518,12 @@ function mapRemoteTrendyolDocToRecord(
     statusRaw === "305" ||
     statusRaw.toUpperCase().includes("CANCEL") ||
     Boolean(doc.isCancelled || doc.cancelled)
+  const isError =
+    statusRaw === "29" ||
+    statusRaw === "105" ||
+    statusRaw === "405" ||
+    statusRaw.toUpperCase().includes("ERROR") ||
+    statusRaw.toUpperCase().includes("FAIL")
 
   const issueDate =
     doc.issuedAt || doc.issueDate || doc.createdAt || doc.createDate || new Date().toISOString()
@@ -367,7 +538,7 @@ function mapRemoteTrendyolDocToRecord(
     invoiceScenario:
       doc.scenario || (docType === "EFATURA" ? "TICARIFATURA" : "EARSIVFATURA"),
     invoiceType: doc.invoiceTypeCode === "IADE" ? "IADE" : "SATIS",
-    status: isCancelled ? "IPTAL" : "RESMILESTI",
+    status: isCancelled ? "IPTAL" : isError ? "HATA" : "RESMILESTI",
     source: "TRENDYOL_API",
     environment: config.environment,
     issueDate,
@@ -414,9 +585,10 @@ async function fetchTrendyolIssuedInvoices(
     "Content-Type": "application/json",
     "x-access-token": session.token,
     Authorization: `Bearer ${session.token}`,
+    "Accept-Language": "tr-TR",
   }
 
-  const companyIdNum = Number(session.companyId) || undefined
+  const companyIdNum = Number(session.companyId || config.companyId) || undefined
   const results: EfaturaInvoiceRecord[] = []
 
   const searchPayload: Record<string, any> = {
@@ -481,6 +653,596 @@ async function fetchTrendyolIssuedInvoices(
   return results
 }
 
+async function checkTrendyolTaxpayer(
+  config: EfaturaConfig,
+  session: TrendyolAuthSession,
+  taxId: string
+): Promise<{ isEinvoiceMukellef: boolean; alias?: string; title?: string }> {
+  const cleanTaxId = (taxId || "").replace(/[^0-9]/g, "")
+  if (
+    (cleanTaxId.length !== 10 && cleanTaxId.length !== 11) ||
+    /^1+$/.test(cleanTaxId)
+  ) {
+    return { isEinvoiceMukellef: false }
+  }
+
+  const baseUrl = getGatewayBaseUrl(config.environment)
+  try {
+    const res = await fetch(
+      `${baseUrl}/api/invoice/taxpayers/${encodeURIComponent(cleanTaxId)}`,
+      {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+          "x-access-token": session.token,
+          Authorization: `Bearer ${session.token}`,
+        },
+      }
+    )
+    if (!res.ok) {
+      return { isEinvoiceMukellef: false }
+    }
+    const list = await res.json().catch(() => [])
+    if (!Array.isArray(list) || list.length === 0) {
+      return { isEinvoiceMukellef: false }
+    }
+    const invoiceEntry =
+      list.find((x: any) => x?.aliasType === "INVOICE" && x?.alias) ||
+      list.find((x: any) => Boolean(x?.alias))
+    if (invoiceEntry?.alias) {
+      return {
+        isEinvoiceMukellef: true,
+        alias: String(invoiceEntry.alias),
+        title: invoiceEntry.title ? String(invoiceEntry.title) : undefined,
+      }
+    }
+  } catch (e) {
+    console.warn("[efatura] taxpayer check warning:", e)
+  }
+  return { isEinvoiceMukellef: false }
+}
+
+async function resolveTrendyolPrefix(
+  config: EfaturaConfig,
+  session: TrendyolAuthSession,
+  docType: "EARSIV" | "EFATURA"
+): Promise<string | undefined> {
+  const companyIdNum = Number(session.companyId || config.companyId)
+  if (!companyIdNum) return undefined
+
+  const baseUrl = getGatewayBaseUrl(config.environment)
+  const headers = {
+    Accept: "application/json",
+    "Content-Type": "application/json",
+    "x-access-token": session.token,
+    Authorization: `Bearer ${session.token}`,
+  }
+  const trendyolDocType = docType === "EFATURA" ? "EINVOICE" : "EARCHIVE"
+  const desiredPrefix = (
+    docType === "EFATURA" ? config.einvoicePrefix : config.earchivePrefix
+  )
+    ?.toUpperCase()
+    .replace(/[^A-Z0-9]/g, "")
+    .slice(0, 3)
+    .padEnd(3, "A")
+
+  try {
+    const res = await fetch(`${baseUrl}/api/invoice/corporates/prefixes`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ companyId: companyIdNum }),
+    })
+    if (res.ok) {
+      const prefixes = await res.json().catch(() => [])
+      if (Array.isArray(prefixes) && prefixes.length > 0) {
+        const matchingDocType = prefixes.filter(
+          (p: any) => p?.documentType === trendyolDocType && p?.prefix
+        )
+        const portalDefault = matchingDocType.find(
+          (p: any) => p?.source === "PORTAL" && p?.isDefaultPrefix
+        )
+        const anyDefault = matchingDocType.find((p: any) => p?.isDefaultPrefix)
+        const portalAny = matchingDocType.find((p: any) => p?.source === "PORTAL")
+        const chosen = portalDefault || anyDefault || portalAny || matchingDocType[0]
+        if (chosen?.prefix) {
+          return String(chosen.prefix)
+        }
+      }
+    }
+
+    // Eğer şirketin bu belge türü için kayıtlı ön-eki yoksa otomatik tanımlamayı dene
+    if (desiredPrefix && /^[A-Z0-9]{3}$/.test(desiredPrefix)) {
+      const addRes = await fetch(`${baseUrl}/api/invoice/corporates/prefixes/add-prefix`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          companyId: companyIdNum,
+          documentType: trendyolDocType,
+          prefix: desiredPrefix,
+          isDefaultPrefix: true,
+        }),
+      })
+      if (addRes.ok) {
+        return desiredPrefix
+      }
+    }
+  } catch (e) {
+    console.warn("[efatura] resolveTrendyolPrefix warning:", e)
+  }
+
+  return undefined
+}
+
+function sanitizePersonOrCompanyName(raw: string): string {
+  const cleaned = (raw || "")
+    .replace(/[^a-zA-Z0-9ığüşöçĞÜŞÖÇİ\s.,\-']/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+  const forbidden = [
+    "nihai",
+    "tüketici",
+    "nihai tüketici",
+    "nihaitüketici",
+    "tuketici",
+    "nihai tuketici",
+  ]
+  if (!cleaned || forbidden.includes(cleaned.toLocaleLowerCase("tr-TR"))) {
+    return "Sayın Müşteri"
+  }
+  return cleaned
+}
+
+function parseRecipientNames(
+  buyerName: string,
+  taxId: string
+): { name: string; surname?: string } {
+  const cleanFull = sanitizePersonOrCompanyName(buyerName)
+  const isTckn = taxId.length === 11
+
+  if (!isTckn) {
+    // 10 haneli VKN (Kurumsal): surname gönderilmez, name = ünvan
+    return {
+      name: cleanFull.length >= 2 ? cleanFull.slice(0, 127) : `${cleanFull} Ltd. Şti.`,
+    }
+  }
+
+  // 11 haneli TCKN (Bireysel): hem name (min 2) hem surname (min 2) zorunlu
+  const parts = cleanFull.split(/\s+/).filter(Boolean)
+  if (parts.length >= 2) {
+    const first = parts[0]
+    const rest = parts.slice(1).join(" ")
+    return {
+      name: first.length >= 2 ? first.slice(0, 127) : `${first} Bey`,
+      surname: rest.length >= 2 ? rest.slice(0, 127) : "Müşteri",
+    }
+  }
+
+  return {
+    name: cleanFull.length >= 2 ? cleanFull.slice(0, 127) : "Sayın",
+    surname: "Müşteri",
+  }
+}
+
+async function createInvoiceOnTrendyol(
+  record: EfaturaInvoiceRecord,
+  config: EfaturaConfig,
+  session: TrendyolAuthSession,
+  targetAlias?: string,
+  resolvedPrefix?: string
+): Promise<{ uuid: string; invoiceNumber: string; rawResponse: any }> {
+  const baseUrl = getGatewayBaseUrl(config.environment)
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    Accept: "application/json",
+    "Accept-Language": "tr-TR",
+    "x-access-token": session.token,
+    Authorization: `Bearer ${session.token}`,
+  }
+
+  const { name: recipientName, surname: recipientSurname } = parseRecipientNames(
+    record.buyerName,
+    record.buyerIdentifier
+  )
+
+  const cleanPhone = (record.buyerPhone || "").replace(/[^0-9]/g, "").slice(-10)
+  const validPhone = cleanPhone.length >= 7 ? cleanPhone : undefined
+  const rawEmail = (record.buyerEmail || "").trim().toLowerCase()
+  const validEmail =
+    /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/.test(rawEmail) ? rawEmail : undefined
+
+  const cityClean = (record.buyerCity || "İstanbul").trim()
+  const districtClean = (record.buyerDistrict || "Merkez").trim()
+  const addressClean = (record.buyerAddress || "Merkez Mah.").trim().slice(0, 250)
+
+  const notes = [
+    `Sipariş No: #${record.orderDisplayId}`,
+    `Ödeme Yöntemi: ${record.paymentMethod}`,
+    `Mağaza: ${record.storeWebUrl || "https://bodykitmerkezi.com"}`,
+  ]
+
+  const errors: string[] = []
+
+  // --- YÖNTEM 1: V1 Hesaplama (/api/invoice/documents/calculate-invoice) + V1 Oluşturma ---
+  try {
+    const toKurus = (tl: number) => Math.round((Number(tl) || 0) * 100)
+
+    // Önce V1 calculate-invoice ile Trendyol'un kendi kuruş hesaplamasını almayı dene
+    let v1InvoiceLines: any[] = []
+    let v1TotalTaxAmountKurus = 0
+    let v1TotalTaxableAmountKurus = 0
+    let v1SubtotalKurus = 0
+    let v1PayableKurus = 0
+    let v1DiscountKurus = 0
+
+    const calcV1Req = {
+      invoiceLineCalculationRequest: record.items.map((item) => ({
+        itemName:
+          item.title && item.title.trim().length >= 2 ? item.title.trim() : "Oto Aksesuar Ürünü",
+        quantity: item.quantity,
+        kdvTaxRate: item.vatRate,
+        unitPrice: Number(item.netUnitPrice.toFixed(4)),
+        discount: 0,
+        taxType: "KDV",
+      })),
+      invoiceTypeCode: "SATIS",
+      scenario: record.invoiceScenario,
+    }
+
+    const calcV1Res = await fetch(`${baseUrl}/api/invoice/documents/calculate-invoice`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(calcV1Req),
+    })
+
+    if (calcV1Res.ok) {
+      const calcV1Data = await calcV1Res.json()
+      if (Array.isArray(calcV1Data?.invoiceLines) && calcV1Data.invoiceLines.length > 0) {
+        v1InvoiceLines = calcV1Data.invoiceLines.map((cl: any, idx: number) => {
+          const origItem = record.items[idx] || record.items[0]
+          const lineVatKurus = Number(cl.kdvTaxAmount ?? cl.taxAmount ?? 0)
+          const lineTaxableKurus = Number(cl.kdvTaxableAmount ?? cl.taxableAmount ?? cl.rawPrice ?? 0)
+          const lineTotalKurus = Number(cl.totalAmount ?? lineTaxableKurus + lineVatKurus)
+          const lineUnitKurus = Number(cl.unitPrice ?? toKurus(origItem.netUnitPrice))
+          const lineVatRate = Number(cl.kdvTaxRate ?? origItem.vatRate ?? 20)
+
+          return {
+            unitCode: "C62",
+            quantity: Number(cl.quantity ?? origItem.quantity ?? 1),
+            itemName: cl.itemName || origItem.title || "Ürün",
+            unitPriceAmount: lineUnitKurus,
+            totalAmount: lineTotalKurus,
+            taxableAmount: lineTaxableKurus,
+            taxAmount: Number((lineVatKurus / 100).toFixed(2)),
+            kdvTaxAmount: lineVatKurus,
+            taxPercent: lineVatRate,
+            totalDiscountAmount: Number(cl.discount ?? 0),
+            totalTax: {
+              totalTaxAmount: lineVatKurus,
+              subTotalTaxes: [
+                {
+                  taxAmount: lineVatKurus,
+                  taxableAmount: lineTaxableKurus,
+                  percent: lineVatRate,
+                  taxType: "KDV",
+                  name: "KDV",
+                },
+              ],
+            },
+          }
+        })
+        v1SubtotalKurus = Number(calcV1Data.totalRawPrice ?? calcV1Data.totalTaxableAmount ?? 0)
+        v1TotalTaxableAmountKurus = Number(
+          calcV1Data.totalTaxableAmount ?? calcV1Data.totalRawPrice ?? 0
+        )
+        v1TotalTaxAmountKurus = Number(calcV1Data.totalTaxAmount ?? 0)
+        v1PayableKurus = Number(calcV1Data.payableAmount ?? calcV1Data.totalAmount ?? 0)
+        v1DiscountKurus = Number(calcV1Data.totalDiscount ?? 0)
+      }
+    }
+
+    // Eğer calculate-invoice yanıt vermediyse birebir tam kuruş toplamlarıyla oluştur
+    if (v1InvoiceLines.length === 0) {
+      v1InvoiceLines = record.items.map((item) => {
+        const lineGrossKurus = toKurus(item.totalAmount)
+        const lineNetKurus = Math.round(lineGrossKurus / (1 + item.vatRate / 100))
+        const lineVatKurus = lineGrossKurus - lineNetKurus
+        const unitNetKurus = Number((lineNetKurus / item.quantity).toFixed(2))
+
+        v1SubtotalKurus += lineNetKurus
+        v1TotalTaxableAmountKurus += lineNetKurus
+        v1TotalTaxAmountKurus += lineVatKurus
+        v1PayableKurus += lineGrossKurus
+
+        return {
+          unitCode: "C62",
+          quantity: item.quantity,
+          itemName:
+            item.title && item.title.trim().length >= 2 ? item.title.trim() : "Oto Aksesuar Ürünü",
+          unitPriceAmount: unitNetKurus,
+          totalAmount: lineGrossKurus,
+          taxableAmount: lineNetKurus,
+          taxAmount: lineVatKurus,
+          kdvTaxAmount: lineVatKurus,
+          taxPercent: item.vatRate,
+          totalDiscountAmount: 0,
+          totalTax: {
+            totalTaxAmount: lineVatKurus,
+            subTotalTaxes: [
+              {
+                taxAmount: lineVatKurus,
+                taxableAmount: lineNetKurus,
+                percent: item.vatRate,
+                taxType: "KDV",
+                name: "KDV",
+              },
+            ],
+          },
+        }
+      })
+    }
+
+    const v1Payload: Record<string, any> = {
+      userId: Number(session.userId) || undefined,
+      companyId: Number(session.companyId || config.companyId) || undefined,
+      autoInvoiceId: true,
+      targetAlias: targetAlias || "",
+      source: "PORTAL",
+      localReferenceId: String(record.orderDisplayId),
+      ...(resolvedPrefix ? { prefix: resolvedPrefix } : {}),
+      notes,
+      recipientInfo: {
+        countryCode: "TR",
+        city: cityClean.length >= 2 ? cityClean : "İstanbul",
+        district: districtClean.length >= 1 ? districtClean : "Merkez",
+        address: addressClean.length >= 2 ? addressClean : "Merkez Mah.",
+        phone: validPhone,
+        email: validEmail,
+        taxId: record.buyerIdentifier,
+        taxOffice:
+          record.documentType === "EFATURA"
+            ? record.buyerTaxOffice || "Merkez"
+            : undefined,
+        name: recipientName,
+        ...(recipientSurname ? { surname: recipientSurname } : {}),
+      },
+      invoiceInfo: {
+        invoiceType: record.invoiceScenario,
+        invoiceTypeCode: "SATIS",
+      },
+      invoiceLines: v1InvoiceLines,
+      totalTax: {
+        totalTaxAmount: v1TotalTaxAmountKurus,
+        subTotalTaxes: [
+          {
+            taxableAmount: v1TotalTaxableAmountKurus,
+            taxAmount: v1TotalTaxAmountKurus,
+            percent: record.vatRate,
+            taxType: "KDV",
+            name: "KDV",
+          },
+        ],
+      },
+      invoiceTotal: {
+        lineExtensionAmount: v1SubtotalKurus,
+        taxExclusiveAmount: v1SubtotalKurus,
+        taxInclusiveAmount: v1PayableKurus,
+        allowanceTotalAmount: v1DiscountKurus,
+        payableAmount: v1PayableKurus,
+      },
+      currencyInfo: {
+        currency: "TRY",
+        hasExchange: false,
+        calculationRate: 0,
+        sourceCurrency: "TRY",
+        targetCurrency: "TRY",
+      },
+    }
+
+    const v1Endpoint =
+      record.documentType === "EFATURA"
+        ? `${baseUrl}/api/invoice/documents/outgoing-einvoice`
+        : `${baseUrl}/api/invoice/documents/earchive`
+
+    let v1Res = await fetch(v1Endpoint, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(v1Payload),
+    })
+    let v1Data = await v1Res.json().catch(() => null)
+
+    if (!v1Res.ok && v1Payload.prefix) {
+      const { prefix: _omitted, ...v1PayloadNoPrefix } = v1Payload
+      v1Res = await fetch(v1Endpoint, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(v1PayloadNoPrefix),
+      })
+      v1Data = await v1Res.json().catch(() => null)
+    }
+
+    if (v1Res.ok) {
+      const uuid =
+        v1Data?.invoiceUuid ||
+        v1Data?.uuid ||
+        v1Data?.data?.invoiceUuid ||
+        record.uuid
+      const invoiceNumber =
+        v1Data?.invoiceId ||
+        v1Data?.invoiceNumber ||
+        v1Data?.data?.invoiceId ||
+        ""
+      return { uuid, invoiceNumber, rawResponse: v1Data }
+    } else {
+      const errDetail =
+        v1Data?.detail ||
+        v1Data?.title ||
+        v1Data?.message ||
+        v1Data?.error ||
+        JSON.stringify(v1Data) ||
+        `HTTP ${v1Res.status}`
+      errors.push(`V1 (${v1Res.status}): ${errDetail}`)
+    }
+  } catch (e: any) {
+    errors.push(`V1 Exception: ${e?.message || String(e)}`)
+  }
+
+  // --- YÖNTEM 2: V2 Hesaplama (/api/calculation/invoice-calculation) + V2 Oluşturma ---
+  try {
+    const calcV2Req = {
+      invoiceTypeCode: "SATIS",
+      scenario: record.invoiceScenario,
+      lines: record.items.map((item, idx) => ({
+        itemId: String(idx),
+        itemName:
+          item.title && item.title.trim().length >= 2 ? item.title.trim() : "Oto Aksesuar Ürünü",
+        quantity: item.quantity,
+        totalLineAmount: Number(item.totalAmount.toFixed(2)),
+        taxes: [
+          {
+            type: "KDV",
+            rate: item.vatRate,
+          },
+        ],
+      })),
+    }
+
+    const calcV2Res = await fetch(`${baseUrl}/api/calculation/invoice-calculation`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(calcV2Req),
+    })
+
+    if (calcV2Res.ok) {
+      const calcV2 = await calcV2Res.json()
+      const v2Payload: Record<string, any> = {
+        source: "PORTAL",
+        localReferenceId: String(record.orderDisplayId),
+        ...(resolvedPrefix ? { prefix: resolvedPrefix } : {}),
+        notes,
+        receiverInfo: {
+          taxId: record.buyerIdentifier,
+          name: recipientName,
+          ...(recipientSurname ? { surname: recipientSurname } : {}),
+          countryCode: "TR",
+          city: cityClean.length >= 2 ? cityClean : "İstanbul",
+          district: districtClean.length >= 1 ? districtClean : "Merkez",
+          address: addressClean.length >= 2 ? addressClean : "Merkez Mah.",
+          ...(record.documentType === "EFATURA"
+            ? { taxOffice: record.buyerTaxOffice || "Merkez" }
+            : {}),
+          ...(validEmail ? { email: validEmail } : {}),
+          ...(validPhone ? { phone: validPhone } : {}),
+        },
+        invoiceIdentification: {
+          invoiceType: record.invoiceScenario,
+          invoiceTypeCode: "SATIS",
+          autoInvoiceId: true,
+        },
+        invoiceLines: (calcV2?.lines || []).map((line: any, idx: number) => {
+          const origItem = record.items[idx] || record.items[0]
+          return {
+            itemName: line.itemName || origItem.title || "Ürün",
+            unitCode: "C62",
+            unitPriceAmount: line.unitPrice,
+            quantity: line.quantity,
+            subtotal: line.subtotal,
+            totalAmount: line.totalAmount,
+            totalDiscountAmount: line.discountAmount || 0,
+            totalTax: {
+              totalTaxAmount: line.totalTax,
+              subTotalTaxes: (line.taxes || []).map((tx: any) => ({
+                taxableAmount: tx.taxableBase,
+                taxAmount: tx.amount,
+                taxType: tx.type || "KDV",
+                percent: tx.rate ?? origItem.vatRate,
+              })),
+            },
+          }
+        }),
+        totalTax: {
+          totalTaxAmount: calcV2?.totalTaxAmount ?? 0,
+          subTotalTaxes: (calcV2?.taxGroups || []).map((tg: any) => ({
+            taxableAmount: tg.taxableBase,
+            taxAmount: tg.amount,
+            taxType: tg.type || "KDV",
+            percent: tg.rate ?? record.vatRate,
+          })),
+        },
+        invoiceTotal: {
+          totalRawPrice: calcV2?.totalRawPrice ?? 0,
+          totalSubtotal: calcV2?.totalSubtotal ?? 0,
+          totalAmount: calcV2?.totalAmount ?? 0,
+          totalDiscountAmount: calcV2?.totalDiscount ?? 0,
+          payableAmount: calcV2?.payableAmount ?? 0,
+        },
+        currencyInfo: {
+          currency: "TRY",
+          hasExchange: false,
+          sourceCurrency: "TRY",
+          targetCurrency: "TRY",
+          calculationRate: 0,
+        },
+        bankInfo: [],
+        ...(record.documentType === "EFATURA" ? { targetAlias: targetAlias || "" } : {}),
+      }
+
+      const v2Endpoint =
+        record.documentType === "EFATURA"
+          ? `${baseUrl}/api/invoice/v2/documents/outgoing-einvoice`
+          : `${baseUrl}/api/invoice/v2/documents/earchive`
+
+      let v2Res = await fetch(v2Endpoint, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(v2Payload),
+      })
+      let v2Data = await v2Res.json().catch(() => null)
+
+      if (!v2Res.ok && v2Payload.prefix) {
+        const { prefix: _omitted, ...v2PayloadNoPrefix } = v2Payload
+        v2Res = await fetch(v2Endpoint, {
+          method: "POST",
+          headers,
+          body: JSON.stringify(v2PayloadNoPrefix),
+        })
+        v2Data = await v2Res.json().catch(() => null)
+      }
+
+      if (v2Res.ok) {
+        const uuid =
+          v2Data?.invoiceUuid ||
+          v2Data?.uuid ||
+          v2Data?.data?.invoiceUuid ||
+          record.uuid
+        const invoiceNumber =
+          v2Data?.invoiceId ||
+          v2Data?.invoiceNumber ||
+          v2Data?.data?.invoiceId ||
+          ""
+        return { uuid, invoiceNumber, rawResponse: v2Data }
+      } else {
+        const errDetail =
+          v2Data?.detail ||
+          v2Data?.title ||
+          v2Data?.message ||
+          v2Data?.error ||
+          JSON.stringify(v2Data) ||
+          `HTTP ${v2Res.status}`
+        errors.push(`V2 (${v2Res.status}): ${errDetail}`)
+      }
+    } else {
+      const calcErr = await calcV2Res.text().catch(() => "")
+      errors.push(`V2 Calc (${calcV2Res.status}): ${calcErr.slice(0, 200)}`)
+    }
+  } catch (e: any) {
+    errors.push(`V2 Exception: ${e?.message || String(e)}`)
+  }
+
+  throw new Error(
+    `Trendyol E-Faturam fatura oluşturmayı reddetti: ${errors.join(" | ")}`
+  )
+}
+
 function generateSequentialInvoiceNumber(
   prefix: string,
   existingInvoices: EfaturaInvoiceRecord[]
@@ -507,144 +1269,48 @@ function generateSequentialInvoiceNumber(
   return `${prefixWithYear}${nextSeq}`
 }
 
-function buildTrendyolInvoicePayload(
-  record: EfaturaInvoiceRecord,
-  config: EfaturaConfig,
-  session: TrendyolAuthSession
-) {
-  const toKurus = (tl: number) => Math.round((Number(tl) || 0) * 100)
-
-  const invoiceLines = record.items.map((item) => {
-    const lineNetTotal = item.netUnitPrice * item.quantity
-    const lineVatTotal = item.vatAmount
-    return {
-      unitCode: "C62",
-      quantity: item.quantity,
-      itemName: item.title,
-      unitPriceAmount: toKurus(item.netUnitPrice),
-      totalAmount: toKurus(lineNetTotal),
-      taxableAmount: toKurus(lineNetTotal),
-      taxAmount: toKurus(lineVatTotal),
-      taxPercent: item.vatRate,
-      totalDiscountAmount: 0,
-    }
-  })
-
-  const netSubtotal = Math.max(0, record.totalAmount - record.vatAmount)
-  const nameParts = (record.buyerName || "Müşteri").trim().split(/\s+/)
-  const firstName =
-    nameParts.length > 1 ? nameParts.slice(0, -1).join(" ") : record.buyerName || "Müşteri"
-  const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : "Müşteri"
-  const cleanPhone = (record.buyerPhone || "").replace(/[^0-9]/g, "").slice(-10)
-
-  const paymentMeans = record.paymentMethod.toLowerCase().includes("kart")
-    ? "CREDIT_CARD"
-    : record.paymentMethod.toLowerCase().includes("kapı")
-    ? "ON_DELIVERY"
-    : "EFT"
-
-  return {
-    autoInvoiceId: true,
-    companyId: Number(session.companyId || config.companyId) || undefined,
-    userId: Number(session.userId) || undefined,
-    taxId: session.taxId || config.supplierVkn,
-    source: "PORTAL",
-    localReferenceId: String(record.orderDisplayId),
-    notes: [
-      `Sipariş No: #${record.orderDisplayId}`,
-      `Ödeme Yöntemi: ${record.paymentMethod}`,
-      `İnternet Satış Web Adresi: ${record.storeWebUrl || "https://bodykitmerkezi.com"}`,
-    ],
-    recipientInfo: {
-      taxId: record.buyerIdentifier,
-      countryCode: "TR",
-      city: record.buyerCity || "İstanbul",
-      district: record.buyerDistrict || "Merkez",
-      address: record.buyerAddress || "Merkez",
-      name: firstName.length >= 2 ? firstName : `${firstName} Bey`,
-      surname: lastName.length >= 2 ? lastName : "Müşteri",
-      taxOffice: record.buyerTaxOffice || undefined,
-      phone: cleanPhone.length >= 7 ? cleanPhone : undefined,
-      email:
-        record.buyerEmail && record.buyerEmail.includes("@")
-          ? record.buyerEmail.toLowerCase()
-          : undefined,
-    },
-    currencyInfo: {
-      currency: "TRY",
-      hasExchange: false,
-    },
-    invoiceInfo: {
-      invoiceType: record.invoiceScenario, // EARSIVFATURA | TICARIFATURA | TEMELFATURA
-      invoiceTypeCode: "SATIS",
-      invoiceUuid: record.uuid,
-    },
-    invoiceLines,
-    totalTax: {
-      totalTaxAmount: toKurus(record.vatAmount),
-      subTotalTaxes: [
-        {
-          taxableAmount: toKurus(netSubtotal),
-          taxAmount: toKurus(record.vatAmount),
-          taxType: "KDV",
-          percent: record.vatRate,
-        },
-      ],
-    },
-    taxes: {
-      taxAmount: toKurus(record.vatAmount),
-      taxableAmount: toKurus(netSubtotal),
-    },
-    invoiceTotal: {
-      lineExtensionAmount: toKurus(netSubtotal),
-      taxExclusiveAmount: toKurus(netSubtotal),
-      taxInclusiveAmount: toKurus(record.totalAmount),
-      allowanceTotalAmount: toKurus(record.discountAmount),
-      payableAmount: toKurus(record.totalAmount),
-    },
-    orderInfo: {
-      orderId: String(record.orderDisplayId),
-      orderDate: record.issueDate.slice(0, 10),
-    },
-    paymentInfo: {
-      purchaseUrl: record.storeWebUrl || config.storeWebUrl || "https://bodykitmerkezi.com",
-      paymentMeans,
-      paymentDate: record.issueDate,
-      paymentAgentName: record.paymentMethod,
-    },
-    deliveryInfo: {
-      carrierTaxId: "1111111111",
-      carrierName: record.carrierName || "Yurtiçi Kargo",
-      sentAt: record.issueDate.slice(0, 10),
-    },
-  }
-}
-
 function mergeRemoteAndLocalInvoices(
   remoteList: EfaturaInvoiceRecord[],
-  localList: EfaturaInvoiceRecord[]
+  localList: EfaturaInvoiceRecord[],
+  purgeFakeLocalWhenActive: boolean
 ): EfaturaInvoiceRecord[] {
+  const filteredLocal = purgeFakeLocalWhenActive
+    ? localList.filter((loc) => loc.source === "TRENDYOL_API")
+    : localList
+
+  if (purgeFakeLocalWhenActive && filteredLocal.length !== localList.length) {
+    writeEfaturaInvoices(filteredLocal)
+  }
+
   const byKey = new Map<string, EfaturaInvoiceRecord>()
-  for (const loc of localList) {
+  for (const loc of filteredLocal) {
     byKey.set(loc.uuid || loc.invoiceNumber, loc)
   }
   for (const rem of remoteList) {
     const existing =
       byKey.get(rem.uuid) ||
-      Array.from(byKey.values()).find((x) => x.invoiceNumber === rem.invoiceNumber)
+      Array.from(byKey.values()).find(
+        (x) =>
+          x.invoiceNumber === rem.invoiceNumber ||
+          (rem.orderDisplayId && x.orderDisplayId === rem.orderDisplayId)
+      )
     if (existing) {
       byKey.set(existing.uuid || existing.invoiceNumber, {
         ...existing,
         ...rem,
+        orderId: existing.orderId || rem.orderId,
+        orderDisplayId: existing.orderDisplayId || rem.orderDisplayId,
         items: existing.items?.length ? existing.items : rem.items,
       })
     } else {
       byKey.set(rem.uuid || rem.invoiceNumber, rem)
     }
   }
-  return Array.from(byKey.values()).sort(
+  const merged = Array.from(byKey.values()).sort(
     (a, b) => new Date(b.issueDate).getTime() - new Date(a.issueDate).getTime()
   )
+  writeEfaturaInvoices(merged)
+  return merged
 }
 
 export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
@@ -670,9 +1336,7 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
         fetchTrendyolIssuedInvoices(config, session),
       ])
       creditInfo = credits
-      if (remoteInvoices.length > 0) {
-        invoices = mergeRemoteAndLocalInvoices(remoteInvoices, invoices)
-      }
+      invoices = mergeRemoteAndLocalInvoices(remoteInvoices, invoices, true)
     } catch (e: any) {
       console.warn("[efatura GET] Remote sync warning:", e?.message)
     }
@@ -714,7 +1378,11 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
         ])
 
         const localInvoices = readEfaturaInvoices()
-        const mergedInvoices = mergeRemoteAndLocalInvoices(remoteInvoices, localInvoices)
+        const mergedInvoices = mergeRemoteAndLocalInvoices(
+          remoteInvoices,
+          localInvoices,
+          Boolean(config.active)
+        )
 
         return res.json({
           success: true,
@@ -844,25 +1512,46 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
     }
 
     let authSession: TrendyolAuthSession | null = null
-    let apiErrorNote = ""
-    if (config.active && config.email && config.password) {
+    if (config.active) {
+      if (!config.email || !config.password) {
+        return res.status(400).json({
+          success: false,
+          error:
+            "Trendyol E-Faturam aktif ancak e-posta veya şifre ayarlanmamış. Lütfen E-Fatura ayarlarından giriş bilgilerinizi kaydedin.",
+        })
+      }
       try {
         authSession = await signInTrendyolEfatura(config)
         if (authSession.companyId && !config.companyId) {
           config = writeEfaturaConfig({ ...config, companyId: authSession.companyId })
         }
       } catch (e: any) {
-        apiErrorNote = e?.message || "Trendyol API giriş hatası"
-        console.warn("[efatura] SignIn warning:", apiErrorNote)
+        return res.status(400).json({
+          success: false,
+          error: `Trendyol E-Faturam girişi başarısız: ${
+            e?.message || "Kimlik doğrulama hatası"
+          }`,
+        })
       }
     }
 
     const createdInvoices: EfaturaInvoiceRecord[] = []
     let existingInvoices = readEfaturaInvoices()
 
+    // Aktif modda eski sahte YEREL_UBL kayıtlarını temizle
+    if (config.active) {
+      const onlyReal = existingInvoices.filter((inv) => inv.source === "TRENDYOL_API")
+      if (onlyReal.length !== existingInvoices.length) {
+        existingInvoices = writeEfaturaInvoices(onlyReal)
+      }
+    }
+
     for (const o of orders as any[]) {
       const existingForOrder = existingInvoices.find(
-        (inv) => inv.orderId === o.id && inv.status !== "IPTAL"
+        (inv) =>
+          inv.orderId === o.id &&
+          inv.status !== "IPTAL" &&
+          (!config.active || inv.source === "TRENDYOL_API")
       )
       if (existingForOrder && !body.force_recreate) {
         createdInvoices.push(existingForOrder)
@@ -890,12 +1579,12 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
         rawVkn.length === 10 ||
         Boolean(meta.company_name || billing.company)
 
-      const buyerIdentifier = isCorporate
+      let buyerIdentifier = isCorporate
         ? rawVkn.length === 10
           ? rawVkn
           : rawTckn.length === 11
           ? rawTckn
-          : "1111111111"
+          : "11111111111"
         : rawTckn.length === 11
         ? rawTckn
         : "11111111111"
@@ -903,24 +1592,50 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
       const fullPersonName =
         `${billing.first_name || shipping.first_name || customer.first_name || ""} ${
           billing.last_name || shipping.last_name || customer.last_name || ""
-        }`.trim() || "Müşteri"
+        }`.trim() || "Sayın Müşteri"
 
-      const buyerName = isCorporate
+      let buyerName = isCorporate
         ? String(meta.company_name || billing.company || fullPersonName).trim()
         : fullPersonName
 
       const buyerTaxOffice = String(meta.tax_office || billing.tax_office || "").trim()
 
-      const requestedDocType = body.document_type as "EARSIV" | "EFATURA" | undefined
-      const documentType: "EARSIV" | "EFATURA" =
-        requestedDocType || (isCorporate && buyerIdentifier.length === 10 ? "EFATURA" : "EARSIV")
+      // Trendyol mükellef sorgusu ile alıcının gerçek E-Fatura mükellefi olup olmadığını kontrol et
+      let targetAlias: string | undefined = undefined
+      let documentType: "EARSIV" | "EFATURA" = "EARSIV"
+
+      if (authSession) {
+        const taxpayerCheck = await checkTrendyolTaxpayer(
+          config,
+          authSession,
+          buyerIdentifier
+        )
+        if (taxpayerCheck.isEinvoiceMukellef && taxpayerCheck.alias) {
+          documentType = "EFATURA"
+          targetAlias = taxpayerCheck.alias
+          if (taxpayerCheck.title && isCorporate) {
+            buyerName = taxpayerCheck.title
+          }
+        } else {
+          // E-Fatura mükellefi değilse GİB kuralları gereği ZORUNLU olarak E-Arşiv kesilir
+          documentType = "EARSIV"
+          if (buyerIdentifier === "1111111111") {
+            buyerIdentifier = "11111111111"
+          }
+        }
+      } else {
+        const requestedDocType = body.document_type as "EARSIV" | "EFATURA" | undefined
+        documentType =
+          requestedDocType || (isCorporate && buyerIdentifier.length === 10 ? "EFATURA" : "EARSIV")
+      }
+
       const invoiceScenario: "EARSIVFATURA" | "TEMELFATURA" | "TICARIFATURA" =
         documentType === "EFATURA" ? "TICARIFATURA" : "EARSIVFATURA"
 
       const vatRate = Number(config.defaultVatRate) || 20
       const rawItems = Array.isArray(meta.edited_items) ? meta.edited_items : o.items || []
 
-      const mappedItems = rawItems.map((it: any) => {
+      const mappedItems: EfaturaInvoiceItem[] = rawItems.map((it: any) => {
         const qty = Number(it.quantity) || 1
         const rawUnitPrice = Number(it.unit_price) || 0
         const unitPriceTL = rawUnitPrice >= 100 ? rawUnitPrice / 100 : rawUnitPrice
@@ -942,15 +1657,51 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
       })
 
       const rawOrderTotal = Number(meta.edited_total ?? o.total ?? 0)
+      const itemsSumTL = Number(
+        mappedItems.reduce((acc: number, x: EfaturaInvoiceItem) => acc + x.totalAmount, 0).toFixed(2)
+      )
       const orderTotalTL =
         rawOrderTotal >= 100
-          ? rawOrderTotal / 100
-          : mappedItems.reduce((acc: number, x: any) => acc + x.totalAmount, 0)
+          ? Number((rawOrderTotal / 100).toFixed(2))
+          : rawOrderTotal > 0
+          ? Number(rawOrderTotal.toFixed(2))
+          : itemsSumTL
 
-      const itemsSumTL = mappedItems.reduce((acc: number, x: any) => acc + x.totalAmount, 0)
-      const totalAmountTL = Number((orderTotalTL > 0 ? orderTotalTL : itemsSumTL).toFixed(2))
-      const netTotalAllTL = Number((totalAmountTL / (1 + vatRate / 100)).toFixed(2))
-      const vatTotalAllTL = Number((totalAmountTL - netTotalAllTL).toFixed(2))
+      // Eğer sipariş toplamı (ör. kargo/hizmet farkı nedeniyle) kalemler toplamından büyükse, farkı kalem olarak ekle
+      if (orderTotalTL > itemsSumTL + 0.01) {
+        const diffGrossTL = Number((orderTotalTL - itemsSumTL).toFixed(2))
+        const diffNetTL = Number((diffGrossTL / (1 + vatRate / 100)).toFixed(2))
+        const diffVatTL = Number((diffGrossTL - diffNetTL).toFixed(2))
+        mappedItems.push({
+          title: "Kargo ve Teslimat Hizmet Bedeli",
+          sku: "BKM-KARGO",
+          quantity: 1,
+          unitPrice: diffGrossTL,
+          netUnitPrice: Number((diffGrossTL / (1 + vatRate / 100)).toFixed(4)),
+          vatRate,
+          vatAmount: diffVatTL,
+          totalAmount: diffGrossTL,
+        })
+      } else if (mappedItems.length === 0 && orderTotalTL > 0) {
+        const netTL = Number((orderTotalTL / (1 + vatRate / 100)).toFixed(2))
+        const vatTL = Number((orderTotalTL - netTL).toFixed(2))
+        mappedItems.push({
+          title: `Sipariş #${o.display_id || ""} Ürün Bedeli`.trim(),
+          sku: "BKM-SIPARIS",
+          quantity: 1,
+          unitPrice: orderTotalTL,
+          netUnitPrice: Number((orderTotalTL / (1 + vatRate / 100)).toFixed(4)),
+          vatRate,
+          vatAmount: vatTL,
+          totalAmount: orderTotalTL,
+        })
+      }
+
+      const finalTotalTL = Number(
+        mappedItems.reduce((acc, x) => acc + x.totalAmount, 0).toFixed(2)
+      )
+      const finalNetTL = Number((finalTotalTL / (1 + vatRate / 100)).toFixed(2))
+      const finalVatTL = Number((finalTotalTL - finalNetTL).toFixed(2))
 
       let payMethod = "Kredi Kartı (Online)"
       const metaOption = meta.payment_option
@@ -967,20 +1718,20 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
           : o.shipping_methods?.[0]?.name || "Anlaşmalı Kargo"
 
       const prefix = documentType === "EFATURA" ? config.einvoicePrefix : config.earchivePrefix
-      const invoiceNumber = generateSequentialInvoiceNumber(prefix, existingInvoices)
+      const fallbackInvoiceNumber = generateSequentialInvoiceNumber(prefix, existingInvoices)
       const uuid = crypto.randomUUID()
 
       const record: EfaturaInvoiceRecord = {
         id: `efat_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
         uuid,
-        invoiceNumber,
+        invoiceNumber: fallbackInvoiceNumber,
         orderId: o.id,
         orderDisplayId: String(o.display_id || o.id.slice(-8)),
         documentType,
         invoiceScenario,
         invoiceType: "SATIS",
         status: "RESMILESTI",
-        source: "YEREL_UBL",
+        source: config.active ? "TRENDYOL_API" : "YEREL_UBL",
         environment: config.environment,
         issueDate: new Date().toISOString(),
         buyerName,
@@ -988,7 +1739,7 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
         buyerTaxOffice,
         buyerAddress:
           `${billing.address_1 || shipping.address_1 || ""} ${billing.address_2 || ""}`.trim() ||
-          "Merkez",
+          "Merkez Mah.",
         buyerCity:
           billing.province ||
           billing.city ||
@@ -999,11 +1750,11 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
         buyerEmail: o.email || customer.email || "",
         buyerPhone: billing.phone || shipping.phone || customer.phone || "",
         currencyCode: (o.currency_code || "TRY").toUpperCase(),
-        subtotalAmount: totalAmountTL,
+        subtotalAmount: finalTotalTL,
         vatRate,
-        vatAmount: vatTotalAllTL,
-        discountAmount: Number(((Number(o.discount_total) || 0) / 100).toFixed(2)),
-        totalAmount: totalAmountTL,
+        vatAmount: finalVatTL,
+        discountAmount: 0,
+        totalAmount: finalTotalTL,
         paymentMethod: payMethod,
         carrierName,
         storeWebUrl: config.storeWebUrl || "https://bodykitmerkezi.com",
@@ -1011,54 +1762,39 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
         createdAt: new Date().toISOString(),
       }
 
-      if (authSession?.token) {
-        try {
-          const baseUrl = getGatewayBaseUrl(config.environment)
-          const endpoint =
-            documentType === "EFATURA"
-              ? `${baseUrl}/api/invoice/documents/outgoing-einvoice`
-              : `${baseUrl}/api/invoice/documents/earchive`
+      if (config.active && authSession) {
+        const resolvedPrefix = await resolveTrendyolPrefix(config, authSession, documentType)
+        const createdRemote = await createInvoiceOnTrendyol(
+          record,
+          config,
+          authSession,
+          targetAlias,
+          resolvedPrefix
+        )
 
-          const payload = buildTrendyolInvoicePayload(record, config, authSession)
-
-          const apiRes = await fetch(endpoint, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Accept: "application/json",
-              "x-access-token": authSession.token,
-              Authorization: `Bearer ${authSession.token}`,
-            },
-            body: JSON.stringify(payload),
-          })
-
-          const apiData = await apiRes.json().catch(() => null)
-
-          if (apiRes.ok) {
-            record.source = "TRENDYOL_API"
-            if (apiData?.invoiceUuid || apiData?.uuid || apiData?.data?.invoiceUuid) {
-              record.uuid = apiData.invoiceUuid || apiData.uuid || apiData.data.invoiceUuid
-            }
-            if (apiData?.invoiceId || apiData?.invoiceNumber || apiData?.data?.invoiceId) {
-              record.invoiceNumber =
-                apiData.invoiceId || apiData.invoiceNumber || apiData.data.invoiceId
-            }
-          } else {
-            record.trendyolResponse = {
-              warning:
-                apiData?.detail ||
-                apiData?.title ||
-                apiData?.message ||
-                apiData?.error ||
-                `HTTP ${apiRes.status}`,
-              raw: apiData,
-            }
-          }
-        } catch (apiErr: any) {
-          record.trendyolResponse = { warning: apiErr?.message || "API çağrısı hatası" }
+        record.source = "TRENDYOL_API"
+        if (createdRemote.uuid) {
+          record.uuid = createdRemote.uuid
         }
-      } else if (apiErrorNote) {
-        record.trendyolResponse = { warning: apiErrorNote }
+        if (createdRemote.invoiceNumber) {
+          record.invoiceNumber = createdRemote.invoiceNumber
+        }
+        record.trendyolResponse = createdRemote.rawResponse
+
+        // Eğer yanıt içinde invoiceNumber boş döndüyse (örn. V2 async oluşturma), Trendyol'dan güncel listeyi çekip eşleştir
+        if (!createdRemote.invoiceNumber) {
+          const remoteList = await fetchTrendyolIssuedInvoices(config, authSession)
+          const matchedRemote =
+            remoteList.find(
+              (r) =>
+                r.orderDisplayId === record.orderDisplayId ||
+                (createdRemote.uuid && r.uuid === createdRemote.uuid)
+            ) || remoteList[0]
+          if (matchedRemote) {
+            record.uuid = matchedRemote.uuid || record.uuid
+            record.invoiceNumber = matchedRemote.invoiceNumber || record.invoiceNumber
+          }
+        }
       }
 
       existingInvoices = saveEfaturaInvoice(record)
@@ -1098,38 +1834,50 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
             message: `Trendyol ${
               record.documentType === "EFATURA" ? "E-Fatura" : "E-Arşiv Fatura"
             } oluşturuldu: ${record.invoiceNumber} (ETTN: ${record.uuid.slice(0, 8)}...)`,
-            created_at: issueDateFormatted,
+            date: issueDateFormatted,
+            type: "invoice",
           },
           ...(Array.isArray(meta.integration_logs) ? meta.integration_logs : []),
         ],
       }
 
-      try {
-        const orderModuleService = req.scope.resolve(Modules.ORDER)
-        await orderModuleService.updateOrders(o.id, { metadata: updatedMetadata })
-      } catch {
-        if (pgConnection) {
-          try {
-            await pgConnection("order")
-              .where({ id: o.id })
-              .update({ metadata: JSON.stringify(updatedMetadata), updated_at: new Date() })
-          } catch (pgErr) {
-            console.error("[efatura] Order metadata PG update error:", pgErr)
-          }
+      if (pgConnection) {
+        try {
+          await pgConnection("order")
+            .where("id", o.id)
+            .update({
+              metadata: JSON.stringify(updatedMetadata),
+              updated_at: new Date(),
+            })
+        } catch (dbErr) {
+          console.warn("[efatura] Order metadata update warning:", dbErr)
         }
       }
     }
 
-    return res.json({
+    res.json({
       success: true,
+      createdCount: createdInvoices.length,
       created: createdInvoices,
       invoices: existingInvoices,
+      allInvoices: existingInvoices,
       config,
     })
   } catch (e: any) {
     console.error("[efatura POST] Error:", e)
-    return res
-      .status(500)
-      .json({ error: e?.message || "E-Fatura işlemi sırasında hata oluştu." })
+    res.status(400).json({
+      success: false,
+      error: e?.message || "E-Fatura işlemi sırasında beklenmeyen bir hata oluştu.",
+    })
+  }
+}
+
+export const PUT = async (req: MedusaRequest, res: MedusaResponse) => {
+  try {
+    const body = (req.body as Partial<EfaturaConfig>) || {}
+    const updated = writeEfaturaConfig(body)
+    res.json({ success: true, config: updated })
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message || "Ayarlar kaydedilemedi." })
   }
 }
