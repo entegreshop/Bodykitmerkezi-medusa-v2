@@ -1,19 +1,13 @@
 FROM node:20-slim AS runner
 
 WORKDIR /app
-
-# Önce sadece package.json dosyalarını kopyalıyoruz (Docker BuildKit önbelleklemesi için)
-COPY package.json ./
-COPY apps/backend/package.json ./apps/backend/
-COPY apps/storefront/package.json ./apps/storefront/
-COPY packages/ ./packages/
-
-# 1. Proje yapısını bozmadan tüm ana bağımlılıkları kuruyoruz (npmmirror senkron gecikmesinde resmi npmjs'e yedekli)
-RUN (npm config set registry https://registry.npmmirror.com && npm install --legacy-peer-deps --include=dev) || (npm config set registry https://registry.npmjs.org && npm install --legacy-peer-deps --include=dev)
-
-# Kaynak kodlarını kopyalıyoruz
 COPY . .
-RUN rm -f package-lock.json
+
+# 1. Mevcut package-lock.json ile Taobao Mirror üzerinden hızlı kurulum (senkron gecikmesi ve 429 takılmasını önler)
+RUN npm config set registry https://registry.npmmirror.com && \
+    npm config set fetch-retries 2 && \
+    npm config set fetch-retry-maxtimeout 15000 && \
+    npm install --legacy-peer-deps --include=dev
 
 WORKDIR /app/apps/backend
 ENV NODE_OPTIONS="--max-old-space-size=4096"
