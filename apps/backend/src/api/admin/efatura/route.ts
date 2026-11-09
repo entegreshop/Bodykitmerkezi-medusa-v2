@@ -847,22 +847,72 @@ async function createInvoiceOnTrendyol(
   const cleanPhone = (record.buyerPhone || "").replace(/[^0-9]/g, "").slice(-10)
   const validPhone = cleanPhone.length >= 7 ? cleanPhone : undefined
   const rawEmail = (record.buyerEmail || "").trim().toLowerCase()
+  const sellerEmails = [
+    (config.email || "").trim().toLowerCase(),
+    (config.supplierEmail || "").trim().toLowerCase(),
+  ].filter(Boolean)
+  // Trendyol E-Faturam Kuralı: Alıcı ve satıcı e-posta adresi aynı olamaz (receiver-and-sender-emails-are-same)
   const validEmail =
-    /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/.test(rawEmail) ? rawEmail : undefined
+    /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/.test(rawEmail) &&
+    !sellerEmails.includes(rawEmail)
+      ? rawEmail
+      : undefined
 
   const cityClean = (record.buyerCity || "İstanbul").trim()
   const districtClean = (record.buyerDistrict || "Merkez").trim()
   const addressClean = (record.buyerAddress || "Merkez Mah.").trim().slice(0, 250)
 
+  const issueDateObj = record.issueDate ? new Date(record.issueDate) : new Date()
+  const issueIsoStr = issueDateObj.toISOString()
+  const issueDateOnly = issueIsoStr.slice(0, 10) // YYYY-MM-DD (format: "date")
+
+  const payMethodLower = (record.paymentMethod || "").toLocaleLowerCase("tr-TR")
+  let paymentMeansEnum: "CREDIT_CARD" | "EFT" | "ON_DELIVERY" | "MEDIATOR" | "OTHER" = "CREDIT_CARD"
+  let paymentTypeStr = "KREDIKARTI/BANKAKARTI"
+  let paymentAgentStr = "IYZICO"
+  if (payMethodLower.includes("havale") || payMethodLower.includes("eft")) {
+    paymentMeansEnum = "EFT"
+    paymentTypeStr = "EFT/HAVALE"
+    paymentAgentStr = "BANKA"
+  } else if (payMethodLower.includes("kapıda") || payMethodLower.includes("kapida")) {
+    paymentMeansEnum = "ON_DELIVERY"
+    paymentTypeStr = "KAPIDAODEME"
+    paymentAgentStr = "KARGO"
+  }
+
+  // 1 Temmuz 2024 GİB / Trendyol E-Faturam kuralı: İnternet satış e-Arşiv faturalarında paymentInfo ve deliveryInfo zorunludur.
+  // Taşıyıcı VKN (Mod-10 geçerli 10 haneli VKN): Yurtiçi Kargo (9860008925), Aras Kargo (0720039666), MNG (6080712084), PTT (7320068060)
+  const carrierLower = (record.carrierName || "").toLocaleLowerCase("tr-TR")
+  let carrierTaxId = "9860008925" // Yurtiçi Kargo Servisi A.Ş.
+  let carrierOfficialName = record.carrierName || "Yurtiçi Kargo Servisi A.Ş."
+  if (carrierLower.includes("aras")) {
+    carrierTaxId = "0720039666"
+    carrierOfficialName = "Aras Kargo Yurt İçi Yurt Dışı Taşımacılık A.Ş."
+  } else if (carrierLower.includes("mng") || carrierLower.includes("dhl")) {
+    carrierTaxId = "6080712084"
+    carrierOfficialName = "MNG Kargo Yurtiçi ve Yurtdışı Taşımacılık A.Ş."
+  } else if (carrierLower.includes("ptt")) {
+    carrierTaxId = "7320068060"
+    carrierOfficialName = "Posta ve Telgraf Teşkilatı A.Ş."
+  }
+
+  const purchaseUrlClean = (
+    record.storeWebUrl ||
+    config.storeWebUrl ||
+    "https://bodykitmerkezi.com"
+  )
+    .trim()
+    .slice(0, 255)
+
   const notes = [
     `Sipariş No: #${record.orderDisplayId}`,
     `Ödeme Yöntemi: ${record.paymentMethod}`,
-    `Mağaza: ${record.storeWebUrl || "https://bodykitmerkezi.com"}`,
+    `Mağaza: ${purchaseUrlClean}`,
   ]
 
   const errors: string[] = []
 
-  // --- YÖNTEM 1: V1 Hesaplama (/api/invoice/documents/calculate-invoice) + V1 Oluşturma ---
+  // --- YÖNTEM 1: Resmi OpenAPI V1 (/api/invoice/documents/earchive & outgoing-einvoice) ---
   try {
     const toKurus = (tl: number) => Math.round((Number(tl) || 0) * 100)
 
@@ -899,9 +949,13 @@ async function createInvoiceOnTrendyol(
       if (Array.isArray(calcV1Data?.invoiceLines) && calcV1Data.invoiceLines.length > 0) {
         v1InvoiceLines = calcV1Data.invoiceLines.map((cl: any, idx: number) => {
           const origItem = record.items[idx] || record.items[0]
-          const lineVatKurus = Number(cl.kdvTaxAmount ?? cl.taxAmount ?? 0)
-          const lineTaxableKurus = Number(cl.kdvTaxableAmount ?? cl.taxableAmount ?? cl.rawPrice ?? 0)
-          const lineTotalKurus = Number(cl.totalAmount ?? lineTaxableKurus + lineVatKurus)
+          const lineVatKurus = Math.round(Number(cl.kdvTaxAmount ?? cl.taxAmount ?? 0))
+          const lineTaxableKurus = Math.round(
+            Number(cl.kdvTaxableAmount ?? cl.taxableAmount ?? cl.rawPrice ?? 0)
+          )
+          const lineTotalKurus = Math.round(
+            Number(cl.totalAmount ?? lineTaxableKurus + lineVatKurus)
+          )
           const lineUnitKurus = Number(cl.unitPrice ?? toKurus(origItem.netUnitPrice))
           const lineVatRate = Number(cl.kdvTaxRate ?? origItem.vatRate ?? 20)
 
@@ -912,10 +966,11 @@ async function createInvoiceOnTrendyol(
             unitPriceAmount: lineUnitKurus,
             totalAmount: lineTotalKurus,
             taxableAmount: lineTaxableKurus,
-            taxAmount: Number((lineVatKurus / 100).toFixed(2)),
+            taxAmount: lineVatKurus,
             kdvTaxAmount: lineVatKurus,
             taxPercent: lineVatRate,
-            totalDiscountAmount: Number(cl.discount ?? 0),
+            taxName: "KDV",
+            totalDiscountAmount: Math.round(Number(cl.discount ?? 0)),
             totalTax: {
               totalTaxAmount: lineVatKurus,
               subTotalTaxes: [
@@ -930,13 +985,17 @@ async function createInvoiceOnTrendyol(
             },
           }
         })
-        v1SubtotalKurus = Number(calcV1Data.totalRawPrice ?? calcV1Data.totalTaxableAmount ?? 0)
-        v1TotalTaxableAmountKurus = Number(
-          calcV1Data.totalTaxableAmount ?? calcV1Data.totalRawPrice ?? 0
+        v1SubtotalKurus = Math.round(
+          Number(calcV1Data.totalRawPrice ?? calcV1Data.totalTaxableAmount ?? 0)
         )
-        v1TotalTaxAmountKurus = Number(calcV1Data.totalTaxAmount ?? 0)
-        v1PayableKurus = Number(calcV1Data.payableAmount ?? calcV1Data.totalAmount ?? 0)
-        v1DiscountKurus = Number(calcV1Data.totalDiscount ?? 0)
+        v1TotalTaxableAmountKurus = Math.round(
+          Number(calcV1Data.totalTaxableAmount ?? calcV1Data.totalRawPrice ?? 0)
+        )
+        v1TotalTaxAmountKurus = Math.round(Number(calcV1Data.totalTaxAmount ?? 0))
+        v1PayableKurus = Math.round(
+          Number(calcV1Data.payableAmount ?? calcV1Data.totalAmount ?? 0)
+        )
+        v1DiscountKurus = Math.round(Number(calcV1Data.totalDiscount ?? 0))
       }
     }
 
@@ -964,6 +1023,7 @@ async function createInvoiceOnTrendyol(
           taxAmount: lineVatKurus,
           kdvTaxAmount: lineVatKurus,
           taxPercent: item.vatRate,
+          taxName: "KDV",
           totalDiscountAmount: 0,
           totalTax: {
             totalTaxAmount: lineVatKurus,
@@ -981,30 +1041,32 @@ async function createInvoiceOnTrendyol(
       })
     }
 
+    const recipientInfoObj: Record<string, any> = {
+      countryCode: "TR",
+      city: cityClean.length >= 2 ? cityClean : "İstanbul",
+      district: districtClean.length >= 1 ? districtClean : "Merkez",
+      address: addressClean.length >= 2 ? addressClean : "Merkez Mah.",
+      taxId: record.buyerIdentifier,
+      name: recipientName,
+      ...(recipientSurname ? { surname: recipientSurname } : {}),
+      ...(validPhone ? { phone: validPhone } : {}),
+      ...(validEmail ? { email: validEmail } : {}),
+      ...(record.documentType === "EFATURA" || (record.buyerTaxOffice && record.buyerTaxOffice.length >= 2)
+        ? { taxOffice: (record.buyerTaxOffice && record.buyerTaxOffice.length >= 2 ? record.buyerTaxOffice : "Merkez") }
+        : {}),
+    }
+
     const v1Payload: Record<string, any> = {
       userId: Number(session.userId) || undefined,
       companyId: Number(session.companyId || config.companyId) || undefined,
       autoInvoiceId: true,
-      targetAlias: targetAlias || "",
+      ...(record.documentType === "EFATURA" && targetAlias ? { targetAlias } : {}),
       source: "PORTAL",
       localReferenceId: String(record.orderDisplayId),
       ...(resolvedPrefix ? { prefix: resolvedPrefix } : {}),
+      issuedAt: issueIsoStr,
       notes,
-      recipientInfo: {
-        countryCode: "TR",
-        city: cityClean.length >= 2 ? cityClean : "İstanbul",
-        district: districtClean.length >= 1 ? districtClean : "Merkez",
-        address: addressClean.length >= 2 ? addressClean : "Merkez Mah.",
-        phone: validPhone,
-        email: validEmail,
-        taxId: record.buyerIdentifier,
-        taxOffice:
-          record.documentType === "EFATURA"
-            ? record.buyerTaxOffice || "Merkez"
-            : undefined,
-        name: recipientName,
-        ...(recipientSurname ? { surname: recipientSurname } : {}),
-      },
+      recipientInfo: recipientInfoObj,
       invoiceInfo: {
         invoiceType: record.invoiceScenario,
         invoiceTypeCode: "SATIS",
@@ -1036,6 +1098,27 @@ async function createInvoiceOnTrendyol(
         sourceCurrency: "TRY",
         targetCurrency: "TRY",
       },
+      orderInfo: {
+        orderId: String(record.orderDisplayId),
+        orderDate: issueDateOnly,
+      },
+      ...(record.documentType === "EARSIV"
+        ? {
+            paymentInfo: {
+              purchaseUrl: purchaseUrlClean,
+              paymentMeans: paymentMeansEnum,
+              paymentType: paymentTypeStr,
+              paymentAgentName: paymentAgentStr,
+              paymentDate: issueIsoStr,
+              instructionNote: `Sipariş #${record.orderDisplayId} İnternet Satışı`,
+            },
+            deliveryInfo: {
+              carrierTaxId,
+              carrierName: carrierOfficialName,
+              sentAt: issueDateOnly,
+            },
+          }
+        : {}),
     }
 
     const v1Endpoint =
@@ -1050,6 +1133,7 @@ async function createInvoiceOnTrendyol(
     })
     let v1Data = await v1Res.json().catch(() => null)
 
+    // Eğer ön-ek (prefix) sistemde bulunamadı hatası dönerse prefix olmadan varsayılan seriyle tekrar dene
     if (!v1Res.ok && v1Payload.prefix) {
       const { prefix: _omitted, ...v1PayloadNoPrefix } = v1Payload
       v1Res = await fetch(v1Endpoint, {
@@ -1058,6 +1142,25 @@ async function createInvoiceOnTrendyol(
         body: JSON.stringify(v1PayloadNoPrefix),
       })
       v1Data = await v1Res.json().catch(() => null)
+    }
+
+    // Eğer e-Arşiv internet satış alanları olmadan düz e-Arşiv bekliyorsa fallback dene
+    if (!v1Res.ok && v1Payload.paymentInfo) {
+      const {
+        prefix: _omittedPfx,
+        paymentInfo: _omittedPay,
+        deliveryInfo: _omittedDel,
+        ...v1MinimalPayload
+      } = v1Payload
+      const retryRes = await fetch(v1Endpoint, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(v1MinimalPayload),
+      })
+      if (retryRes.ok) {
+        v1Res = retryRes
+        v1Data = await retryRes.json().catch(() => null)
+      }
     }
 
     if (v1Res.ok) {
@@ -1182,6 +1285,27 @@ async function createInvoiceOnTrendyol(
           targetCurrency: "TRY",
           calculationRate: 0,
         },
+        orderInfo: {
+          orderId: String(record.orderDisplayId),
+          orderDate: issueDateOnly,
+        },
+        ...(record.documentType === "EARSIV"
+          ? {
+              paymentInfo: {
+                purchaseUrl: purchaseUrlClean,
+                paymentMeans: paymentMeansEnum,
+                paymentType: paymentTypeStr,
+                paymentAgentName: paymentAgentStr,
+                paymentDate: issueDateOnly,
+                instructionNote: `Sipariş #${record.orderDisplayId} İnternet Satışı`,
+              },
+              deliveryInfo: {
+                carrierTaxId,
+                carrierName: carrierOfficialName,
+                sentAt: issueDateOnly,
+              },
+            }
+          : {}),
         bankInfo: [],
         ...(record.documentType === "EFATURA" ? { targetAlias: targetAlias || "" } : {}),
       }
@@ -1206,6 +1330,24 @@ async function createInvoiceOnTrendyol(
           body: JSON.stringify(v2PayloadNoPrefix),
         })
         v2Data = await v2Res.json().catch(() => null)
+      }
+
+      if (!v2Res.ok && v2Payload.paymentInfo) {
+        const {
+          prefix: _omittedPfx,
+          paymentInfo: _omittedPay,
+          deliveryInfo: _omittedDel,
+          ...v2MinimalPayload
+        } = v2Payload
+        const retryRes = await fetch(v2Endpoint, {
+          method: "POST",
+          headers,
+          body: JSON.stringify(v2MinimalPayload),
+        })
+        if (retryRes.ok) {
+          v2Res = retryRes
+          v2Data = await retryRes.json().catch(() => null)
+        }
       }
 
       if (v2Res.ok) {
@@ -1451,7 +1593,38 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
       return res.status(404).json({ error: "Resmi indirme bağlantısı alınamadı." })
     }
 
-    // 3. Fatura İptali
+    // 3. Fatura Durum Sorgulama (getEArchiveStatus / getOutgoingEInvoiceStatus)
+    if (action === "status") {
+      const uuid = body.uuid || body.invoiceUuid
+      const docType = body.documentType === "EFATURA" ? "EFATURA" : "EARSIV"
+      if (!uuid || !config.email || !config.password) {
+        return res.status(400).json({ error: "Fatura UUID veya API bilgileri eksik." })
+      }
+      const session = await signInTrendyolEfatura(config)
+      const baseUrl = getGatewayBaseUrl(config.environment)
+      const statusEndpoint =
+        docType === "EFATURA"
+          ? `${baseUrl}/api/invoice/documents/outgoing-einvoice/status/${encodeURIComponent(uuid)}`
+          : `${baseUrl}/api/invoice/documents/earchive/status/${encodeURIComponent(uuid)}`
+      const stRes = await fetch(statusEndpoint, {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+          "x-access-token": session.token,
+          Authorization: `Bearer ${session.token}`,
+        },
+      })
+      const stData = await stRes.json().catch(() => null)
+      if (!stRes.ok) {
+        return res.status(stRes.status).json({
+          success: false,
+          error: stData?.detail || stData?.title || "Fatura durumu sorgulanamadı.",
+        })
+      }
+      return res.json({ success: true, statusData: stData })
+    }
+
+    // 4. Fatura İptali (cancelEArchive: POST /api/invoice/documents/earchive/cancel)
     if (action === "cancel") {
       const invoiceId = body.invoice_id
       const orderId = body.order_id
@@ -1460,6 +1633,36 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
       if (!target) {
         return res.status(404).json({ error: "İptal edilecek fatura kaydı bulunamadı." })
       }
+
+      if (
+        config.active &&
+        config.email &&
+        config.password &&
+        target.source === "TRENDYOL_API" &&
+        target.documentType === "EARSIV" &&
+        target.uuid
+      ) {
+        try {
+          const session = await signInTrendyolEfatura(config)
+          const baseUrl = getGatewayBaseUrl(config.environment)
+          await fetch(`${baseUrl}/api/invoice/documents/earchive/cancel`, {
+            method: "POST",
+            headers: {
+              Accept: "application/json",
+              "Content-Type": "application/json",
+              "x-access-token": session.token,
+              Authorization: `Bearer ${session.token}`,
+            },
+            body: JSON.stringify({
+              invoiceUuid: target.uuid,
+              companyId: Number(session.companyId || config.companyId) || undefined,
+            }),
+          })
+        } catch (cancelErr) {
+          console.warn("[efatura] Remote cancel warning:", cancelErr)
+        }
+      }
+
       target.status = "IPTAL"
       const updatedList = saveEfaturaInvoice(target)
       return res.json({ success: true, invoice: target, invoices: updatedList })
