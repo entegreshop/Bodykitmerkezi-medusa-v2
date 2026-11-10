@@ -47,10 +47,18 @@ export interface CartItem {
 export const PosModal = ({ isOpen, onOpenChange, onOrderCreated }: PosModalProps) => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [availableTags, setAvailableTags] = useState<string[]>([
+      "Instagram",
+      "WhatsApp",
+      "Facebook",
+      "Twitter",
+      "Telefon",
+      "Mağaza",
+  ]);
   
   // Müşteri Formu State
   const [customerForm, setCustomerForm] = useState({
-      orderLabel: "Hızlı Satış",
+      orderLabel: "Instagram",
       customerType: "Ziyaretçi",
       fullName: "",
       tcNo: "",
@@ -74,6 +82,27 @@ export const PosModal = ({ isOpen, onOpenChange, onOrderCreated }: PosModalProps
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  React.useEffect(() => {
+      if (!isOpen) return;
+      fetch("/admin/order-operations")
+          .then((r) => r.json())
+          .then((data) => {
+              if (data?.success && Array.isArray(data.orderTags)) {
+                  const activeNames = data.orderTags
+                      .filter((t: any) => t.active !== false && t.name)
+                      .map((t: any) => String(t.name));
+                  if (activeNames.length > 0) {
+                      setAvailableTags(activeNames);
+                      setCustomerForm((prev) => ({
+                          ...prev,
+                          orderLabel: activeNames.includes(prev.orderLabel) ? prev.orderLabel : activeNames[0],
+                      }));
+                  }
+              }
+          })
+          .catch(() => {});
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -228,6 +257,30 @@ export const PosModal = ({ isOpen, onOpenChange, onOrderCreated }: PosModalProps
                          city: customerForm.city || "Belirtilmemiş",
                          province: customerForm.district || "Belirtilmemiş",
                          country_code: "tr"
+                     },
+                     metadata: {
+                         platform: customerForm.orderLabel || "Instagram",
+                         order_tag: customerForm.orderLabel || "Instagram",
+                         payment_option:
+                             customerForm.paymentMethod === "Kapıda Nakit Ödeme"
+                                 ? "cash_on_delivery"
+                                 : customerForm.paymentMethod === "Kapıda Kredi Kartı ile Ödeme"
+                                 ? "card_on_delivery"
+                                 : customerForm.paymentMethod === "Havale"
+                                 ? "bank_transfer"
+                                 : "paytr",
+                         delivery_status:
+                             customerForm.orderStatus === "Yeni Sipariş"
+                                 ? "onay_bekleyen"
+                                 : customerForm.orderStatus === "Hazırlanan Sipariş"
+                                 ? "hazirlanan"
+                                 : customerForm.orderStatus === "Kargolanan Sipariş"
+                                 ? "kargolanan"
+                                 : "teslim_edilen",
+                         tc_no: customerForm.tcNo || "",
+                         tax_no: customerForm.taxNo || "",
+                         tax_office: customerForm.taxOffice || "",
+                         admin_notes: customerForm.adminNote || customerForm.customerNote || "",
                      },
                      items: cartItems.map(item => ({
                          variant_id: item.variant_id,
@@ -426,10 +479,9 @@ export const PosModal = ({ isOpen, onOpenChange, onOrderCreated }: PosModalProps
                         value={customerForm.orderLabel} onChange={e => setCustomerForm(p => ({ ...p, orderLabel: e.target.value }))}
                         className="bg-ui-bg-base border border-ui-border-strong rounded-md p-1.5 text-sm outline-none"
                      >
-                        <option value="Hızlı Satış">Hızlı Satış</option>
-                        <option value="WhatsApp">WhatsApp</option>
-                        <option value="Instagram">Instagram</option>
-                        <option value="Telefon">Telefon</option>
+                        {availableTags.map((tagName) => (
+                           <option key={tagName} value={tagName}>{tagName}</option>
+                        ))}
                      </select>
                   </div>
                   <div className="flex flex-col gap-1">

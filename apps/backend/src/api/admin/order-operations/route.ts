@@ -10,23 +10,80 @@ const pool = new Pool({
 
 const OPS_STATE_FILE = path.join(process.cwd(), "uploads", "order-operations-state.json")
 
-interface OpsState {
+export interface OrderTagItem {
+  id: string
+  no: number
+  name: string
+  active: boolean
+  created_at: string
+}
+
+export interface RiskCriterionItem {
+  id: string
+  no: number
+  full_name: string
+  email: string
+  phone: string
+  tc_no: string
+  tax_no: string
+  ip: string
+  blocked_payment_methods: string[]
+  is_completely_blocked: boolean
+  only_credit_card: boolean
+  admin_note: string
+  source?: "manual" | "auto_return"
+  created_at: string
+}
+
+export interface AutoRiskConfig {
+  autoDisableCodOnReturn: boolean
+  minReturnCount: number
+  actionType: "only_credit_card" | "block_customer"
+  blockedMethods: string[]
+}
+
+export interface OpsState {
   deletedEftIds: string[]
   convertedMissingIds: string[]
   customEftNotifications: any[]
   automationActive: boolean
+  orderTags: OrderTagItem[]
+  riskCriteria: RiskCriterionItem[]
+  autoRiskConfig: AutoRiskConfig
 }
 
-function readOpsState(): OpsState {
+const DEFAULT_ORDER_TAGS: OrderTagItem[] = [
+  { id: "tag_6", no: 6, name: "Mağaza", active: true, created_at: "2025-12-30" },
+  { id: "tag_5", no: 5, name: "Telefon", active: true, created_at: "2025-12-30" },
+  { id: "tag_4", no: 4, name: "Twitter", active: true, created_at: "2025-12-30" },
+  { id: "tag_3", no: 3, name: "WhatsApp", active: true, created_at: "2025-12-30" },
+  { id: "tag_2", no: 2, name: "Facebook", active: true, created_at: "2025-12-30" },
+  { id: "tag_1", no: 1, name: "Instagram", active: true, created_at: "2025-12-30" },
+]
+
+const DEFAULT_AUTO_RISK_CONFIG: AutoRiskConfig = {
+  autoDisableCodOnReturn: true,
+  minReturnCount: 1,
+  actionType: "only_credit_card",
+  blockedMethods: ["Kapıda Ödeme", "Havale / EFT"],
+}
+
+export function readOpsState(): OpsState {
   try {
     if (fs.existsSync(OPS_STATE_FILE)) {
       const raw = fs.readFileSync(OPS_STATE_FILE, "utf-8")
+      const parsed = JSON.parse(raw)
       return {
         deletedEftIds: [],
         convertedMissingIds: [],
         customEftNotifications: [],
         automationActive: true,
-        ...JSON.parse(raw),
+        orderTags: Array.isArray(parsed.orderTags) && parsed.orderTags.length > 0 ? parsed.orderTags : DEFAULT_ORDER_TAGS,
+        riskCriteria: Array.isArray(parsed.riskCriteria) ? parsed.riskCriteria : [],
+        autoRiskConfig: parsed.autoRiskConfig
+          ? { ...DEFAULT_AUTO_RISK_CONFIG, ...parsed.autoRiskConfig }
+          : DEFAULT_AUTO_RISK_CONFIG,
+        ...parsed,
       }
     }
   } catch (e) {}
@@ -35,10 +92,13 @@ function readOpsState(): OpsState {
     convertedMissingIds: [],
     customEftNotifications: [],
     automationActive: true,
+    orderTags: DEFAULT_ORDER_TAGS,
+    riskCriteria: [],
+    autoRiskConfig: DEFAULT_AUTO_RISK_CONFIG,
   }
 }
 
-function writeOpsState(state: OpsState) {
+export function writeOpsState(state: OpsState) {
   try {
     const dir = path.dirname(OPS_STATE_FILE)
     if (!fs.existsSync(dir)) {
@@ -72,6 +132,11 @@ function formatIsoDate(dateInput: any): string {
 export async function GET(req: MedusaRequest, res: MedusaResponse) {
   try {
     const opsState = readOpsState()
+    if (!opsState.orderTags || opsState.orderTags.length === 0) {
+      opsState.orderTags = DEFAULT_ORDER_TAGS
+      writeOpsState(opsState)
+    }
+
     const paymentConfig: any = readPaymentConfig()
     const defaultBankHolder =
       paymentConfig?.bank_transfer?.account_holder ||
@@ -203,8 +268,10 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
     // 2. Also query orders for:
     //    - odeme_hatasi orders
     //    - bank_transfer (Havale / EFT) orders
+    //    - iade_edilen (Returned COD orders for automatic risk criteria)
     let dbMissingOrders: any[] = []
     let dbEftOrders: any[] = []
+    let autoDetectedRiskItems: RiskCriterionItem[] = []
     try {
       const ordersQuery = await pool.query(`
         SELECT 
@@ -272,13 +339,54 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
             created_at: formatIsoDate(row.created_at),
           })
         }
+
+        // Automatic Risk Detection for Returned COD Orders
+        const isCodOrder =
+          row.metadata?.payment_option === "cash_on_delivery" ||
+          row.metadata?.payment_option === "card_on_delivery" ||
+          !row.metadata?.payment_option
+        const isReturnedOrder = row.metadata?.delivery_status === "iade_edilen"
+
+        if (opsState.autoRiskConfig?.autoDisableCodOnReturn && isCodOrder && isReturnedOrder) {
+          const cleanPhone = phone ? phone.replace(/[^0-9]/g, "").slice(-10) : ""
+          const cleanEmail = (row.email || "").toLowerCase().trim()
+          const alreadyInManual = (opsState.riskCriteria || []).some((rc) => {
+            const rcPhone = rc.phone ? rc.phone.replace(/[^0-9]/g, "").slice(-10) : ""
+            const rcEmail = (rc.email || "").toLowerCase().trim()
+            return (cleanPhone && rcPhone === cleanPhone) || (cleanEmail && rcEmail === cleanEmail)
+          })
+          const alreadyInAuto = autoDetectedRiskItems.some((rc) => {
+            const rcPhone = rc.phone ? rc.phone.replace(/[^0-9]/g, "").slice(-10) : ""
+            const rcEmail = (rc.email || "").toLowerCase().trim()
+            return (cleanPhone && rcPhone === cleanPhone) || (cleanEmail && rcEmail === cleanEmail)
+          })
+
+          if (!alreadyInManual && !alreadyInAuto && (cleanPhone || cleanEmail || fullName)) {
+            autoDetectedRiskItems.push({
+              id: `auto_rc_${row.id}`,
+              no: 900 + autoDetectedRiskItems.length + 1,
+              full_name: fullName,
+              email: row.email || "",
+              phone: phone || "",
+              tc_no: row.metadata?.tc_no || row.metadata?.tckn || "",
+              tax_no: row.metadata?.tax_no || row.metadata?.vkn || "",
+              ip: row.metadata?.ip_address || "",
+              blocked_payment_methods:
+                opsState.autoRiskConfig?.blockedMethods || ["Kapıda Ödeme", "Havale / EFT"],
+              is_completely_blocked: opsState.autoRiskConfig?.actionType === "block_customer",
+              only_credit_card: opsState.autoRiskConfig?.actionType !== "block_customer",
+              admin_note: `Kapıda ödemeli kargoyu teslim almadığı / iade döndüğü için otomatik eklendi (Sipariş #${row.display_id || orderNo})`,
+              source: "auto_return",
+              created_at: formatIsoDate(row.created_at),
+            })
+          }
+        }
       }
     } catch (err) {
       console.error("order-operations orders query error:", err)
     }
 
     // Build Missing / Failed Payment Orders (Görsel 2: Ödeme Hatası Alınanlar)
-    // Include incomplete carts where customer entered checkout details or attempted PayTR
     const cartMissingOrders = enrichedCarts
       .filter((c) => c.has_customer_info || c.metadata?.paytr_oid || c.metadata?.payment_attempt)
       .map((c) => ({
@@ -351,6 +459,9 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
       ...dbEftOrders,
     ]
 
+    // Combine manual risk criteria and auto-detected return risk criteria
+    const combinedRiskCriteria = [...(opsState.riskCriteria || []), ...autoDetectedRiskItems]
+
     return res.json({
       success: true,
       missingOrders,
@@ -377,6 +488,9 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
         items: abandonedCarts,
       },
       eftNotifications,
+      orderTags: opsState.orderTags || DEFAULT_ORDER_TAGS,
+      riskCriteria: combinedRiskCriteria,
+      autoRiskConfig: opsState.autoRiskConfig || DEFAULT_AUTO_RISK_CONFIG,
     })
   } catch (error: any) {
     console.error("GET /admin/order-operations error:", error)
@@ -446,6 +560,148 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
       return res.json({
         success: true,
         automationActive: opsState.automationActive,
+      })
+    }
+
+    // ==========================================
+    // SİPARİŞ ETİKETLERİ İŞLEMLERİ (Görsel 1 & 2)
+    // ==========================================
+    if (action === "save_order_tag") {
+      const { tag } = body
+      if (!tag || !String(tag.name || "").trim()) {
+        return res.status(400).json({ success: false, error: "Etiket adı zorunludur." })
+      }
+      const tags = Array.isArray(opsState.orderTags) ? [...opsState.orderTags] : [...DEFAULT_ORDER_TAGS]
+      const cleanName = String(tag.name).trim()
+      const isActive = tag.active !== false
+
+      if (tag.id) {
+        const idx = tags.findIndex((t) => t.id === tag.id)
+        if (idx !== -1) {
+          tags[idx] = {
+            ...tags[idx],
+            name: cleanName,
+            active: isActive,
+          }
+        }
+      } else {
+        const maxNo = tags.reduce((max, t) => (t.no > max ? t.no : max), 0)
+        const newTag: OrderTagItem = {
+          id: `tag_${Date.now()}`,
+          no: maxNo + 1,
+          name: cleanName,
+          active: isActive,
+          created_at: formatIsoDate(new Date()),
+        }
+        tags.unshift(newTag)
+      }
+
+      opsState.orderTags = tags
+      writeOpsState(opsState)
+      return res.json({
+        success: true,
+        orderTags: opsState.orderTags,
+        message: "Sipariş etiketi başarıyla kaydedildi.",
+      })
+    }
+
+    if (action === "delete_order_tag") {
+      opsState.orderTags = (opsState.orderTags || DEFAULT_ORDER_TAGS).filter((t) => t.id !== id)
+      writeOpsState(opsState)
+      return res.json({
+        success: true,
+        orderTags: opsState.orderTags,
+        message: "Sipariş etiketi silindi.",
+      })
+    }
+
+    // ==========================================
+    // RİSK KRİTERLERİ İŞLEMLERİ (Görsel 3, 4 & 5)
+    // ==========================================
+    if (action === "save_risk_criterion") {
+      const { criterion } = body
+      if (!criterion) {
+        return res.status(400).json({ success: false, error: "Kriter verisi eksik." })
+      }
+      const list = Array.isArray(opsState.riskCriteria) ? [...opsState.riskCriteria] : []
+      const blockedMethods: string[] = Array.isArray(criterion.blocked_payment_methods)
+        ? criterion.blocked_payment_methods
+        : ["Kapıda Ödeme", "Havale / EFT"]
+      const isCompletelyBlocked = Boolean(criterion.is_completely_blocked)
+      const onlyCreditCard =
+        !isCompletelyBlocked &&
+        (Boolean(criterion.only_credit_card) ||
+          (blockedMethods.includes("Kapıda Ödeme") && !blockedMethods.includes("Kredi Kartı")))
+
+      if (criterion.id && !String(criterion.id).startsWith("auto_rc_")) {
+        const idx = list.findIndex((c) => c.id === criterion.id)
+        if (idx !== -1) {
+          list[idx] = {
+            ...list[idx],
+            full_name: String(criterion.full_name || "").trim(),
+            email: String(criterion.email || "").trim(),
+            phone: String(criterion.phone || "").trim(),
+            tc_no: String(criterion.tc_no || "").trim(),
+            tax_no: String(criterion.tax_no || "").trim(),
+            ip: String(criterion.ip || "").trim(),
+            blocked_payment_methods: blockedMethods,
+            is_completely_blocked: isCompletelyBlocked,
+            only_credit_card: onlyCreditCard,
+            admin_note: String(criterion.admin_note || "").trim(),
+          }
+        }
+      } else {
+        const maxNo = list.reduce((max, c) => (c.no > max ? c.no : max), 0)
+        const newCriterion: RiskCriterionItem = {
+          id: `rc_${Date.now()}`,
+          no: maxNo + 1,
+          full_name: String(criterion.full_name || "").trim(),
+          email: String(criterion.email || "").trim(),
+          phone: String(criterion.phone || "").trim(),
+          tc_no: String(criterion.tc_no || "").trim(),
+          tax_no: String(criterion.tax_no || "").trim(),
+          ip: String(criterion.ip || "").trim(),
+          blocked_payment_methods: blockedMethods,
+          is_completely_blocked: isCompletelyBlocked,
+          only_credit_card: onlyCreditCard,
+          admin_note: String(criterion.admin_note || "").trim(),
+          source: "manual",
+          created_at: formatIsoDate(new Date()),
+        }
+        list.unshift(newCriterion)
+      }
+
+      opsState.riskCriteria = list
+      writeOpsState(opsState)
+      return res.json({
+        success: true,
+        riskCriteria: opsState.riskCriteria,
+        message: "Risk kriteri başarıyla kaydedildi.",
+      })
+    }
+
+    if (action === "delete_risk_criterion") {
+      opsState.riskCriteria = (opsState.riskCriteria || []).filter((c) => c.id !== id)
+      writeOpsState(opsState)
+      return res.json({
+        success: true,
+        riskCriteria: opsState.riskCriteria,
+        message: "Risk kriteri silindi.",
+      })
+    }
+
+    if (action === "save_auto_risk_config") {
+      const { config } = body
+      opsState.autoRiskConfig = {
+        ...DEFAULT_AUTO_RISK_CONFIG,
+        ...opsState.autoRiskConfig,
+        ...(config || {}),
+      }
+      writeOpsState(opsState)
+      return res.json({
+        success: true,
+        autoRiskConfig: opsState.autoRiskConfig,
+        message: "Otomatik risk kriterleri ayarları kaydedildi.",
       })
     }
 

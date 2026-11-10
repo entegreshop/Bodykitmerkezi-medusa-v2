@@ -425,7 +425,7 @@ const SiparisYonetimiPage = () => {
     fetchOrders()
   }, [])
 
-  // Order Operations Data (Ödeme Hatası / PayTR, Aktif Sepetler, Terk Edilmiş Sepetler, Havale Bildirimleri)
+  // Order Operations Data (Ödeme Hatası / PayTR, Aktif Sepetler, Terk Edilmiş Sepetler, Havale Bildirimleri, Sipariş Etiketleri, Risk Kriterleri)
   const [opsData, setOpsData] = useState<any>({
     missingOrders: [],
     activeCarts: {
@@ -438,11 +438,86 @@ const SiparisYonetimiPage = () => {
       items: [],
     },
     eftNotifications: [],
+    orderTags: [
+      { id: "tag_6", no: 6, name: "Mağaza", active: true, created_at: "2025-12-30" },
+      { id: "tag_5", no: 5, name: "Telefon", active: true, created_at: "2025-12-30" },
+      { id: "tag_4", no: 4, name: "Twitter", active: true, created_at: "2025-12-30" },
+      { id: "tag_3", no: 3, name: "WhatsApp", active: true, created_at: "2025-12-30" },
+      { id: "tag_2", no: 2, name: "Facebook", active: true, created_at: "2025-12-30" },
+      { id: "tag_1", no: 1, name: "Instagram", active: true, created_at: "2025-12-30" },
+    ],
+    riskCriteria: [],
+    autoRiskConfig: {
+      autoDisableCodOnReturn: true,
+      minReturnCount: 1,
+      actionType: "only_credit_card",
+      blockedMethods: ["Kapıda Ödeme", "Havale / EFT"],
+    },
   })
   const [opsLoading, setOpsLoading] = useState(false)
   const [selectedCartPreview, setSelectedCartPreview] = useState<any | null>(null)
   const [creatingFromMissingId, setCreatingFromMissingId] = useState<string | null>(null)
   const [eftPageSize, setEftPageSize] = useState<number>(15)
+  const [tagPageSize, setTagPageSize] = useState<number>(15)
+  const [riskPageSize, setRiskPageSize] = useState<number>(15)
+
+  // Sipariş Etiketleri Modal State (Görsel 1 & 2)
+  const [showOrderTagModal, setShowOrderTagModal] = useState(false)
+  const [tagModalActionsOpen, setTagModalActionsOpen] = useState(false)
+  const [editingOrderTag, setEditingOrderTag] = useState<{
+    id?: string
+    no?: number
+    name: string
+    active: boolean
+  }>({ name: "", active: true })
+
+  // Risk Kriterleri Modal State (Görsel 3, 4 & 5)
+  const [showRiskCriterionModal, setShowRiskCriterionModal] = useState(false)
+  const [showAutoRiskModal, setShowAutoRiskModal] = useState(false)
+  const [riskMethodsDropdownOpen, setRiskMethodsDropdownOpen] = useState(false)
+  const [riskMethodsSearch, setRiskMethodsSearch] = useState("")
+  const [showRiskFilters, setShowRiskFilters] = useState(false)
+  const [riskFilterName, setRiskFilterName] = useState("")
+  const [riskFilterPhone, setRiskFilterPhone] = useState("")
+  const [riskFilterEmail, setRiskFilterEmail] = useState("")
+  const [editingRiskCriterion, setEditingRiskCriterion] = useState<{
+    id?: string
+    no?: number
+    full_name: string
+    email: string
+    phone: string
+    tc_no: string
+    tax_no: string
+    ip: string
+    blocked_payment_methods: string[]
+    is_completely_blocked: boolean
+    only_credit_card: boolean
+    admin_note: string
+  }>({
+    full_name: "",
+    email: "",
+    phone: "",
+    tc_no: "",
+    tax_no: "",
+    ip: "",
+    blocked_payment_methods: ["Kapıda Ödeme", "Havale / EFT"],
+    is_completely_blocked: false,
+    only_credit_card: true,
+    admin_note: "",
+  })
+
+  const ALL_RISK_PAYMENT_METHODS = [
+    "Kapıda Ödeme",
+    "Havale / EFT",
+    "Kredi Kartı",
+    "PayTR (iFrame)",
+    "İyzico (iFrame)",
+    "Cüzdanla Ödeme",
+    "Mağazada Ödeme",
+    "Vallet (iFrame)",
+    "PayOp",
+    "Diğer",
+  ]
 
   const fetchOrderOperations = async () => {
     setOpsLoading(true)
@@ -451,7 +526,7 @@ const SiparisYonetimiPage = () => {
       if (res.ok) {
         const data = await res.json()
         if (data && data.success) {
-          setOpsData(data)
+          setOpsData((prev: any) => ({ ...prev, ...data }))
         }
       }
     } catch (err) {
@@ -462,15 +537,167 @@ const SiparisYonetimiPage = () => {
   }
 
   useEffect(() => {
+    fetchOrderOperations()
+  }, [])
+
+  useEffect(() => {
     if (
       activeTab === "odeme_hatasi" ||
       activeTab === "aktif-sepetler" ||
       activeTab === "terk-edilmis-sepetler" ||
-      activeTab === "havale-bildirimleri"
+      activeTab === "havale-bildirimleri" ||
+      activeTab === "siparis-etiketleri" ||
+      activeTab === "risk-kriterleri"
     ) {
       fetchOrderOperations()
     }
   }, [activeTab])
+
+  const handleSaveOrderTag = async () => {
+    if (!editingOrderTag.name.trim()) {
+      alert("Lütfen etiket adı giriniz.")
+      return
+    }
+    try {
+      const res = await fetch("/admin/order-operations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "save_order_tag",
+          tag: editingOrderTag,
+        }),
+      })
+      const data = await res.json()
+      if (data?.success) {
+        setOpsData((prev: any) => ({ ...prev, orderTags: data.orderTags }))
+        setShowOrderTagModal(false)
+        setTagModalActionsOpen(false)
+        showSuccess(data.message || "Sipariş etiketi kaydedildi.")
+      }
+    } catch (err) {
+      alert("Etiket kaydedilirken hata oluştu.")
+    }
+  }
+
+  const handleDeleteOrderTag = async (id: string) => {
+    if (!confirm("Bu sipariş etiketini silmek istediğinize emin misiniz?")) return
+    try {
+      const res = await fetch("/admin/order-operations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "delete_order_tag", id }),
+      })
+      const data = await res.json()
+      if (data?.success) {
+        setOpsData((prev: any) => ({ ...prev, orderTags: data.orderTags }))
+        setShowOrderTagModal(false)
+        setTagModalActionsOpen(false)
+        showSuccess("Sipariş etiketi silindi.")
+      }
+    } catch (err) {}
+  }
+
+  const handleNavigateOrderTagModal = (direction: "prev" | "next") => {
+    const list = opsData.orderTags || []
+    if (!editingOrderTag.id || list.length <= 1) return
+    const currentIdx = list.findIndex((t: any) => t.id === editingOrderTag.id)
+    if (currentIdx === -1) return
+    const targetIdx =
+      direction === "prev"
+        ? (currentIdx - 1 + list.length) % list.length
+        : (currentIdx + 1) % list.length
+    const target = list[targetIdx]
+    if (target) {
+      setEditingOrderTag({
+        id: target.id,
+        no: target.no,
+        name: target.name,
+        active: target.active !== false,
+      })
+    }
+  }
+
+  const handleOpenNewRiskCriterion = (prefill?: Partial<typeof editingRiskCriterion>) => {
+    setEditingRiskCriterion({
+      id: prefill?.id,
+      no: prefill?.no,
+      full_name: prefill?.full_name || "",
+      email: prefill?.email || "",
+      phone: prefill?.phone || "",
+      tc_no: prefill?.tc_no || "",
+      tax_no: prefill?.tax_no || "",
+      ip: prefill?.ip || "",
+      blocked_payment_methods: prefill?.blocked_payment_methods || ["Kapıda Ödeme", "Havale / EFT"],
+      is_completely_blocked: Boolean(prefill?.is_completely_blocked),
+      only_credit_card: prefill?.only_credit_card !== undefined ? prefill.only_credit_card : true,
+      admin_note: prefill?.admin_note || "",
+    })
+    setRiskMethodsDropdownOpen(false)
+    setRiskMethodsSearch("")
+    setShowRiskCriterionModal(true)
+  }
+
+  const handleSaveRiskCriterion = async () => {
+    if (
+      !editingRiskCriterion.full_name.trim() &&
+      !editingRiskCriterion.phone.trim() &&
+      !editingRiskCriterion.email.trim() &&
+      !editingRiskCriterion.tc_no.trim() &&
+      !editingRiskCriterion.tax_no.trim() &&
+      !editingRiskCriterion.ip.trim()
+    ) {
+      alert("Lütfen en az bir müşteri kriteri (Ad Soyad, Telefon, E-Posta, TC Kimlik No veya IP) giriniz.")
+      return
+    }
+    try {
+      const res = await fetch("/admin/order-operations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "save_risk_criterion",
+          criterion: editingRiskCriterion,
+        }),
+      })
+      const data = await res.json()
+      if (data?.success) {
+        await fetchOrderOperations()
+        setShowRiskCriterionModal(false)
+        showSuccess(data.message || "Risk kriteri başarıyla kaydedildi.")
+      }
+    } catch (err) {
+      alert("Risk kriteri kaydedilirken hata oluştu.")
+    }
+  }
+
+  const handleDeleteRiskCriterion = async (id: string) => {
+    if (!confirm("Bu risk kriterini silmek istediğinize emin misiniz?")) return
+    try {
+      const res = await fetch("/admin/order-operations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "delete_risk_criterion", id }),
+      })
+      if (res.ok) {
+        await fetchOrderOperations()
+        showSuccess("Risk kriteri silindi.")
+      }
+    } catch (err) {}
+  }
+
+  const handleSaveAutoRiskConfig = async (newConfig: any) => {
+    try {
+      const res = await fetch("/admin/order-operations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "save_auto_risk_config", config: newConfig }),
+      })
+      if (res.ok) {
+        await fetchOrderOperations()
+        setShowAutoRiskModal(false)
+        showSuccess("Otomatik risk kriterleri ayarları güncellendi.")
+      }
+    } catch (err) {}
+  }
 
   const handleCreateOrderFromMissing = async (item: any) => {
     setCreatingFromMissingId(item.id)
@@ -684,8 +911,9 @@ const SiparisYonetimiPage = () => {
         if (!matchNo && !matchCust && !matchPhone) return false
       }
 
-      // 2. Platform filter
+      // 2. Platform & Sipariş Etiketi filter
       if (filterPlatform && o.platform.toLowerCase() !== filterPlatform.toLowerCase()) return false
+      if (filterTag && o.order_tag.toLowerCase() !== filterTag.toLowerCase() && o.platform.toLowerCase() !== filterTag.toLowerCase()) return false
 
       // 3. Sipariş No filter
       if (filterOrderNo && !o.display_id.includes(filterOrderNo)) return false
@@ -723,7 +951,7 @@ const SiparisYonetimiPage = () => {
 
       return true
     })
-  }, [tabFilteredOrders, quickSearch, filterPlatform, filterOrderNo, filterCustomerFirstName, filterCustomerLastName, filterPhone, filterTcNo, filterCarrier, filterPaymentMethod, filterTotalMin, filterTotalMax, filterProvince, filterProductName])
+  }, [tabFilteredOrders, quickSearch, filterPlatform, filterTag, filterOrderNo, filterCustomerFirstName, filterCustomerLastName, filterPhone, filterTcNo, filterCarrier, filterPaymentMethod, filterTotalMin, filterTotalMax, filterProvince, filterProductName])
 
   // Select all handler
   const handleSelectAll = (checked: boolean) => {
@@ -2022,6 +2250,372 @@ const SiparisYonetimiPage = () => {
               </span>
             </div>
           </div>
+        ) : activeTab === "siparis-etiketleri" ? (
+          /* GÖRSEL 1: SİPARİŞ ETİKETLERİ (HIZLI SATIŞ / INSTAGRAM DM / WHATSAPP MANUEL SİPARİŞ ETİKETLERİ) */
+          <div className="bg-white border border-zinc-200 rounded-xl p-6 shadow-sm flex flex-col gap-5">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+              <div className="relative w-full max-w-[300px]">
+                <span className="absolute inset-y-0 left-3 flex items-center text-zinc-400 text-xs">🔍</span>
+                <input
+                  type="text"
+                  placeholder="Hızlı ara.."
+                  value={quickSearch}
+                  onChange={(e) => setQuickSearch(e.target.value)}
+                  className="w-full bg-white border border-zinc-200 rounded-lg pl-8 pr-4 py-2 text-xs font-medium focus:outline-none focus:border-zinc-300 text-zinc-800"
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingOrderTag({ name: "", active: true })
+                  setTagModalActionsOpen(false)
+                  setShowOrderTagModal(true)
+                }}
+                className="bg-[#2ebd85] hover:bg-emerald-600 text-white px-4 py-2 rounded-md text-xs font-bold inline-flex items-center justify-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+              >
+                <span className="text-sm leading-none font-black">+</span>
+                <span>Yeni Sipariş Etiketi</span>
+              </button>
+            </div>
+
+            <div className="border border-zinc-200 rounded-lg overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse text-left bg-white text-[12px]">
+                  <thead>
+                    <tr className="bg-zinc-50/80 border-b border-zinc-200 text-[11.5px] font-bold text-zinc-800 divide-x divide-zinc-200">
+                      <th className="py-3.5 px-4 w-[14%]">No</th>
+                      <th className="py-3.5 px-4 w-[40%]">Etiket Adı</th>
+                      <th className="py-3.5 px-4 w-[14%]">Durum</th>
+                      <th className="py-3.5 px-4 w-[18%]">Tarih</th>
+                      <th className="py-3.5 px-4 w-[14%]">İşlemler</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-200 text-zinc-700">
+                    {(() => {
+                      const tagsList = (opsData.orderTags || []).filter((item: any) => {
+                        if (!quickSearch.trim()) return true
+                        const q = quickSearch.toLowerCase()
+                        return (
+                          String(item.name || "").toLowerCase().includes(q) ||
+                          String(item.no || "").toLowerCase().includes(q)
+                        )
+                      })
+                      if (tagsList.length === 0) {
+                        return (
+                          <tr>
+                            <td colSpan={5} className="py-12 text-center text-zinc-400 font-semibold">
+                              Sipariş etiketi bulunamadı.
+                            </td>
+                          </tr>
+                        )
+                      }
+                      return tagsList.slice(0, tagPageSize).map((item: any, idx: number) => (
+                        <tr
+                          key={item.id || idx}
+                          className={`divide-x divide-zinc-200 transition-colors ${idx % 2 === 1 ? "bg-zinc-50/40" : "bg-white"} hover:bg-zinc-50`}
+                        >
+                          <td className="py-3 px-4">
+                            <span
+                              onClick={() => {
+                                setEditingOrderTag({
+                                  id: item.id,
+                                  no: item.no,
+                                  name: item.name,
+                                  active: item.active !== false,
+                                })
+                                setTagModalActionsOpen(false)
+                                setShowOrderTagModal(true)
+                              }}
+                              className="font-bold text-[#1976d2] hover:underline cursor-pointer"
+                            >
+                              {item.no}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 font-medium text-zinc-700">{item.name}</td>
+                          <td className="py-3 px-4">
+                            {item.active !== false ? (
+                              <span className="inline-flex items-center justify-center w-5 h-5 rounded-full border border-emerald-500 text-emerald-500">
+                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center justify-center w-5 h-5 rounded-full border border-zinc-300 text-zinc-400">
+                                ✕
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4 font-medium text-zinc-600">{item.created_at || "2025-12-30"}</td>
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingOrderTag({
+                                    id: item.id,
+                                    no: item.no,
+                                    name: item.name,
+                                    active: item.active !== false,
+                                  })
+                                  setTagModalActionsOpen(false)
+                                  setShowOrderTagModal(true)
+                                }}
+                                className="w-7 h-7 rounded bg-[#9b66c4] hover:bg-purple-600 text-white flex items-center justify-center shadow-sm cursor-pointer transition-colors"
+                                title="Etiketi Düzenle"
+                              >
+                                <EyeIcon />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteOrderTag(item.id)}
+                                className="w-7 h-7 rounded bg-[#ef4444] hover:bg-red-600 text-white flex items-center justify-center shadow-sm cursor-pointer transition-colors"
+                                title="Sil"
+                              >
+                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    })()}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 pt-1">
+              <select
+                value={tagPageSize}
+                onChange={(e) => setTagPageSize(Number(e.target.value))}
+                className="border border-zinc-200 rounded-lg px-3 py-1.5 text-xs font-semibold text-zinc-700 bg-white focus:outline-none"
+              >
+                <option value={15}>15</option>
+                <option value={30}>30</option>
+                <option value={50}>50</option>
+              </select>
+              <span className="text-xs font-medium text-zinc-600">
+                {(opsData.orderTags || []).length} kayıttan {(opsData.orderTags || []).length > 0 ? 1 : 0} ile {Math.min(tagPageSize, (opsData.orderTags || []).length)} arası gösteriliyor
+              </span>
+            </div>
+          </div>
+        ) : activeTab === "risk-kriterleri" ? (
+          /* GÖRSEL 3 & 4: RİSK KRİTERLERİ (KAPIDA ÖDEME İADE DÖNEN MÜŞTERİLERİ SADECE KREDİ KARTINA ZORLAMA VEYA BLOKLAMA) */
+          <div className="bg-white border border-zinc-200 rounded-xl p-6 shadow-sm flex flex-col gap-5">
+            <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5 flex-1">
+                <button
+                  type="button"
+                  onClick={() => setShowRiskFilters(!showRiskFilters)}
+                  className="bg-white border border-zinc-200 px-3.5 py-2 rounded-lg text-xs font-semibold text-zinc-700 hover:bg-zinc-50 inline-flex items-center gap-1.5 cursor-pointer"
+                >
+                  <span>Filtreler</span>
+                  <svg className={`w-3.5 h-3.5 text-zinc-500 transition-transform ${showRiskFilters ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                <div className="relative w-full max-w-[290px]">
+                  <span className="absolute inset-y-0 left-3 flex items-center text-zinc-400 text-xs">🔍</span>
+                  <input
+                    type="text"
+                    placeholder="Hızlı ara.."
+                    value={quickSearch}
+                    onChange={(e) => setQuickSearch(e.target.value)}
+                    className="w-full bg-white border border-zinc-200 rounded-lg pl-8 pr-4 py-2 text-xs font-medium focus:outline-none focus:border-zinc-300 text-zinc-800"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => handleOpenNewRiskCriterion()}
+                  className="bg-[#2ebd85] hover:bg-emerald-600 text-white px-4 py-2 rounded-md text-xs font-bold inline-flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+                >
+                  <span className="text-sm leading-none font-black">+</span>
+                  <span>Yeni Risk Kriteri</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowAutoRiskModal(true)}
+                  className="bg-[#f59e0b] hover:bg-amber-600 text-white px-4 py-2 rounded-md text-xs font-bold inline-flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+                >
+                  <span className="text-xs leading-none">✳</span>
+                  <span>Otomatik Risk Kriterleri</span>
+                </button>
+              </div>
+            </div>
+
+            {showRiskFilters && (
+              <div className="bg-zinc-50/70 border border-zinc-200 rounded-lg p-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[11px] font-semibold text-zinc-600">Ad Soyad</label>
+                  <input
+                    type="text"
+                    placeholder="Müşteri adı..."
+                    value={riskFilterName}
+                    onChange={(e) => setRiskFilterName(e.target.value)}
+                    className="bg-white border border-zinc-200 rounded px-3 py-1.5 text-xs text-zinc-800 focus:outline-none"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[11px] font-semibold text-zinc-600">Telefon</label>
+                  <input
+                    type="text"
+                    placeholder="Telefon numarası..."
+                    value={riskFilterPhone}
+                    onChange={(e) => setRiskFilterPhone(e.target.value)}
+                    className="bg-white border border-zinc-200 rounded px-3 py-1.5 text-xs text-zinc-800 focus:outline-none"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[11px] font-semibold text-zinc-600">E-posta</label>
+                  <input
+                    type="text"
+                    placeholder="E-posta adresi..."
+                    value={riskFilterEmail}
+                    onChange={(e) => setRiskFilterEmail(e.target.value)}
+                    className="bg-white border border-zinc-200 rounded px-3 py-1.5 text-xs text-zinc-800 focus:outline-none"
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="border border-zinc-200 rounded-lg overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse text-left bg-white text-[12px]">
+                  <thead>
+                    <tr className="bg-zinc-50/80 border-b border-zinc-200 text-[11.5px] font-bold text-zinc-800 divide-x divide-zinc-200">
+                      <th className="py-3.5 px-4">No</th>
+                      <th className="py-3.5 px-4">Ad Soyad</th>
+                      <th className="py-3.5 px-4">E-posta</th>
+                      <th className="py-3.5 px-4">Telefon</th>
+                      <th className="py-3.5 px-4">TC Kimlik No</th>
+                      <th className="py-3.5 px-4">Vergi Numarası</th>
+                      <th className="py-3.5 px-4">IP</th>
+                      <th className="py-3.5 px-4 w-36">İşlemler</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-200 text-zinc-700">
+                    {(() => {
+                      const list = (opsData.riskCriteria || []).filter((item: any) => {
+                        if (quickSearch.trim()) {
+                          const q = quickSearch.toLowerCase()
+                          const matchQ =
+                            String(item.full_name || "").toLowerCase().includes(q) ||
+                            String(item.email || "").toLowerCase().includes(q) ||
+                            String(item.phone || "").toLowerCase().includes(q) ||
+                            String(item.tc_no || "").toLowerCase().includes(q) ||
+                            String(item.tax_no || "").toLowerCase().includes(q) ||
+                            String(item.ip || "").toLowerCase().includes(q)
+                          if (!matchQ) return false
+                        }
+                        if (riskFilterName && !String(item.full_name || "").toLowerCase().includes(riskFilterName.toLowerCase())) return false
+                        if (riskFilterPhone && !String(item.phone || "").toLowerCase().includes(riskFilterPhone.toLowerCase())) return false
+                        if (riskFilterEmail && !String(item.email || "").toLowerCase().includes(riskFilterEmail.toLowerCase())) return false
+                        return true
+                      })
+
+                      if (list.length === 0) {
+                        return (
+                          <tr>
+                            <td colSpan={8} className="py-12 text-center text-zinc-500 font-medium">
+                              Aramaya uygun kayıt bulunamadı.
+                            </td>
+                          </tr>
+                        )
+                      }
+
+                      return list.slice(0, riskPageSize).map((item: any, idx: number) => (
+                        <tr
+                          key={item.id || idx}
+                          className={`divide-x divide-zinc-200 transition-colors ${idx % 2 === 1 ? "bg-zinc-50/40" : "bg-white"} hover:bg-zinc-50`}
+                        >
+                          <td className="py-3 px-4">
+                            <span
+                              onClick={() => handleOpenNewRiskCriterion(item)}
+                              className="font-bold text-[#1976d2] hover:underline cursor-pointer"
+                            >
+                              {item.no || idx + 1}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="flex flex-col gap-1">
+                              <span className="font-semibold text-zinc-800">{item.full_name || "-"}</span>
+                              <div className="flex flex-wrap items-center gap-1">
+                                {item.is_completely_blocked ? (
+                                  <span className="inline-block px-2 py-0.5 rounded bg-red-100 text-red-700 border border-red-200 text-[10px] font-bold">
+                                    Müşteri Tamamen Bloklu
+                                  </span>
+                                ) : (
+                                  <span className="inline-block px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-bold">
+                                    Sadece Kredi Kartı ({(item.blocked_payment_methods || ["Kapıda Ödeme", "Havale / EFT"]).join(", ")} Pasif)
+                                  </span>
+                                )}
+                                {item.source === "auto_return" && (
+                                  <span className="inline-block px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200 text-[9.5px] font-semibold">
+                                    Otomatik (İade Kargo)
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 font-medium text-zinc-700">{item.email || "-"}</td>
+                          <td className="py-3 px-4 font-medium text-zinc-700">{item.phone || "-"}</td>
+                          <td className="py-3 px-4 font-medium text-zinc-700">{item.tc_no || "-"}</td>
+                          <td className="py-3 px-4 font-medium text-zinc-700">{item.tax_no || "-"}</td>
+                          <td className="py-3 px-4 font-medium text-zinc-700">{item.ip || "-"}</td>
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => handleOpenNewRiskCriterion(item)}
+                                className="w-7 h-7 rounded bg-[#9b66c4] hover:bg-purple-600 text-white flex items-center justify-center shadow-sm cursor-pointer transition-colors"
+                                title="Düzenle"
+                              >
+                                <EyeIcon />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteRiskCriterion(item.id)}
+                                className="w-7 h-7 rounded bg-[#ef4444] hover:bg-red-600 text-white flex items-center justify-center shadow-sm cursor-pointer transition-colors"
+                                title="Sil"
+                              >
+                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    })()}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 pt-1">
+              <select
+                value={riskPageSize}
+                onChange={(e) => setRiskPageSize(Number(e.target.value))}
+                className="border border-zinc-200 rounded-lg px-3 py-1.5 text-xs font-semibold text-zinc-700 bg-white focus:outline-none"
+              >
+                <option value={15}>15</option>
+                <option value={30}>30</option>
+                <option value={50}>50</option>
+              </select>
+              {(opsData.riskCriteria || []).length > 0 && (
+                <span className="text-xs font-medium text-zinc-600">
+                  {(opsData.riskCriteria || []).length} kayıttan 1 ile {Math.min(riskPageSize, (opsData.riskCriteria || []).length)} arası gösteriliyor
+                </span>
+              )}
+            </div>
+          </div>
         ) : (
           <>
 
@@ -2149,6 +2743,9 @@ const SiparisYonetimiPage = () => {
                   className="w-full px-3 py-2 rounded-lg border border-zinc-200 focus:outline-none focus:border-zinc-400 text-xs font-bold text-zinc-800 bg-white"
                 >
                   <option value="">Seçilmedi</option>
+                  {(opsData.orderTags || []).map((t: any) => (
+                    <option key={t.id} value={t.name}>{t.name}</option>
+                  ))}
                 </select>
               </div>
 
@@ -2545,8 +3142,29 @@ const SiparisYonetimiPage = () => {
                                   const cleanIp = ip ? ip.trim() : "";
                                   
                                   let isRisky = false;
+                                  const tcNo = (order.billing_address?.tc_no || "").trim();
+                                  const taxNo = (order.billing_address?.tax_no || "").trim();
+                                  for (const rc of (opsData.riskCriteria || [])) {
+                                    const rcPhone = rc.phone ? rc.phone.replace(/[^0-9]/g, '').slice(-10) : "";
+                                    const rcEmail = rc.email ? rc.email.toLowerCase().trim() : "";
+                                    const rcIp = rc.ip ? rc.ip.trim() : "";
+                                    const rcTc = rc.tc_no ? rc.tc_no.trim() : "";
+                                    const rcTax = rc.tax_no ? rc.tax_no.trim() : "";
+                                    const rcName = rc.full_name ? rc.full_name.toLowerCase().replace(/\s+/g, '') : "";
+                                    if (
+                                      (cleanPhone && rcPhone && cleanPhone === rcPhone) ||
+                                      (cleanEmail && rcEmail && cleanEmail === rcEmail) ||
+                                      (cleanIp && rcIp && cleanIp === rcIp && cleanIp !== "127.0.0.1") ||
+                                      (tcNo && rcTc && tcNo === rcTc) ||
+                                      (taxNo && rcTax && taxNo === rcTax) ||
+                                      (fullName && rcName && fullName === rcName)
+                                    ) {
+                                      isRisky = true;
+                                      break;
+                                    }
+                                  }
                                   
-                                  if (cleanPhone || cleanEmail || cleanIp || fullName) {
+                                  if (!isRisky && (cleanPhone || cleanEmail || cleanIp || fullName)) {
                                     for (const o of currentOrders) {
                                       if (o.id === order.id) continue;
                                       
@@ -3717,7 +4335,23 @@ const SiparisYonetimiPage = () => {
                     <div className="absolute bottom-full mb-1 left-0 w-48 bg-white border border-slate-200 rounded shadow-lg overflow-hidden py-1 z-20 animate-fade-in">
                       <button
                         type="button"
-                        className="w-full text-left px-4 py-2 text-[11px] font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+                        onClick={() => {
+                          setIsActionMenuOpen(false)
+                          const fullName = `${activeOrderDetails.customer.first_name || ""} ${activeOrderDetails.customer.last_name || ""}`.trim()
+                          handleOpenNewRiskCriterion({
+                            full_name: fullName,
+                            email: activeOrderDetails.customer.email || "",
+                            phone: activeOrderDetails.customer.phone || "",
+                            tc_no: activeOrderDetails.billing_address?.tc_no || "",
+                            tax_no: activeOrderDetails.billing_address?.tax_no || "",
+                            ip: activeOrderDetails.customer.ip && activeOrderDetails.customer.ip !== "127.0.0.1" ? activeOrderDetails.customer.ip : "",
+                            blocked_payment_methods: ["Kapıda Ödeme", "Havale / EFT"],
+                            is_completely_blocked: false,
+                            only_credit_card: true,
+                            admin_note: `#${activeOrderDetails.display_id} nolu sipariş üzerinden risk kriterlerine eklendi (Kapıda Ödeme & Havale Pasif / Sadece Kredi Kartı).`,
+                          })
+                        }}
+                        className="w-full text-left px-4 py-2 text-[11px] font-medium text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
                       >
                         Risk Kriterlerine Ekle
                       </button>
@@ -4230,6 +4864,586 @@ const SiparisYonetimiPage = () => {
               )}
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* SİPARİŞ ETİKETLERİ DÜZENLE / YENİ EKLE MODALI (GÖRSEL 2 BİREBİR TASARIM) */}
+      {showOrderTagModal && (
+        <div style={{ zIndex: 100020 }} className="fixed inset-0 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-zinc-900/50 backdrop-blur-[1px]"
+            onClick={() => {
+              setShowOrderTagModal(false)
+              setTagModalActionsOpen(false)
+            }}
+          />
+          <div className="bg-white rounded-lg shadow-2xl w-full max-w-[900px] flex flex-col relative z-10 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            {/* Blue Header */}
+            <div className="bg-[#1e88e5] text-white px-6 py-4 flex items-center justify-between">
+              <div className="flex flex-col">
+                <span className="text-[12px] font-medium text-blue-100 leading-tight">
+                  Sipariş Etiketleri
+                </span>
+                <span className="text-[16px] font-bold tracking-tight mt-0.5">
+                  {editingOrderTag.no ? `${editingOrderTag.no} Nolu Etiket` : "Yeni Sipariş Etiketi"}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-4">
+                {editingOrderTag.id && (
+                  <div className="flex items-center gap-2 mr-1">
+                    <button
+                      type="button"
+                      onClick={() => handleNavigateOrderTagModal("prev")}
+                      className="w-7 h-7 rounded hover:bg-white/15 flex items-center justify-center text-white/90 hover:text-white transition-colors cursor-pointer"
+                      title="Önceki Etiket"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleNavigateOrderTagModal("next")}
+                      className="w-7 h-7 rounded hover:bg-white/15 flex items-center justify-center text-white/90 hover:text-white transition-colors cursor-pointer"
+                      title="Sonraki Etiket"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowOrderTagModal(false)
+                    setTagModalActionsOpen(false)
+                  }}
+                  className="w-7 h-7 rounded hover:bg-white/15 flex items-center justify-center text-white/90 hover:text-white transition-colors cursor-pointer"
+                >
+                  <span className="text-lg font-bold leading-none">✕</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 bg-[#f8fafc]">
+              <div className="bg-white border border-zinc-200 rounded-lg p-6 flex flex-col gap-5 shadow-2xs">
+                <div className="flex flex-col gap-2">
+                  <label className="text-[12px] font-semibold text-zinc-700">
+                    Etiket Adı <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={editingOrderTag.name}
+                    onChange={(e) => setEditingOrderTag({ ...editingOrderTag, name: e.target.value })}
+                    placeholder="Örn: Instagram, WhatsApp, Telefon, Mağaza..."
+                    className="w-full border border-zinc-200 rounded-md px-3.5 py-2.5 text-[13px] font-medium text-zinc-800 focus:outline-none focus:border-[#1e88e5]"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label className="text-[12px] font-semibold text-zinc-700">Durum</label>
+                  <button
+                    type="button"
+                    onClick={() => setEditingOrderTag({ ...editingOrderTag, active: !editingOrderTag.active })}
+                    className={`w-11 h-6 rounded-full transition-colors p-0.5 cursor-pointer flex items-center ${
+                      editingOrderTag.active ? "bg-[#2ebd85]" : "bg-zinc-300"
+                    }`}
+                  >
+                    <span
+                      className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                        editingOrderTag.active ? "translate-x-5" : "translate-x-0"
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="bg-white border-t border-zinc-200 px-6 py-3.5 flex items-center justify-between">
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setTagModalActionsOpen(!tagModalActionsOpen)}
+                  className="bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 font-semibold text-[12px] h-9 px-4 rounded-md inline-flex items-center gap-2 cursor-pointer transition-colors"
+                >
+                  <span>İşlemler</span>
+                  <span className="text-[10px]">▲</span>
+                </button>
+                {tagModalActionsOpen && (
+                  <div className="absolute bottom-full mb-1.5 left-0 w-52 bg-white border border-zinc-200 rounded-md shadow-lg py-1 z-20">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTagModalActionsOpen(false)
+                        setShowOrderTagModal(false)
+                        setIsPosOpen(true)
+                      }}
+                      className="w-full text-left px-4 py-2 text-[12px] font-medium text-zinc-700 hover:bg-zinc-50 cursor-pointer"
+                    >
+                      Bu Etiketle Hızlı Satış (POS) Aç
+                    </button>
+                    {editingOrderTag.id && (
+                      <button
+                        type="button"
+                        onClick={() => editingOrderTag.id && handleDeleteOrderTag(editingOrderTag.id)}
+                        className="w-full text-left px-4 py-2 text-[12px] font-medium text-red-600 hover:bg-red-50 cursor-pointer"
+                      >
+                        Etiketi Sil
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={handleSaveOrderTag}
+                className="bg-[#2ebd85] hover:bg-emerald-600 text-white font-bold text-[12.5px] h-9 px-5 rounded-md inline-flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+              >
+                <span>✓</span>
+                <span>Kaydet</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* YENİ RİSK KRİTERİ / DÜZENLE MODALI (GÖRSEL 4 & GÖRSEL 5 BİREBİR TASARIM) */}
+      {showRiskCriterionModal && (
+        <div style={{ zIndex: 100020 }} className="fixed inset-0 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-zinc-900/50 backdrop-blur-[1px]"
+            onClick={() => {
+              setShowRiskCriterionModal(false)
+              setRiskMethodsDropdownOpen(false)
+            }}
+          />
+          <div className="bg-white rounded-lg shadow-2xl w-full max-w-[920px] max-h-[92vh] flex flex-col relative z-10 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            {/* Blue Header */}
+            <div className="bg-[#1e88e5] text-white px-6 py-4 flex items-center justify-between shrink-0">
+              <div className="flex flex-col">
+                <span className="text-[12px] font-medium text-blue-100 leading-tight">
+                  Risk Kriterleri
+                </span>
+                <span className="text-[16px] font-bold tracking-tight mt-0.5">
+                  {editingRiskCriterion.no
+                    ? `${editingRiskCriterion.no} Nolu Risk Kriteri`
+                    : "Yeni Risk Kriteri"}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowRiskCriterionModal(false)
+                  setRiskMethodsDropdownOpen(false)
+                }}
+                className="w-7 h-7 rounded hover:bg-white/15 flex items-center justify-center text-white/90 hover:text-white transition-colors cursor-pointer"
+              >
+                <span className="text-lg font-bold leading-none">✕</span>
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 bg-[#f8fafc] overflow-y-auto flex-1 flex flex-col gap-4">
+              {/* Info Banner (Görsel 4) */}
+              <div className="bg-white border border-zinc-200 rounded-lg px-4 py-3 text-[12px] font-bold text-zinc-700 shadow-2xs">
+                Bu kriterlere uyan bir müşteriden yeni sipariş geldiğinde &quot;Riskli Sipariş&quot; olarak işaretlenir ve aşağıda seçtiğiniz ödeme yöntemlerini kullanamaz.
+              </div>
+
+              <div className="bg-white border border-zinc-200 rounded-lg p-6 flex flex-col gap-5 shadow-2xs">
+                {/* Hızlı Kısıtlama Modu Seçimi (Kapıda Ödeme İade -> Sadece Kredi Kartı veya Tam Bloklama) */}
+                <div className="flex flex-col gap-2 pb-4 border-b border-zinc-100">
+                  <label className="text-[12px] font-bold text-zinc-700">
+                    Kısıtlama / Yaptırım Türü (Hızlı Seçim)
+                  </label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setEditingRiskCriterion({
+                          ...editingRiskCriterion,
+                          is_completely_blocked: false,
+                          only_credit_card: true,
+                          blocked_payment_methods: ["Kapıda Ödeme", "Havale / EFT"],
+                        })
+                      }
+                      className={`p-3 rounded-lg border text-left transition-all cursor-pointer flex items-start gap-2.5 ${
+                        !editingRiskCriterion.is_completely_blocked &&
+                        editingRiskCriterion.blocked_payment_methods.includes("Kapıda Ödeme") &&
+                        editingRiskCriterion.blocked_payment_methods.includes("Havale / EFT") &&
+                        !editingRiskCriterion.blocked_payment_methods.includes("Kredi Kartı")
+                          ? "border-[#1e88e5] bg-blue-50/50 ring-1 ring-[#1e88e5]"
+                          : "border-zinc-200 hover:bg-zinc-50"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        readOnly
+                        checked={
+                          !editingRiskCriterion.is_completely_blocked &&
+                          editingRiskCriterion.blocked_payment_methods.includes("Kapıda Ödeme") &&
+                          !editingRiskCriterion.blocked_payment_methods.includes("Kredi Kartı")
+                        }
+                        className="mt-0.5"
+                      />
+                      <div className="flex flex-col">
+                        <span className="text-[12px] font-bold text-zinc-800">
+                          Sadece Kredi Kartı İle Satın Alabilsin (Kapıda Ödeme & Havale Pasif)
+                        </span>
+                        <span className="text-[11px] text-zinc-500 mt-0.5">
+                          Kapıda ödemeli kargosunu teslim almayan müşteriler için Kapıda Ödeme ve Havale/EFT yöntemlerini kapatır.
+                        </span>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setEditingRiskCriterion({
+                          ...editingRiskCriterion,
+                          is_completely_blocked: true,
+                          only_credit_card: false,
+                          blocked_payment_methods: [...ALL_RISK_PAYMENT_METHODS],
+                        })
+                      }
+                      className={`p-3 rounded-lg border text-left transition-all cursor-pointer flex items-start gap-2.5 ${
+                        editingRiskCriterion.is_completely_blocked
+                          ? "border-red-500 bg-red-50/50 ring-1 ring-red-500"
+                          : "border-zinc-200 hover:bg-zinc-50"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        readOnly
+                        checked={editingRiskCriterion.is_completely_blocked}
+                        className="mt-0.5"
+                      />
+                      <div className="flex flex-col">
+                        <span className="text-[12px] font-bold text-red-700">
+                          Müşteriyi Tamamen Blokla (Sipariş Veremesin)
+                        </span>
+                        <span className="text-[11px] text-zinc-500 mt-0.5">
+                          Müşterinin tüm ödeme yöntemlerini kapatır ve yeni sipariş oluşturmasını tamamen engeller.
+                        </span>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+
+                {/* 2-Column Customer Criteria Grid (Görsel 4) */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[12px] font-semibold text-zinc-700">Ad Soyad</label>
+                    <input
+                      type="text"
+                      value={editingRiskCriterion.full_name}
+                      onChange={(e) =>
+                        setEditingRiskCriterion({ ...editingRiskCriterion, full_name: e.target.value })
+                      }
+                      className="w-full border border-zinc-200 rounded-md px-3.5 py-2 text-[12.5px] text-zinc-800 focus:outline-none focus:border-[#1e88e5]"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[12px] font-semibold text-zinc-700">IP Adresi</label>
+                    <input
+                      type="text"
+                      value={editingRiskCriterion.ip}
+                      onChange={(e) =>
+                        setEditingRiskCriterion({ ...editingRiskCriterion, ip: e.target.value })
+                      }
+                      className="w-full border border-zinc-200 rounded-md px-3.5 py-2 text-[12.5px] text-zinc-800 focus:outline-none focus:border-[#1e88e5]"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[12px] font-semibold text-zinc-700">E-Posta Adresi</label>
+                    <input
+                      type="email"
+                      value={editingRiskCriterion.email}
+                      onChange={(e) =>
+                        setEditingRiskCriterion({ ...editingRiskCriterion, email: e.target.value })
+                      }
+                      className="w-full border border-zinc-200 rounded-md px-3.5 py-2 text-[12.5px] text-zinc-800 focus:outline-none focus:border-[#1e88e5]"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[12px] font-semibold text-zinc-700">Telefon Numarası</label>
+                    <input
+                      type="text"
+                      value={editingRiskCriterion.phone}
+                      onChange={(e) =>
+                        setEditingRiskCriterion({ ...editingRiskCriterion, phone: e.target.value })
+                      }
+                      className="w-full border border-zinc-200 rounded-md px-3.5 py-2 text-[12.5px] text-zinc-800 focus:outline-none focus:border-[#1e88e5]"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[12px] font-semibold text-zinc-700">TC Kimlik Numarası</label>
+                    <input
+                      type="text"
+                      value={editingRiskCriterion.tc_no}
+                      onChange={(e) =>
+                        setEditingRiskCriterion({ ...editingRiskCriterion, tc_no: e.target.value })
+                      }
+                      className="w-full border border-zinc-200 rounded-md px-3.5 py-2 text-[12.5px] text-zinc-800 focus:outline-none focus:border-[#1e88e5]"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[12px] font-semibold text-zinc-700">Vergi Numarası</label>
+                    <input
+                      type="text"
+                      value={editingRiskCriterion.tax_no}
+                      onChange={(e) =>
+                        setEditingRiskCriterion({ ...editingRiskCriterion, tax_no: e.target.value })
+                      }
+                      className="w-full border border-zinc-200 rounded-md px-3.5 py-2 text-[12.5px] text-zinc-800 focus:outline-none focus:border-[#1e88e5]"
+                    />
+                  </div>
+                </div>
+
+                {/* Multi-select Dropdown for Blocked Payment Methods (Görsel 4 Birebir) */}
+                <div className="flex flex-col gap-1.5 relative">
+                  <label className="text-[12px] font-semibold text-zinc-700">
+                    Müşterinin kullanmasını istemediğiniz ödeme yöntemlerini seçiniz.
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setRiskMethodsDropdownOpen(!riskMethodsDropdownOpen)}
+                    className="w-full bg-white border border-zinc-200 rounded-md px-3.5 py-2.5 text-[12.5px] text-zinc-700 flex items-center justify-between cursor-pointer focus:outline-none focus:border-[#1e88e5]"
+                  >
+                    <span className="truncate font-medium">
+                      {editingRiskCriterion.is_completely_blocked
+                        ? "Müşteri Tamamen Bloklu (Tüm Ödeme Yöntemleri Kapalı)"
+                        : editingRiskCriterion.blocked_payment_methods.length === 0
+                        ? "Hiçbiri seçilmedi"
+                        : editingRiskCriterion.blocked_payment_methods.join(", ")}
+                    </span>
+                    <svg className="w-4 h-4 text-zinc-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+
+                  {riskMethodsDropdownOpen && (
+                    <div className="border border-zinc-200 rounded-md bg-white shadow-lg p-3 flex flex-col gap-2.5 z-30">
+                      <div className="relative">
+                        <span className="absolute inset-y-0 left-3 flex items-center text-zinc-400 text-xs">🔍</span>
+                        <input
+                          type="text"
+                          value={riskMethodsSearch}
+                          onChange={(e) => setRiskMethodsSearch(e.target.value)}
+                          placeholder="Ödeme yöntemi ara..."
+                          className="w-full border border-zinc-200 rounded pl-8 pr-3 py-1.5 text-xs focus:outline-none"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setEditingRiskCriterion({
+                              ...editingRiskCriterion,
+                              blocked_payment_methods: [...ALL_RISK_PAYMENT_METHODS],
+                              is_completely_blocked: true,
+                              only_credit_card: false,
+                            })
+                          }
+                          className="border border-zinc-200 hover:bg-zinc-50 rounded py-1.5 text-xs font-semibold text-zinc-700 cursor-pointer"
+                        >
+                          Tümünü Seç
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setEditingRiskCriterion({
+                              ...editingRiskCriterion,
+                              blocked_payment_methods: [],
+                              is_completely_blocked: false,
+                              only_credit_card: false,
+                            })
+                          }
+                          className="border border-zinc-200 hover:bg-zinc-50 rounded py-1.5 text-xs font-semibold text-zinc-700 cursor-pointer"
+                        >
+                          Seçimi Kaldır
+                        </button>
+                      </div>
+
+                      <div className="max-h-52 overflow-y-auto flex flex-col gap-1.5 pt-1">
+                        {ALL_RISK_PAYMENT_METHODS.filter((m) =>
+                          m.toLowerCase().includes(riskMethodsSearch.toLowerCase())
+                        ).map((methodName) => {
+                          const checked = editingRiskCriterion.blocked_payment_methods.includes(methodName)
+                          return (
+                            <label
+                              key={methodName}
+                              className="flex items-center gap-2.5 px-2 py-1 rounded hover:bg-zinc-50 cursor-pointer text-[12.5px] text-zinc-700"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={(e) => {
+                                  const next = e.target.checked
+                                    ? [...editingRiskCriterion.blocked_payment_methods, methodName]
+                                    : editingRiskCriterion.blocked_payment_methods.filter((x) => x !== methodName)
+                                  setEditingRiskCriterion({
+                                    ...editingRiskCriterion,
+                                    blocked_payment_methods: next,
+                                    is_completely_blocked: next.length === ALL_RISK_PAYMENT_METHODS.length,
+                                    only_credit_card:
+                                      next.includes("Kapıda Ödeme") && !next.includes("Kredi Kartı"),
+                                  })
+                                }}
+                                className="w-4 h-4 rounded border-zinc-300 text-[#1e88e5]"
+                              />
+                              <span>{methodName}</span>
+                            </label>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Yönetici Notu (Görsel 4) */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[12px] font-semibold text-zinc-700">Yönetici Notu</label>
+                  <textarea
+                    rows={3}
+                    value={editingRiskCriterion.admin_note}
+                    onChange={(e) =>
+                      setEditingRiskCriterion({ ...editingRiskCriterion, admin_note: e.target.value })
+                    }
+                    className="w-full border border-zinc-200 rounded-md p-3 text-[12.5px] text-zinc-800 focus:outline-none focus:border-[#1e88e5]"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="bg-white border-t border-zinc-200 px-6 py-3.5 flex items-center justify-end shrink-0">
+              <button
+                type="button"
+                onClick={handleSaveRiskCriterion}
+                className="bg-[#2ebd85] hover:bg-emerald-600 text-white font-bold text-[12.5px] h-9 px-5 rounded-md inline-flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+              >
+                <span>✓</span>
+                <span>Kaydet</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* OTOMATİK RİSK KRİTERLERİ MODALI */}
+      {showAutoRiskModal && (
+        <div style={{ zIndex: 100020 }} className="fixed inset-0 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-zinc-900/50 backdrop-blur-[1px]"
+            onClick={() => setShowAutoRiskModal(false)}
+          />
+          <div className="bg-white rounded-lg shadow-2xl w-full max-w-[680px] flex flex-col relative z-10 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div className="bg-[#1e88e5] text-white px-6 py-4 flex items-center justify-between">
+              <div className="flex flex-col">
+                <span className="text-[12px] font-medium text-blue-100 leading-tight">
+                  Risk Kriterleri
+                </span>
+                <span className="text-[16px] font-bold tracking-tight mt-0.5">
+                  Otomatik Risk Kriterleri (Kapıda Ödeme İade Koruması)
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAutoRiskModal(false)}
+                className="w-7 h-7 rounded hover:bg-white/15 flex items-center justify-center text-white/90 hover:text-white transition-colors cursor-pointer"
+              >
+                <span className="text-lg font-bold leading-none">✕</span>
+              </button>
+            </div>
+
+            <div className="p-6 bg-[#f8fafc] flex flex-col gap-4">
+              <div className="bg-white border border-zinc-200 rounded-lg p-5 flex flex-col gap-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex flex-col">
+                    <span className="text-[13px] font-bold text-zinc-800">
+                      Kapıda Ödemeli Kargosunu Teslim Almayan (İade Dönen) Müşterileri Otomatik Kısıtla
+                    </span>
+                    <span className="text-[11.5px] text-zinc-500 mt-0.5">
+                      Sipariş durumu &quot;İade Edildi&quot; olan kapıda ödemeli müşterilerin bir sonraki alışverişinde Kapıda Ödeme ve Havale yöntemlerini otomatik kapatır.
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setOpsData((prev: any) => ({
+                        ...prev,
+                        autoRiskConfig: {
+                          ...prev.autoRiskConfig,
+                          autoDisableCodOnReturn: !prev.autoRiskConfig?.autoDisableCodOnReturn,
+                        },
+                      }))
+                    }
+                    className={`w-12 h-6 rounded-full transition-colors p-0.5 cursor-pointer flex items-center shrink-0 ${
+                      opsData.autoRiskConfig?.autoDisableCodOnReturn ? "bg-[#2ebd85]" : "bg-zinc-300"
+                    }`}
+                  >
+                    <span
+                      className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                        opsData.autoRiskConfig?.autoDisableCodOnReturn ? "translate-x-6" : "translate-x-0"
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                <div className="flex flex-col gap-2 pt-3 border-t border-zinc-100">
+                  <label className="text-[12px] font-semibold text-zinc-700">
+                    İade Dönen Müşteriye Uygulanacak Otomatik İşlem
+                  </label>
+                  <select
+                    value={opsData.autoRiskConfig?.actionType || "only_credit_card"}
+                    onChange={(e) =>
+                      setOpsData((prev: any) => ({
+                        ...prev,
+                        autoRiskConfig: {
+                          ...prev.autoRiskConfig,
+                          actionType: e.target.value,
+                          blockedMethods:
+                            e.target.value === "block_customer"
+                              ? [...ALL_RISK_PAYMENT_METHODS]
+                              : ["Kapıda Ödeme", "Havale / EFT"],
+                        },
+                      }))
+                    }
+                    className="w-full border border-zinc-200 rounded-md px-3.5 py-2.5 text-[12.5px] font-semibold text-zinc-800 bg-white focus:outline-none"
+                  >
+                    <option value="only_credit_card">
+                      Kapıda Ödeme ve Havale Yöntemlerini Pasif Yap (Sadece Kredi Kartı İle Alabilsin)
+                    </option>
+                    <option value="block_customer">
+                      Müşteriyi Tamamen Blokla (Hiçbir Ödeme Yöntemiyle Sipariş Veremesin)
+                    </option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white border-t border-zinc-200 px-6 py-3.5 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => handleSaveAutoRiskConfig(opsData.autoRiskConfig)}
+                className="bg-[#2ebd85] hover:bg-emerald-600 text-white font-bold text-[12.5px] h-9 px-5 rounded-md inline-flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+              >
+                <span>✓</span>
+                <span>Kaydet</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

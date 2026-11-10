@@ -762,22 +762,23 @@ export const EntegreShopHeaderBar = ({
   const activeCategoryLabel = getActiveCategoryLabel()
   const activeCategoryObj = navCategories.find((c) => c.label === activeCategoryLabel)
 
-  const isOrderOperationsSubTab =
-    activeCategoryLabel === "SİPARİŞLER" &&
-    (currentSearch.includes("tab=aktif-sepetler") ||
-      currentSearch.includes("tab=terk-edilmis-sepetler") ||
-      currentSearch.includes("tab=havale-bildirimleri") ||
-      currentSearch.includes("tab=siparis-etiketleri") ||
-      currentSearch.includes("tab=risk-kriterleri") ||
-      currentSearch.includes("action=pos"))
+  const getOrderSubPageTitle = (): string | null => {
+    if (activeCategoryLabel !== "SİPARİŞLER") return null
+    if (currentSearch.includes("tab=aktif-sepetler")) return "Aktif Sepetler"
+    if (currentSearch.includes("tab=terk-edilmis-sepetler")) return "Terk Edilmiş Sepetler"
+    if (currentSearch.includes("tab=havale-bildirimleri")) return "Havale Bildirimleri"
+    if (currentSearch.includes("tab=siparis-etiketleri")) return "Sipariş Etiketleri"
+    if (currentSearch.includes("tab=risk-kriterleri")) return "Risk Kriterleri"
+    if (currentSearch.includes("status=odeme_hatasi")) return "Ödeme Hatası Alınanlar"
+    return null
+  }
+
+  const orderSubPageTitle = getOrderSubPageTitle()
 
   // Determine horizontal sub-category tabs for Tier 3 (Görsel 1, 3, 4, 5)
   const getHorizontalSubTabs = (): SubMenuItem[] => {
     if (!activeCategoryObj || !activeCategoryObj.columns || activeCategoryObj.columns.length === 0) {
       return []
-    }
-    if (isOrderOperationsSubTab && activeCategoryObj.columns[1]) {
-      return [...activeCategoryObj.columns[1].items]
     }
     const baseItems = [...activeCategoryObj.columns[0].items]
     const clean = currentPathname.replace(/^\/app/, "") || "/dashboard"
@@ -1706,7 +1707,14 @@ export const EntegreShopHeaderBar = ({
                 minWidth: "150px",
               }}
             >
-              {isOrderOperationsSubTab ? "Sipariş İşlemleri" : activeCategoryObj?.sectionTitle || activeCategoryLabel}
+              {orderSubPageTitle ? (
+                <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                  <span style={{ color: "#64748b", fontWeight: 500 }}>Sipariş Yönetimi /</span>
+                  <span style={{ color: "#1e293b", fontWeight: 700 }}>{orderSubPageTitle}</span>
+                </span>
+              ) : (
+                activeCategoryObj?.sectionTitle || activeCategoryLabel
+              )}
             </div>
 
             {/* Center: Horizontal Sub-Category Tabs */}
