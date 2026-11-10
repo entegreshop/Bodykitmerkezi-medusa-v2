@@ -1980,170 +1980,274 @@ const SiparisYonetimiPage = () => {
 
       </div>
 
-      {/* DETAIL VIEW MODAL DIALOG (Görsel 3) */}
+      {/* DETAIL VIEW MODAL DIALOG (http://localhost:3095/ Birebir Tasarım) */}
       {selectedOrderId && activeOrderDetails && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedOrderId(null)} />
-          <div className="bg-zinc-100 rounded-2xl border border-zinc-200 shadow-2xl w-full max-w-[1300px] h-[92vh] flex flex-col overflow-hidden animate-scale-up relative z-10">
+        <div
+          id="order-detail-modal"
+          style={{ zIndex: 99999 }}
+          className="fixed inset-0 bg-slate-900/55 backdrop-blur-[2px] flex items-center justify-center p-3 sm:p-5 animate-fade-in"
+        >
+          <div
+            className="absolute inset-0"
+            onClick={() => setSelectedOrderId(null)}
+          />
+          <div className="bg-[#f8fafc] rounded-lg border border-[#cfd6e0] shadow-2xl w-full max-w-[1340px] h-[93vh] flex flex-col overflow-hidden relative z-10">
             
-            {/* Header segment with status and details */}
-            <div className="bg-zinc-600 text-white px-6 py-4 flex items-center justify-between shadow-md select-none shrink-0">
-              <div className="flex items-center gap-3">
-                <span className="text-xs font-semibold uppercase tracking-wider opacity-90">Sipariş Yönetimi</span>
-                <span className="text-base font-bold tracking-tight">{activeOrderDetails.display_id} Nolu Sipariş</span>
+            {/* ÜST BLOK: GÜMÜŞ-GRİ ÇİZGİLİ DESEN VE RENK (http://localhost:3095/) */}
+            <div
+              style={{
+                backgroundColor: "#e9ecf1",
+                backgroundImage:
+                  "repeating-linear-gradient(-45deg, rgba(255,255,255,0.35) 0px, rgba(255,255,255,0.35) 14px, transparent 14px, transparent 28px)",
+              }}
+              className="px-6 py-3.5 border-b border-[#cfd6e0] flex items-center justify-between shrink-0 select-none"
+            >
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[12px] font-semibold text-slate-600 tracking-tight">
+                  Sipariş Yönetimi
+                </span>
+                <span className="text-[17px] font-extrabold text-slate-900 tracking-tight">
+                  {activeOrderDetails.display_id} Nolu Sipariş
+                </span>
               </div>
-              <button 
-                onClick={() => setSelectedOrderId(null)} 
-                className="text-white hover:opacity-85 p-1 rounded-lg hover:bg-zinc-500 transition-colors"
+              <button
+                type="button"
+                onClick={() => setSelectedOrderId(null)}
+                className="w-8 h-8 rounded-lg bg-white/80 hover:bg-white border border-slate-300 text-slate-700 hover:text-slate-900 font-bold flex items-center justify-center shadow-2xs transition cursor-pointer"
               >
-                <XMark className="w-6 h-6" />
+                ✕
               </button>
             </div>
 
-            {/* Main scrollable body grid */}
-            <div className="flex-1 p-6 overflow-y-auto grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6">
+            {/* ANA İÇERİK (SOL: ÜRÜNLER + YÖNETİCİ NOTU + MÜŞTERİ/TESLİMAT/FATURA | SAĞ: BİRLEŞİK ÖZET/ÖDEME/KARGO + DÖNÜŞÜM + DİĞER) */}
+            <div className="flex-1 p-5 overflow-y-auto grid grid-cols-1 lg:grid-cols-[1fr_325px] gap-4 items-start">
               
-              {/* Left Side elements */}
-              <div className="flex flex-col gap-6">
+              {/* SOL KOLON */}
+              <div className="flex flex-col gap-4">
                 
-                {/* 1. Products list table card */}
-                <div className="bg-white border border-zinc-200 rounded shadow-none overflow-hidden">
-                  <div className="p-4 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/50">
-                    <div className="flex items-center gap-2 text-emerald-500">
-                      <CheckCircle className="w-5 h-5" />
-                      <h3 className="text-[14px] font-semibold text-zinc-900 tracking-tight">
-                        Teslim Edilen Ürünler ({activeOrderDetails.items.length})
+                {/* 1. Hazırlanan Ürünler */}
+                <div className="bg-white border border-slate-200 rounded-md overflow-hidden shadow-2xs">
+                  <div className="px-4 py-3 border-b border-slate-200 bg-[#f8fafc] flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <svg className="w-5 h-5 text-[#9333ea] shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12.378 1.602a.75.75 0 00-.756 0L3 6.632l9 5.25 9-5.25-8.622-5.03zM21.75 7.93l-9 5.25v9l8.628-5.032a.75.75 0 00.372-.648V7.93zM11.25 22.18v-9l-9-5.25v8.57a.75.75 0 00.372.648l8.628 5.033z" />
+                      </svg>
+                      <h3 className="text-[13.5px] font-bold text-slate-800 tracking-tight">
+                        Hazırlanan Ürünler{" "}
+                        <span className="font-normal text-slate-500">
+                          ({activeOrderDetails.items.length})
+                        </span>
                       </h3>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex items-center gap-2">
                       {!editingProducts ? (
-                        <button onClick={() => {
-                          setEditingProducts(true);
-                          setTempProducts(activeOrderDetails.items.map(i => ({ id: i.id, unit_price: i.unit_price, quantity: i.quantity })));
-                        }} className="px-3 py-1.5 bg-white border border-zinc-200 text-zinc-700 hover:bg-zinc-50 font-medium text-[11px] rounded shadow-sm">Düzenle</button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingProducts(true)
+                            setTempProducts(
+                              activeOrderDetails.items.map((i) => ({
+                                id: i.id,
+                                unit_price: i.unit_price,
+                                quantity: i.quantity,
+                              }))
+                            )
+                          }}
+                          className="px-3.5 py-1.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-medium text-[12px] rounded transition cursor-pointer"
+                        >
+                          Düzenle
+                        </button>
                       ) : (
                         <>
-                          <button onClick={handleSaveProducts} className="px-3 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 font-bold text-xs rounded shadow-sm">Kaydet</button>
-                          <button onClick={() => setEditingProducts(false)} className="px-3 py-1.5 bg-zinc-50 border border-zinc-200 text-zinc-600 hover:bg-zinc-100 font-medium text-xs rounded shadow-sm">İptal</button>
+                          <button
+                            type="button"
+                            onClick={handleSaveProducts}
+                            className="px-3.5 py-1.5 bg-emerald-50 border border-emerald-300 text-emerald-700 hover:bg-emerald-100 font-bold text-[12px] rounded transition cursor-pointer"
+                          >
+                            Kaydet
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEditingProducts(false)}
+                            className="px-3.5 py-1.5 bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 font-medium text-[12px] rounded transition cursor-pointer"
+                          >
+                            İptal
+                          </button>
                         </>
                       )}
-                      <button onClick={() => setShowProductSearchModal(true)} className="px-3 py-1.5 bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100 font-medium text-xs rounded shadow-sm">Ürün Ekle</button>
-                      <button className="px-3 py-1.5 bg-white border border-zinc-200 text-zinc-700 hover:bg-zinc-50 font-medium text-xs rounded shadow-sm">İade Oluştur</button>
+                      <button
+                        type="button"
+                        onClick={() => setShowProductSearchModal(true)}
+                        className="px-3.5 py-1.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-medium text-[12px] rounded transition cursor-pointer"
+                      >
+                        Ürün Ekle
+                      </button>
+                      <button
+                        type="button"
+                        className="px-3.5 py-1.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-medium text-[12px] rounded transition cursor-pointer"
+                      >
+                        İade Oluştur
+                      </button>
                     </div>
                   </div>
 
-                  <table className="w-full border-collapse text-left text-[13px] text-zinc-700">
+                  <table className="w-full border-collapse text-left text-[12.5px] text-slate-700">
                     <thead>
-                      <tr className="bg-white border-b border-zinc-200 text-xs font-semibold text-zinc-500 tracking-wide">
-                        <th className="py-3 px-4 font-semibold">Ürün</th>
-                        <th className="py-3 px-4 text-center font-semibold">Fiyat</th>
-                        <th className="py-3 px-4 text-center font-semibold">KDV</th>
-                        <th className="py-3 px-4 text-center font-semibold">Miktar</th>
-                        <th className="py-3 px-4 text-right font-semibold">Tutar</th>
+                      <tr className="bg-[#f8fafc] border-b border-slate-200 text-[12px] font-semibold text-slate-700 divide-x divide-slate-200/70">
+                        <th className="py-2.5 px-4 font-semibold">Ürün</th>
+                        <th className="py-2.5 px-4 text-right font-semibold w-28">Fiyat</th>
+                        <th className="py-2.5 px-3 text-center font-semibold w-20">KDV</th>
+                        <th className="py-2.5 px-3 text-center font-semibold w-20">Miktar</th>
+                        <th className="py-2.5 px-4 text-right font-semibold w-32">Tutar</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-zinc-100">
+                    <tbody className="divide-y divide-slate-200">
                       {activeOrderDetails.items.map((item) => (
-                        <tr key={item.id}>
-                          <td className="py-4 px-4 flex gap-3.5 items-start">
-                            <div className="w-12 h-16 bg-zinc-50 border border-zinc-150 rounded overflow-hidden flex-shrink-0 flex items-center justify-center text-xl select-none">
-                              {item.thumbnail ? (
-                                <img src={item.thumbnail} alt={item.title} className="w-full h-full object-cover" style={{ imageRendering: "crisp-edges", WebkitFontSmoothing: "antialiased" }} />
-                              ) : (
-                                "👖"
-                              )}
-                            </div>
-                            <div className="flex flex-col">
-                              <span className="font-medium text-[#0a2540] text-[13px]">{item.title}</span>
-                              <span className="text-[12px] text-zinc-500 mt-1">
-                                {item.sku ? `#${item.sku}` : ""} {item.barcode ? `- ${item.barcode}` : ""}
-                              </span>
-                              <span className="text-[12px] text-zinc-600 mt-0.5">BEDEN: {item.size}</span>
+                        <tr key={item.id} className="divide-x divide-slate-100 hover:bg-slate-50/40">
+                          <td className="py-3.5 px-4">
+                            <div className="flex gap-3.5 items-start">
+                              <div className="w-14 h-16 rounded border border-slate-200 overflow-hidden shrink-0 p-0.5 bg-slate-50 flex items-center justify-center">
+                                {item.thumbnail ? (
+                                  <img
+                                    src={item.thumbnail}
+                                    alt={item.title}
+                                    className="w-full h-full object-cover rounded-xs"
+                                  />
+                                ) : (
+                                  <span>📦</span>
+                                )}
+                              </div>
+                              <div className="flex flex-col leading-snug">
+                                <span className="font-bold text-slate-800 text-[12.5px]">
+                                  {item.title}
+                                </span>
+                                <span className="text-[11.5px] text-slate-500 mt-1">
+                                  #{item.sku || item.id.slice(-4)}
+                                </span>
+                                {item.barcode && (
+                                  <span className="text-[11.5px] text-slate-800 font-medium mt-0.5">
+                                    {item.sku} - {item.barcode}
+                                  </span>
+                                )}
+                                <span className="text-[11.5px] text-slate-700 mt-0.5">
+                                  BEDEN: {item.size}
+                                </span>
+                              </div>
                             </div>
                           </td>
-                          <td className="py-4 px-4 text-center text-zinc-800 text-[13px]">
+                          <td className="py-3.5 px-4 text-right text-slate-800 font-medium align-middle">
                             {editingProducts ? (
-                              <input 
-                                type="number" 
-                                className="w-20 border rounded px-1.5 py-1 text-center text-[13px]"
-                                value={tempProducts.find(t => t.id === item.id)?.unit_price || 0}
-                                onChange={e => {
-                                  const val = parseFloat(e.target.value) || 0;
-                                  setTempProducts(prev => prev.map(t => t.id === item.id ? { ...t, unit_price: val } : t))
+                              <input
+                                type="number"
+                                className="w-20 border border-slate-300 rounded px-1.5 py-1 text-right text-[12px]"
+                                value={tempProducts.find((t) => t.id === item.id)?.unit_price || 0}
+                                onChange={(e) => {
+                                  const val = parseFloat(e.target.value) || 0
+                                  setTempProducts((prev) =>
+                                    prev.map((t) => (t.id === item.id ? { ...t, unit_price: val } : t))
+                                  )
                                 }}
                               />
                             ) : (
                               <>{item.unit_price.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} TL</>
                             )}
                           </td>
-                          <td className="py-4 px-4 text-center text-zinc-500 text-[13px]">
+                          <td className="py-3.5 px-3 text-center text-slate-700 align-middle">
                             %{item.vat_rate}
                           </td>
-                          <td className="py-4 px-4 text-center">
+                          <td className="py-3.5 px-3 text-center align-middle">
                             {editingProducts ? (
-                              <input 
-                                type="number" 
-                                className="w-16 border rounded px-1.5 py-1 text-center text-[13px] mx-auto block"
-                                value={tempProducts.find(t => t.id === item.id)?.quantity || 1}
-                                onChange={e => {
-                                  const val = parseInt(e.target.value) || 1;
-                                  setTempProducts(prev => prev.map(t => t.id === item.id ? { ...t, quantity: val } : t))
+                              <input
+                                type="number"
+                                className="w-14 border border-slate-300 rounded px-1.5 py-1 text-center text-[12px] mx-auto block"
+                                value={tempProducts.find((t) => t.id === item.id)?.quantity || 1}
+                                onChange={(e) => {
+                                  const val = parseInt(e.target.value) || 1
+                                  setTempProducts((prev) =>
+                                    prev.map((t) => (t.id === item.id ? { ...t, quantity: val } : t))
+                                  )
                                 }}
                               />
                             ) : (
                               <div className="flex flex-col leading-tight items-center justify-center">
-                                <span className="text-zinc-800 text-[13px]">{item.quantity}</span>
-                                <span className="text-[11px] text-zinc-500">Adet</span>
+                                <span className="text-slate-800 font-semibold text-[12.5px]">
+                                  {item.quantity}
+                                </span>
+                                <span className="text-[10.5px] text-slate-500">Adet</span>
                               </div>
                             )}
                           </td>
-                          <td className="py-4 px-4 text-right text-zinc-800 text-[13px]">
+                          <td className="py-3.5 px-4 text-right text-slate-800 font-medium align-middle">
                             {editingProducts ? (
-                              <div className="flex items-center justify-end gap-3">
-                                <span>{((tempProducts.find(t => t.id === item.id)?.unit_price || 0) * (tempProducts.find(t => t.id === item.id)?.quantity || 0)).toLocaleString("tr-TR", { minimumFractionDigits: 2 })} TL</span>
+                              <div className="flex items-center justify-end gap-2">
+                                <span>
+                                  {(
+                                    (tempProducts.find((t) => t.id === item.id)?.unit_price || 0) *
+                                    (tempProducts.find((t) => t.id === item.id)?.quantity || 0)
+                                  ).toLocaleString("tr-TR", { minimumFractionDigits: 2 })}{" "}
+                                  TL
+                                </span>
                                 <button
+                                  type="button"
                                   title="Ürünü Sil"
-                                  onClick={() => setTempProducts(prev => prev.filter(t => t.id !== item.id))}
+                                  onClick={() =>
+                                    setTempProducts((prev) => prev.filter((t) => t.id !== item.id))
+                                  }
                                   className="w-6 h-6 flex items-center justify-center rounded bg-rose-50 hover:bg-rose-100 text-rose-500 transition-colors shrink-0"
                                 >
                                   <Trash className="w-3.5 h-3.5" />
                                 </button>
                               </div>
                             ) : (
-                              <>{(item.unit_price * item.quantity).toLocaleString("tr-TR", { minimumFractionDigits: 2 })} TL</>
+                              <>
+                                {(item.unit_price * item.quantity).toLocaleString("tr-TR", {
+                                  minimumFractionDigits: 2,
+                                })}{" "}
+                                TL
+                              </>
                             )}
                           </td>
                         </tr>
                       ))}
 
-                      {/* Display calculations */}
-                      <tr className="bg-white border-t border-zinc-100 text-[13px] text-zinc-600">
-                        <td colSpan={3} className="py-4 px-4">
-                          <div className="flex flex-col gap-1.5 text-zinc-500">
-                            <label className="flex items-center gap-1.5 cursor-pointer">
-                              <input type="checkbox" className="w-3.5 h-3.5 rounded border-zinc-300 text-blue-600" />
+                      {/* Alt Toplam Satırı */}
+                      <tr className="bg-white border-t border-slate-200 text-[12px] divide-x divide-slate-100">
+                        <td className="py-3.5 px-4">
+                          <div className="flex flex-col gap-1.5 text-slate-600 text-[11.5px]">
+                            <label className="flex items-center gap-2 cursor-pointer select-none">
+                              <input type="checkbox" className="w-3.5 h-3.5 rounded border-slate-300 text-blue-600" />
                               <span>Stok miktarını göster</span>
                             </label>
-                            <label className="flex items-center gap-1.5 cursor-pointer">
-                              <input type="checkbox" className="w-3.5 h-3.5 rounded border-zinc-300 text-blue-600" />
+                            <label className="flex items-center gap-2 cursor-pointer select-none">
+                              <input type="checkbox" className="w-3.5 h-3.5 rounded border-slate-300 text-blue-600" />
                               <span>Desiyi göster</span>
                             </label>
-                            <label className="flex items-center gap-1.5 cursor-pointer">
-                              <input type="checkbox" className="w-3.5 h-3.5 rounded border-zinc-300 text-blue-600" />
+                            <label className="flex items-center gap-2 cursor-pointer select-none">
+                              <input type="checkbox" className="w-3.5 h-3.5 rounded border-slate-300 text-blue-600" />
                               <span>Özel kodları göster</span>
                             </label>
                           </div>
                         </td>
-                        <td className="py-4 px-4 text-right">
-                          <div className="flex flex-col gap-2 text-zinc-500">
-                            <span>Ara Toplam</span>
-                            <span>Genel Toplam</span>
-                          </div>
-                        </td>
-                        <td className="py-4 px-4 text-right text-zinc-800">
-                          <div className="flex flex-col gap-2">
-                            <span>{activeOrderDetails.subtotal.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} TL</span>
-                            <span>{activeOrderDetails.total.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} TL</span>
+                        <td colSpan={4} className="py-3.5 px-4 align-middle">
+                          <div className="flex flex-col gap-2 max-w-[260px] ml-auto">
+                            <div className="flex items-center justify-between text-slate-600">
+                              <span>Ara Toplam</span>
+                              <span className="font-semibold text-slate-800">
+                                {activeOrderDetails.subtotal.toLocaleString("tr-TR", {
+                                  minimumFractionDigits: 2,
+                                })}{" "}
+                                TL
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between text-slate-600">
+                              <span>Genel Toplam</span>
+                              <span className="font-bold text-slate-900">
+                                {activeOrderDetails.total.toLocaleString("tr-TR", {
+                                  minimumFractionDigits: 2,
+                                })}{" "}
+                                TL
+                              </span>
+                            </div>
                           </div>
                         </td>
                       </tr>
@@ -2151,190 +2255,280 @@ const SiparisYonetimiPage = () => {
                   </table>
                 </div>
 
-                {/* 2. Admin note card */}
-                <div className="bg-white border border-zinc-200 rounded p-4 flex flex-col gap-2">
-                  <div className="flex justify-between items-center pb-2">
-                    <h3 className="text-[12px] font-bold text-zinc-800 tracking-tight">
+                {/* 2. Yönetici Notu */}
+                <div className="bg-white border border-slate-200 rounded-md overflow-hidden shadow-2xs">
+                  <div className="px-4 py-3 bg-[#f8fafc] flex justify-between items-center border-b border-slate-100">
+                    <h3 className="text-[13px] font-medium text-slate-700 tracking-tight">
                       Yönetici Notu
                     </h3>
                     {!editingNotes ? (
-                      <button 
-                        onClick={() => { setEditingNotes(true); setTempNotesText(activeOrderDetails.admin_notes || ""); }}
-                        className="text-zinc-400 hover:text-zinc-600 border border-zinc-200 rounded p-1 bg-white"
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingNotes(true)
+                          setTempNotesText(activeOrderDetails.admin_notes || "")
+                        }}
+                        className="text-slate-500 hover:text-slate-800 p-1 rounded hover:bg-slate-200/60 transition cursor-pointer"
                       >
-                        <Pencil className="w-3.5 h-3.5" />
+                        <Pencil className="w-4 h-4" />
                       </button>
                     ) : (
                       <div className="flex items-center gap-1.5">
-                        <button 
+                        <button
+                          type="button"
                           onClick={handleSaveNotes}
-                          className="text-[11px] font-bold text-emerald-600 hover:underline border border-emerald-200 bg-emerald-50 px-2 py-1 rounded"
+                          className="text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded cursor-pointer"
                         >
                           Kaydet
                         </button>
-                        <button 
+                        <button
+                          type="button"
                           onClick={() => setEditingNotes(false)}
-                          className="text-[11px] font-semibold text-zinc-500 hover:underline border border-zinc-200 bg-zinc-50 px-2 py-1 rounded"
+                          className="text-[11px] font-semibold text-slate-600 bg-white border border-slate-200 px-2.5 py-1 rounded cursor-pointer"
                         >
                           Vazgeç
                         </button>
                       </div>
                     )}
                   </div>
-                  
-                  {editingNotes ? (
-                    <textarea 
-                      rows={2}
-                      value={tempNotesText}
-                      onChange={(e) => setTempNotesText(e.target.value)}
-                      className="w-full p-2 border border-zinc-300 rounded text-xs font-semibold text-zinc-800"
-                    />
-                  ) : (
-                    <div className="text-xs font-semibold text-zinc-800 tracking-tight bg-zinc-50 p-3 rounded border border-zinc-200 min-h-12">
-                      {activeOrderDetails.admin_notes || "Yönetici notu bulunmuyor."}
+                  {(editingNotes || activeOrderDetails.admin_notes) && (
+                    <div className="p-4">
+                      {editingNotes ? (
+                        <textarea
+                          rows={2}
+                          value={tempNotesText}
+                          onChange={(e) => setTempNotesText(e.target.value)}
+                          className="w-full p-2.5 border border-slate-300 rounded text-xs font-medium text-slate-800"
+                        />
+                      ) : (
+                        <div className="text-xs font-semibold text-slate-800 bg-slate-50 p-3 rounded border border-slate-200">
+                          {activeOrderDetails.admin_notes}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
 
-                {/* 3. Customer, shipping & billing details cards grid */}
-                <div className="bg-white border border-zinc-200 rounded p-0 flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-zinc-200">
-                  {/* Customer Block */}
-                  <div className="flex-1 p-4 flex flex-col gap-4">
-                    <div className="flex justify-between items-center border-b border-zinc-100 pb-3">
-                      <h4 className="text-[14px] font-semibold text-[#0a2540] tracking-tight">Müşteri</h4>
-                      <div className="flex items-center gap-1.5">
-                        <span className="border border-zinc-200 px-2 py-0.5 rounded text-[11px] font-medium text-zinc-600 bg-zinc-50">
+                {/* 3. Müşteri | Teslimat Bilgileri | Fatura Bilgileri (3 Sütunlu Kart) */}
+                <div className="bg-white border border-slate-200 rounded-md overflow-hidden grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-slate-200 shadow-2xs">
+                  {/* Müşteri */}
+                  <div className="flex flex-col">
+                    <div className="px-4 py-2.5 bg-[#f8fafc] border-b border-slate-200 flex items-center justify-between min-h-[44px]">
+                      <h4 className="text-[13px] font-bold text-slate-800">Müşteri</h4>
+                      <div className="flex items-center gap-2">
+                        <span className="bg-white border border-slate-300 px-2.5 py-0.5 rounded text-[11px] font-medium text-slate-700">
                           {activeOrderDetails.customer.is_visitor ? "Ziyaretçi" : "Üye"}
                         </span>
                         {!editingCustomer ? (
-                          <button 
+                          <button
+                            type="button"
                             onClick={() => {
-                              setEditingCustomer(true);
-                              setTempCustomer({ first_name: activeOrderDetails.customer.first_name, last_name: activeOrderDetails.customer.last_name, email: activeOrderDetails.customer.email, phone: activeOrderDetails.customer.phone });
+                              setEditingCustomer(true)
+                              setTempCustomer({
+                                first_name: activeOrderDetails.customer.first_name,
+                                last_name: activeOrderDetails.customer.last_name,
+                                email: activeOrderDetails.customer.email,
+                                phone: activeOrderDetails.customer.phone,
+                              })
                             }}
-                            className="text-zinc-400 hover:text-zinc-600 border border-zinc-200 rounded p-1 shadow-sm bg-white"
+                            className="text-slate-500 hover:text-slate-800 p-1 rounded cursor-pointer"
                           >
-                            <Pencil className="w-3.5 h-3.5" />
+                            <Pencil className="w-4 h-4" />
                           </button>
                         ) : (
                           <div className="flex items-center gap-1">
-                            <button onClick={handleSaveCustomer} className="text-[10px] font-medium text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">Kaydet</button>
-                            <button onClick={() => setEditingCustomer(false)} className="text-[10px] font-medium text-zinc-500 bg-zinc-50 px-1.5 py-0.5 rounded border border-zinc-200">İptal</button>
+                            <button
+                              type="button"
+                              onClick={handleSaveCustomer}
+                              className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200"
+                            >
+                              Kaydet
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditingCustomer(false)}
+                              className="text-[10px] font-medium text-slate-600 bg-white px-1.5 py-0.5 rounded border border-slate-200"
+                            >
+                              İptal
+                            </button>
                           </div>
                         )}
                       </div>
                     </div>
-                    <div className="text-[13px] space-y-2.5 text-zinc-600">
+                    <div className="p-4 text-[12px] space-y-2.5 text-slate-700">
                       {!editingCustomer ? (
                         <>
-                          <div className="font-medium text-zinc-900 flex items-center gap-1.5">
-                            {activeOrderDetails.customer.first_name} {activeOrderDetails.customer.last_name}
+                          <div className="font-bold text-slate-900 text-[12.5px]">
+                            {activeOrderDetails.customer.first_name}{" "}
+                            {activeOrderDetails.customer.last_name}
                           </div>
-                          <div className="flex items-center gap-2">
-                            <svg className="w-4 h-4 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-                            {activeOrderDetails.customer.email}
+                          <div className="flex items-center gap-2 text-slate-800 font-medium">
+                            <svg className="w-4 h-4 text-slate-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                            <span>{activeOrderDetails.customer.email}</span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <svg className="w-4 h-4 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
-                            {activeOrderDetails.customer.phone}
+                          <div className="flex items-center gap-2 text-slate-900 font-bold">
+                            <svg className="w-4 h-4 text-slate-700 shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M6.62 10.79a15.053 15.053 0 006.59 6.59l2.2-2.2a1 1 0 011.01-.24c1.12.37 2.33.57 3.58.57a1 1 0 011 1V20a1 1 0 01-1 1C10.61 21 3 13.39 3 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.46.57 3.58a1 1 0 01-.24 1.01l-2.21 2.2z" />
+                            </svg>
+                            <span>{activeOrderDetails.customer.phone}</span>
                           </div>
                         </>
                       ) : (
                         <div className="flex flex-col gap-2">
-                          <input type="text" className="w-full border rounded p-1.5 text-[12px]" value={tempCustomer.first_name} onChange={e => setTempCustomer({...tempCustomer, first_name: e.target.value})} placeholder="Ad" />
-                          <input type="text" className="w-full border rounded p-1.5 text-[12px]" value={tempCustomer.last_name} onChange={e => setTempCustomer({...tempCustomer, last_name: e.target.value})} placeholder="Soyad" />
-                          <input type="email" className="w-full border rounded p-1.5 text-[12px]" value={tempCustomer.email} onChange={e => setTempCustomer({...tempCustomer, email: e.target.value})} placeholder="E-posta" />
-                          <input type="text" className="w-full border rounded p-1.5 text-[12px]" value={tempCustomer.phone} onChange={e => setTempCustomer({...tempCustomer, phone: e.target.value})} placeholder="Telefon" />
+                          <input type="text" className="w-full border border-slate-300 rounded p-1.5 text-[12px]" value={tempCustomer.first_name} onChange={(e) => setTempCustomer({ ...tempCustomer, first_name: e.target.value })} placeholder="Ad" />
+                          <input type="text" className="w-full border border-slate-300 rounded p-1.5 text-[12px]" value={tempCustomer.last_name} onChange={(e) => setTempCustomer({ ...tempCustomer, last_name: e.target.value })} placeholder="Soyad" />
+                          <input type="email" className="w-full border border-slate-300 rounded p-1.5 text-[12px]" value={tempCustomer.email} onChange={(e) => setTempCustomer({ ...tempCustomer, email: e.target.value })} placeholder="E-posta" />
+                          <input type="text" className="w-full border border-slate-300 rounded p-1.5 text-[12px]" value={tempCustomer.phone} onChange={(e) => setTempCustomer({ ...tempCustomer, phone: e.target.value })} placeholder="Telefon" />
                         </div>
                       )}
-                      
-                      <div className="flex items-center gap-2 mt-2 pt-2 border-t border-zinc-100">
-                        <svg className="w-4 h-4 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" /></svg>
-                        <span className="font-mono text-[12px]">{activeOrderDetails.customer.ip}</span>
+                      <div className="flex items-center gap-2 text-slate-600 pt-0.5">
+                        <svg className="w-4 h-4 text-slate-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
+                        </svg>
+                        <span>{activeOrderDetails.customer.ip}</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Delivery Address Block */}
-                  <div className="flex-1 p-4 flex flex-col gap-4">
-                    <div className="flex justify-between items-center border-b border-zinc-100 pb-3">
-                      <h4 className="text-[14px] font-semibold text-[#0a2540] tracking-tight">Teslimat Bilgileri</h4>
+                  {/* Teslimat Bilgileri */}
+                  <div className="flex flex-col">
+                    <div className="px-4 py-2.5 bg-[#f8fafc] border-b border-slate-200 flex items-center justify-between min-h-[44px]">
+                      <h4 className="text-[13px] font-bold text-slate-800">Teslimat Bilgileri</h4>
                       {!editingShipping ? (
-                        <button 
+                        <button
+                          type="button"
                           onClick={() => {
-                            setEditingShipping(true);
-                            setTempShipping({ first_name: activeOrderDetails.shipping_address.first_name, last_name: activeOrderDetails.shipping_address.last_name, address_1: activeOrderDetails.shipping_address.address_1, district: activeOrderDetails.shipping_address.district, city: activeOrderDetails.shipping_address.city });
+                            setEditingShipping(true)
+                            setTempShipping({
+                              first_name: activeOrderDetails.shipping_address.first_name,
+                              last_name: activeOrderDetails.shipping_address.last_name,
+                              address_1: activeOrderDetails.shipping_address.address_1,
+                              district: activeOrderDetails.shipping_address.district,
+                              city: activeOrderDetails.shipping_address.city,
+                            })
                           }}
-                          className="text-zinc-400 hover:text-zinc-600 border border-zinc-200 rounded p-1 shadow-sm bg-white"
+                          className="text-slate-500 hover:text-slate-800 p-1 rounded cursor-pointer"
                         >
-                          <Pencil className="w-3.5 h-3.5" />
+                          <Pencil className="w-4 h-4" />
                         </button>
                       ) : (
                         <div className="flex items-center gap-1">
-                          <button onClick={handleSaveShipping} className="text-[10px] font-medium text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">Kaydet</button>
-                          <button onClick={() => setEditingShipping(false)} className="text-[10px] font-medium text-zinc-500 bg-zinc-50 px-1.5 py-0.5 rounded border border-zinc-200">İptal</button>
+                          <button
+                            type="button"
+                            onClick={handleSaveShipping}
+                            className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200"
+                          >
+                            Kaydet
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEditingShipping(false)}
+                            className="text-[10px] font-medium text-slate-600 bg-white px-1.5 py-0.5 rounded border border-slate-200"
+                          >
+                            İptal
+                          </button>
                         </div>
                       )}
                     </div>
-                    <div className="text-[13px] space-y-2 text-zinc-600">
+                    <div className="p-4 text-[12px] space-y-2 text-slate-600">
                       {!editingShipping ? (
                         <>
-                          <div className="font-medium text-zinc-900">{activeOrderDetails.shipping_address.first_name} {activeOrderDetails.shipping_address.last_name}</div>
-                          <p className="leading-relaxed">
+                          <div className="font-bold text-slate-900 text-[12.5px]">
+                            {activeOrderDetails.shipping_address.first_name}{" "}
+                            {activeOrderDetails.shipping_address.last_name}
+                          </div>
+                          <p className="leading-relaxed uppercase">
                             {activeOrderDetails.shipping_address.address_1}
                           </p>
-                          <div>{activeOrderDetails.shipping_address.district} / {activeOrderDetails.shipping_address.city} / {activeOrderDetails.shipping_address.country_name}</div>
+                          <div>
+                            {activeOrderDetails.shipping_address.district} /{" "}
+                            {activeOrderDetails.shipping_address.city} /{" "}
+                            {activeOrderDetails.shipping_address.country_name}
+                          </div>
                         </>
                       ) : (
                         <div className="flex flex-col gap-2">
-                          <input type="text" className="w-full border rounded p-1.5 text-[12px]" value={tempShipping.first_name} onChange={e => setTempShipping({...tempShipping, first_name: e.target.value})} placeholder="Ad" />
-                          <input type="text" className="w-full border rounded p-1.5 text-[12px]" value={tempShipping.last_name} onChange={e => setTempShipping({...tempShipping, last_name: e.target.value})} placeholder="Soyad" />
-                          <textarea rows={2} className="w-full border rounded p-1.5 text-[12px]" value={tempShipping.address_1} onChange={e => setTempShipping({...tempShipping, address_1: e.target.value})} placeholder="Açık Adres" />
+                          <input type="text" className="w-full border border-slate-300 rounded p-1.5 text-[12px]" value={tempShipping.first_name} onChange={(e) => setTempShipping({ ...tempShipping, first_name: e.target.value })} placeholder="Ad" />
+                          <input type="text" className="w-full border border-slate-300 rounded p-1.5 text-[12px]" value={tempShipping.last_name} onChange={(e) => setTempShipping({ ...tempShipping, last_name: e.target.value })} placeholder="Soyad" />
+                          <textarea rows={2} className="w-full border border-slate-300 rounded p-1.5 text-[12px]" value={tempShipping.address_1} onChange={(e) => setTempShipping({ ...tempShipping, address_1: e.target.value })} placeholder="Açık Adres" />
                           <div className="flex gap-2">
-                            <input type="text" className="w-1/2 border rounded p-1.5 text-[12px]" value={tempShipping.district} onChange={e => setTempShipping({...tempShipping, district: e.target.value})} placeholder="İlçe" />
-                            <input type="text" className="w-1/2 border rounded p-1.5 text-[12px]" value={tempShipping.city} onChange={e => setTempShipping({...tempShipping, city: e.target.value})} placeholder="İl" />
+                            <input type="text" className="w-1/2 border border-slate-300 rounded p-1.5 text-[12px]" value={tempShipping.district} onChange={(e) => setTempShipping({ ...tempShipping, district: e.target.value })} placeholder="İlçe" />
+                            <input type="text" className="w-1/2 border border-slate-300 rounded p-1.5 text-[12px]" value={tempShipping.city} onChange={(e) => setTempShipping({ ...tempShipping, city: e.target.value })} placeholder="İl" />
                           </div>
                         </div>
                       )}
                     </div>
                   </div>
 
-                  {/* Billing Address Block */}
-                  <div className="flex-1 p-4 flex flex-col gap-4">
-                    <div className="flex justify-between items-center border-b border-zinc-100 pb-3">
-                      <h4 className="text-[14px] font-semibold text-[#0a2540] tracking-tight">Fatura Bilgileri</h4>
+                  {/* Fatura Bilgileri */}
+                  <div className="flex flex-col">
+                    <div className="px-4 py-2.5 bg-[#f8fafc] border-b border-slate-200 flex items-center justify-between min-h-[44px]">
+                      <h4 className="text-[13px] font-bold text-slate-800">Fatura Bilgileri</h4>
                       {!editingBilling ? (
-                        <button 
+                        <button
+                          type="button"
                           onClick={() => {
-                            setEditingBilling(true);
-                            setTempBilling({ first_name: activeOrderDetails.billing_address.first_name, last_name: activeOrderDetails.billing_address.last_name, address_1: activeOrderDetails.billing_address.address_1, district: activeOrderDetails.billing_address.district, city: activeOrderDetails.billing_address.city, tc_no: activeOrderDetails.billing_address.tc_no || "" });
+                            setEditingBilling(true)
+                            setTempBilling({
+                              first_name: activeOrderDetails.billing_address.first_name,
+                              last_name: activeOrderDetails.billing_address.last_name,
+                              address_1: activeOrderDetails.billing_address.address_1,
+                              district: activeOrderDetails.billing_address.district,
+                              city: activeOrderDetails.billing_address.city,
+                              tc_no: activeOrderDetails.billing_address.tc_no || "",
+                            })
                           }}
-                          className="text-zinc-400 hover:text-zinc-600 border border-zinc-200 rounded p-1 shadow-sm bg-white"
+                          className="text-slate-500 hover:text-slate-800 p-1 rounded cursor-pointer"
                         >
-                          <Pencil className="w-3.5 h-3.5" />
+                          <Pencil className="w-4 h-4" />
                         </button>
                       ) : (
                         <div className="flex items-center gap-1">
-                          <button onClick={handleSaveBilling} className="text-[10px] font-medium text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">Kaydet</button>
-                          <button onClick={() => setEditingBilling(false)} className="text-[10px] font-medium text-zinc-500 bg-zinc-50 px-1.5 py-0.5 rounded border border-zinc-200">İptal</button>
+                          <button
+                            type="button"
+                            onClick={handleSaveBilling}
+                            className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200"
+                          >
+                            Kaydet
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEditingBilling(false)}
+                            className="text-[10px] font-medium text-slate-600 bg-white px-1.5 py-0.5 rounded border border-slate-200"
+                          >
+                            İptal
+                          </button>
                         </div>
                       )}
                     </div>
-                    <div className="text-[13px] space-y-2 text-zinc-600">
+                    <div className="p-4 text-[12px] space-y-2 text-slate-600">
                       {!editingBilling ? (
                         <>
-                          <div className="font-medium text-zinc-900">{activeOrderDetails.billing_address.first_name} {activeOrderDetails.billing_address.last_name}</div>
-                          <p className="leading-relaxed">
+                          <div className="font-bold text-slate-900 text-[12.5px]">
+                            {activeOrderDetails.billing_address.first_name}{" "}
+                            {activeOrderDetails.billing_address.last_name}
+                          </div>
+                          <p className="leading-relaxed uppercase">
                             {activeOrderDetails.billing_address.address_1}
                           </p>
-                          <div>{activeOrderDetails.billing_address.district} / {activeOrderDetails.billing_address.city} / {activeOrderDetails.billing_address.country_name}</div>
+                          <div>
+                            {activeOrderDetails.billing_address.district} /{" "}
+                            {activeOrderDetails.billing_address.city} /{" "}
+                            {activeOrderDetails.billing_address.country_name}
+                          </div>
                           {activeOrderDetails.metadata?.company_name && (
-                            <div className="font-semibold text-zinc-800">Firma: {activeOrderDetails.metadata.company_name}</div>
+                            <div className="font-semibold text-slate-800">
+                              Firma: {activeOrderDetails.metadata.company_name}
+                            </div>
                           )}
                           {activeOrderDetails.billing_address.tax_no && (
-                            <div className="mt-0.5 font-medium text-zinc-800">
+                            <div className="mt-0.5 font-medium text-slate-800">
                               VKN: {activeOrderDetails.billing_address.tax_no}
-                              {activeOrderDetails.billing_address.tax_office ? ` / VD: ${activeOrderDetails.billing_address.tax_office}` : ""}
+                              {activeOrderDetails.billing_address.tax_office
+                                ? ` / VD: ${activeOrderDetails.billing_address.tax_office}`
+                                : ""}
                             </div>
                           )}
                           {activeOrderDetails.billing_address.tc_no && (
@@ -2345,11 +2539,21 @@ const SiparisYonetimiPage = () => {
                           {activeOrderDetails.metadata?.efatura?.source === "TRENDYOL_API" && (
                             <div className="mt-2 p-2 rounded bg-orange-50 border border-orange-200 text-[11px] text-orange-800 flex items-center justify-between">
                               <div>
-                                <span className="font-bold">{activeOrderDetails.metadata.efatura.documentType === "EFATURA" ? "e-Fatura" : "e-Arşiv"}:</span>{" "}
-                                <span className="font-mono font-bold">{activeOrderDetails.metadata.efatura.invoiceNumber}</span>
+                                <span className="font-bold">
+                                  {activeOrderDetails.metadata.efatura.documentType === "EFATURA"
+                                    ? "e-Fatura"
+                                    : "e-Arşiv"}
+                                  :
+                                </span>{" "}
+                                <span className="font-mono font-bold">
+                                  {activeOrderDetails.metadata.efatura.invoiceNumber}
+                                </span>
                               </div>
                               <button
-                                onClick={() => triggerPrintSimulation("e-Fatura", activeOrderDetails.id)}
+                                type="button"
+                                onClick={() =>
+                                  triggerPrintSimulation("e-Fatura", activeOrderDetails.id)
+                                }
                                 className="text-orange-700 font-bold underline cursor-pointer"
                               >
                                 Görüntüle
@@ -2359,382 +2563,413 @@ const SiparisYonetimiPage = () => {
                         </>
                       ) : (
                         <div className="flex flex-col gap-2">
-                          <input type="text" className="w-full border rounded p-1.5 text-[12px]" value={tempBilling.first_name} onChange={e => setTempBilling({...tempBilling, first_name: e.target.value})} placeholder="Ad" />
-                          <input type="text" className="w-full border rounded p-1.5 text-[12px]" value={tempBilling.last_name} onChange={e => setTempBilling({...tempBilling, last_name: e.target.value})} placeholder="Soyad" />
-                          <textarea rows={2} className="w-full border rounded p-1.5 text-[12px]" value={tempBilling.address_1} onChange={e => setTempBilling({...tempBilling, address_1: e.target.value})} placeholder="Açık Adres" />
+                          <input type="text" className="w-full border border-slate-300 rounded p-1.5 text-[12px]" value={tempBilling.first_name} onChange={(e) => setTempBilling({ ...tempBilling, first_name: e.target.value })} placeholder="Ad" />
+                          <input type="text" className="w-full border border-slate-300 rounded p-1.5 text-[12px]" value={tempBilling.last_name} onChange={(e) => setTempBilling({ ...tempBilling, last_name: e.target.value })} placeholder="Soyad" />
+                          <textarea rows={2} className="w-full border border-slate-300 rounded p-1.5 text-[12px]" value={tempBilling.address_1} onChange={(e) => setTempBilling({ ...tempBilling, address_1: e.target.value })} placeholder="Açık Adres" />
                           <div className="flex gap-2">
-                            <input type="text" className="w-1/2 border rounded p-1.5 text-[12px]" value={tempBilling.district} onChange={e => setTempBilling({...tempBilling, district: e.target.value})} placeholder="İlçe" />
-                            <input type="text" className="w-1/2 border rounded p-1.5 text-[12px]" value={tempBilling.city} onChange={e => setTempBilling({...tempBilling, city: e.target.value})} placeholder="İl" />
+                            <input type="text" className="w-1/2 border border-slate-300 rounded p-1.5 text-[12px]" value={tempBilling.district} onChange={(e) => setTempBilling({ ...tempBilling, district: e.target.value })} placeholder="İlçe" />
+                            <input type="text" className="w-1/2 border border-slate-300 rounded p-1.5 text-[12px]" value={tempBilling.city} onChange={(e) => setTempBilling({ ...tempBilling, city: e.target.value })} placeholder="İl" />
                           </div>
-                          <input type="text" className="w-full border rounded p-1.5 text-[12px]" value={tempBilling.tc_no} onChange={e => setTempBilling({...tempBilling, tc_no: e.target.value})} placeholder="TC Kimlik No (Opsiyonel)" />
+                          <input type="text" className="w-full border border-slate-300 rounded p-1.5 text-[12px]" value={tempBilling.tc_no} onChange={(e) => setTempBilling({ ...tempBilling, tc_no: e.target.value })} placeholder="TC Kimlik No (Opsiyonel)" />
                         </div>
                       )}
                     </div>
-                  </div>
-                </div>
-
-                {/* 4. Chronological logs (Admin logs & Integration logs) */}
-                <div className="bg-white border border-zinc-200 rounded shadow-none overflow-hidden">
-                  <div className="p-4 border-b border-zinc-150 bg-white">
-                    <h3 className="text-[14px] font-semibold text-[#0a2540] tracking-tight">
-                      Yönetici Logları
-                    </h3>
-                  </div>
-                  <div className="divide-y divide-zinc-100 text-[13px] text-zinc-600">
-                    {activeOrderDetails.logs.length === 0 ? (
-                      <div className="p-4 text-center text-zinc-400">Log kaydı bulunmuyor.</div>
-                    ) : (
-                      activeOrderDetails.logs.map((log) => (
-                        <div key={log.id} className="py-3 px-4 flex justify-between items-center hover:bg-zinc-50/50 transition-colors">
-                          <span className="text-zinc-800">{log.message}</span>
-                          <span className="text-[12px] text-zinc-400">{log.created_at}</span>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-
-                <div className="bg-white border border-zinc-200 rounded shadow-none overflow-hidden">
-                  <div className="p-4 border-b border-zinc-150 bg-white">
-                    <h3 className="text-[12px] font-bold text-zinc-800 tracking-tight">
-                      Kargo Entegrasyon Logları
-                    </h3>
-                  </div>
-                  <div className="divide-y divide-zinc-100 text-xs font-semibold text-zinc-700">
-                    {activeOrderDetails.integration_logs.length === 0 ? (
-                      <div className="p-4 text-center text-zinc-400">Kargo entegrasyon log kaydı bulunmuyor.</div>
-                    ) : (
-                      activeOrderDetails.integration_logs.map((log) => (
-                        <div key={log.id} className="py-2.5 px-4 flex justify-between items-center hover:bg-zinc-50/50 transition-colors">
-                          <span className="text-emerald-700 font-bold">{log.message}</span>
-                          <span className="text-[11px] text-zinc-400 font-bold">{log.created_at}</span>
-                        </div>
-                      ))
-                    )}
                   </div>
                 </div>
 
               </div>
 
-              {/* Right Side Info Cards */}
-              <div className="flex flex-col gap-6">
+              {/* SAĞ KOLON (http://localhost:3095/ Birebir Tasarım) */}
+              <div className="flex flex-col gap-4">
                 
-                {/* Order Meta details block */}
-                {/* Header block (Order Info) */}
-                <div className="bg-white border border-zinc-200 rounded p-5 flex justify-between items-start">
-                  <div className="flex flex-col gap-1.5">
-                    <span className="text-[16px] text-[#0066cc] font-medium tracking-tight">{activeOrderDetails.display_id}</span>
-                    <span className="text-[14px] text-zinc-800 font-medium">{activeOrderDetails.customer?.first_name} {activeOrderDetails.customer?.last_name}</span>
-                    <span className="text-[13px] text-zinc-700">{activeOrderDetails.created_at}</span>
-                    <div className="mt-2">
-                      {activeOrderDetails.status === "teslim_edilen" && (
-                        <span className="inline-block px-3 py-1 rounded border border-emerald-500 text-[13px] font-medium text-emerald-600 bg-white">
-                          Teslim Edildi
-                        </span>
-                      )}
-                      {activeOrderDetails.status === "kargolanan" && (
-                        <span className="inline-block px-3 py-1 rounded border border-amber-500 text-[13px] font-medium text-amber-600 bg-white">
-                          Kargolandı
-                        </span>
-                      )}
-                      {activeOrderDetails.status === "hazirlanan" && (
-                        <span className="inline-block px-3 py-1 rounded border border-blue-500 text-[13px] font-medium text-blue-600 bg-white">
-                          Hazırlanıyor
-                        </span>
-                      )}
-                      {activeOrderDetails.status === "iptal_edilen" && (
-                        <span className="inline-block px-3 py-1 rounded border border-rose-500 text-[13px] font-medium text-rose-600 bg-white">
-                          İptal Edildi
-                        </span>
-                      )}
-                      {activeOrderDetails.status === "onay_bekleyen" && (
-                        <span className="inline-block px-3 py-1 rounded border border-zinc-400 text-[13px] font-medium text-zinc-600 bg-white">
-                          Yeni Sipariş
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-end">
-                    <div className="w-10 h-10 bg-black flex items-center justify-center rotate-45 mb-2">
-                      <div className="w-6 h-6 border-2 border-white -rotate-45" />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Financial block */}
-                <div className="bg-white border border-zinc-200 rounded p-5 flex flex-col">
-                  <div className="text-[13px] space-y-3 text-zinc-600">
-                    <div className="flex justify-between items-center">
-                      <span>Ödeme</span>
-                      <span className="text-zinc-900 font-medium text-[14px]">{activeOrderDetails.payment_method}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span>Sipariş Tutarı</span>
-                      <span className="text-zinc-900 font-medium text-[14px]">{activeOrderDetails.total.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} TL</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span>KDV</span>
-                      <span className="text-zinc-900 font-medium text-[14px]">{activeOrderDetails.vat_total.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} TL</span>
-                    </div>
-                  </div>
-
-                  {activeOrderDetails.discount_total > 0 && (
-                    <>
-                      <div className="h-px bg-zinc-100 my-4" />
-                      <div className="text-[13px] space-y-3 text-zinc-600">
-                        <div className="flex justify-between items-center">
-                          <span>İndirim ({activeOrderDetails.discounts?.[0]?.code || "Genel"})</span>
-                          <span className="text-zinc-900 font-medium text-[14px]">{activeOrderDetails.discount_total.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} TL</span>
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                {/* Carrier info block */}
-                {(() => {
-                  let dCarrierName = activeOrderDetails.carrier_name || "DİĞER KARGO";
-                  let dBarcode = activeOrderDetails.carrier_barcode || "-";
-                  let dLink = `https://webpostman.kargoist.com/t.php?t=${dBarcode !== "-" ? dBarcode : ""}`;
-                  
-                  if (activeOrderDetails.metadata?.interline_barcode || activeOrderDetails.metadata?.selected_carrier === "interline") {
-                    dCarrierName = "Interline Express Kargo";
-                    dBarcode = activeOrderDetails.metadata?.interline_barcode || "-";
-                    dLink = dBarcode !== "-" ? `https://webpostman.interlineexpress.com/tracking?h=${dBarcode}` : "#";
-                  } else if (activeOrderDetails.metadata?.nova_barcode || activeOrderDetails.metadata?.selected_carrier === "kargonova") {
-                    dCarrierName = "Nova Kargo";
-                    dBarcode = activeOrderDetails.metadata?.nova_barcode || "-";
-                    dLink = dBarcode !== "-" ? `https://webpostman.interlineexpress.com/tracking?h=${dBarcode}` : "#"; // Varsayılan olarak aynı altyapıyı kullanır
-                  }
-
-                  const hasBarcode = dBarcode && dBarcode !== "-";
-
-                  return (
-                    <div className="bg-white border border-zinc-200 rounded p-5 flex flex-col gap-4">
-                      <h4 className="text-[14px] font-semibold text-[#0a2540] tracking-tight">Kargo Bilgileri</h4>
-                      <div className="text-[13px] space-y-3 text-zinc-600">
-                        <div className="flex justify-between items-center">
-                          <span>Firma</span>
-                          <span className="text-zinc-900 font-medium">{dCarrierName}</span>
-                        </div>
-                        {hasBarcode && (
-                          <>
-                            <div className="flex justify-between items-center">
-                              <span>Barkod</span>
-                              <span className="text-zinc-900 font-medium">{dBarcode}</span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span>Takip Kodu</span>
-                              <span className="text-zinc-900 font-medium">{dBarcode}</span>
-                            </div>
-                            <div className="flex pt-1 mt-1 break-all">
-                              <a href={dLink} target="_blank" rel="noopener noreferrer" className="text-[#0066cc] hover:underline text-[13px]">
-                                {dLink}
-                              </a>
-                            </div>
-                          </>
+                {/* 1. Birleşik Sipariş Özeti + Ödeme + Kargo Bilgileri */}
+                <div className="bg-white border border-slate-200 rounded-md overflow-hidden divide-y divide-slate-200 shadow-2xs">
+                  <div className="p-4 flex items-start justify-between gap-3">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[14.5px] font-semibold text-[#1565c0]">
+                        {activeOrderDetails.display_id}
+                      </span>
+                      <span className="text-[12px] font-medium text-slate-800">
+                        EntegreShop
+                      </span>
+                      <span className="text-[12px] font-bold text-slate-900">
+                        {activeOrderDetails.created_at}
+                      </span>
+                      <div className="mt-1.5">
+                        {activeOrderDetails.status === "teslim_edilen" && (
+                          <span className="inline-block px-3 py-1 rounded border border-emerald-500 text-[12px] font-medium text-emerald-600 bg-white">
+                            Teslim Edildi
+                          </span>
+                        )}
+                        {activeOrderDetails.status === "kargolanan" && (
+                          <span className="inline-block px-3 py-1 rounded border border-amber-500 text-[12px] font-medium text-amber-600 bg-white">
+                            Kargolandı
+                          </span>
+                        )}
+                        {activeOrderDetails.status === "hazirlanan" && (
+                          <span className="inline-block px-3 py-1 rounded border border-[#9333ea] text-[12px] font-medium text-[#9333ea] bg-white">
+                            Hazırlanıyor
+                          </span>
+                        )}
+                        {activeOrderDetails.status === "iptal_edilen" && (
+                          <span className="inline-block px-3 py-1 rounded border border-rose-500 text-[12px] font-medium text-rose-600 bg-white">
+                            İptal Edildi
+                          </span>
+                        )}
+                        {(activeOrderDetails.status === "onay_bekleyen" ||
+                          activeOrderDetails.status === "tum_siparisler" ||
+                          activeOrderDetails.status === "odeme_hatasi" ||
+                          activeOrderDetails.status === "iade_edilen") && (
+                          <span className="inline-block px-3 py-1 rounded border border-[#9333ea] text-[12px] font-medium text-[#9333ea] bg-white">
+                            {activeOrderDetails.status === "onay_bekleyen"
+                              ? "Hazırlanıyor"
+                              : activeOrderDetails.status === "iade_edilen"
+                              ? "İade Edildi"
+                              : "Yeni Sipariş"}
+                          </span>
                         )}
                       </div>
                     </div>
-                  );
-                })()}
+                    <img
+                      src={ENTEGRESHOP_LOGO_BLACK}
+                      alt="EntegreShop"
+                      className="h-12 w-auto object-contain shrink-0"
+                    />
+                  </div>
 
-                {/* Dönüşüm Bilgileri block */}
-                <div className="bg-white border border-zinc-200 rounded p-5 flex flex-col gap-4">
-                  <h4 className="text-[12px] font-bold text-zinc-800 tracking-tight border-b border-zinc-100 pb-2">Dönüşüm Bilgileri</h4>
-                  <div className="text-xs space-y-3 font-semibold text-zinc-500 pb-2 border-b border-zinc-100">
-                    <div className="flex justify-between">
-                      <span>Trafik Kaynağı</span>
-                      <span className="text-zinc-900 font-bold">{activeOrderDetails.metadata?.traffic_source as string || "-"}</span>
+                  <div className="p-4 text-[12px] space-y-2.5 text-slate-600">
+                    <div className="flex justify-between items-center">
+                      <span>Ödeme</span>
+                      <span className="text-slate-900 font-semibold">
+                        {activeOrderDetails.payment_method}
+                      </span>
                     </div>
-                    <div className="flex justify-between">
-                      <span>Yönlendiren</span>
-                      <span className="text-zinc-900 font-bold">{activeOrderDetails.metadata?.referrer as string || "-"}</span>
+                    <div className="flex justify-between items-center">
+                      <span>Sipariş Tutarı</span>
+                      <span className="text-slate-900 font-bold text-[14px]">
+                        {activeOrderDetails.total.toLocaleString("tr-TR", {
+                          minimumFractionDigits: 2,
+                        })}{" "}
+                        TL
+                      </span>
                     </div>
-                    <div className="flex justify-between">
-                      <span>Cihaz</span>
-                      <span className="text-zinc-900 font-bold">{activeOrderDetails.metadata?.device_type as string || "-"}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Oturum Süresi</span>
-                      <span className="text-zinc-900 font-bold">{activeOrderDetails.metadata?.session_duration as string || "-"}</span>
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-2 border-b border-zinc-100 pb-3">
-                    <div className="text-[11px] font-bold text-zinc-800 tracking-tight">UTM Bilgileri</div>
-                    <div className="grid grid-cols-2 gap-y-2 text-[11px]">
-                      <div className="flex flex-col">
-                        <span className="text-zinc-400">source</span>
-                        <span className="text-zinc-900 font-bold">{activeOrderDetails.metadata?.utm_source as string || "-"}</span>
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-zinc-400">medium</span>
-                        <span className="text-zinc-900 font-bold">{activeOrderDetails.metadata?.utm_medium as string || "-"}</span>
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-zinc-400">campaign</span>
-                        <span className="text-zinc-900 font-bold">{activeOrderDetails.metadata?.utm_campaign as string || "-"}</span>
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-zinc-400">term</span>
-                        <span className="text-zinc-900 font-bold">{activeOrderDetails.metadata?.utm_term as string || "-"}</span>
-                      </div>
-                      <div className="flex flex-col col-span-2">
-                        <span className="text-zinc-400">content</span>
-                        <span className="text-zinc-900 font-bold">{activeOrderDetails.metadata?.utm_content as string || "-"}</span>
-                      </div>
+                    <div className="flex justify-between items-center">
+                      <span>KDV</span>
+                      <span className="text-slate-900 font-semibold">
+                        {activeOrderDetails.vat_total.toLocaleString("tr-TR", {
+                          minimumFractionDigits: 2,
+                        })}{" "}
+                        TL
+                      </span>
                     </div>
                   </div>
-                  {activeOrderDetails.metadata?.is_recovered_order && (
-                    <div className="flex items-center gap-1.5 pt-1">
-                      <StarIcon />
-                      <span className="text-xs font-bold text-zinc-700">Kurtarılan Sipariş</span>
-                    </div>
-                  )}
+
+                  {(() => {
+                    let dCarrierName = activeOrderDetails.carrier_name || "Yurtiçi Kargo"
+                    let dBarcode = activeOrderDetails.carrier_barcode || activeOrderDetails.display_id
+                    if (
+                      activeOrderDetails.metadata?.interline_barcode ||
+                      activeOrderDetails.metadata?.selected_carrier === "interline"
+                    ) {
+                      dCarrierName = "Interline Express Kargo"
+                      dBarcode =
+                        activeOrderDetails.metadata?.interline_barcode ||
+                        activeOrderDetails.display_id
+                    } else if (
+                      activeOrderDetails.metadata?.nova_barcode ||
+                      activeOrderDetails.metadata?.selected_carrier === "kargonova"
+                    ) {
+                      dCarrierName = "Nova Kargo"
+                      dBarcode =
+                        activeOrderDetails.metadata?.nova_barcode ||
+                        activeOrderDetails.display_id
+                    }
+
+                    return (
+                      <div className="p-4 text-[12px] space-y-2 text-slate-600">
+                        <div className="font-bold text-slate-800 text-[12.5px] mb-1">
+                          Kargo Bilgileri
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span>Firma</span>
+                          <span className="text-slate-900 font-semibold">
+                            {dCarrierName}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span>Barkod</span>
+                          <span className="text-slate-900 font-semibold">
+                            {dBarcode}
+                          </span>
+                        </div>
+                      </div>
+                    )
+                  })()}
                 </div>
 
-                {/* Other/Fatura Series block */}
-                <div className="bg-white border border-zinc-200 rounded p-5 shadow-none flex flex-col gap-4">
-                  <div className="flex justify-between items-center border-b border-zinc-100 pb-2">
-                    <h4 className="text-[12px] font-bold text-zinc-800 tracking-tight">Diğer</h4>
+                {/* 2. Dönüşüm Bilgileri */}
+                <div className="bg-white border border-slate-200 rounded-md overflow-hidden shadow-2xs">
+                  <div className="px-4 py-2.5 bg-[#f8fafc] border-b border-slate-200">
+                    <h4 className="text-[13px] font-bold text-slate-800">
+                      Dönüşüm Bilgileri
+                    </h4>
+                  </div>
+                  <div className="p-4 flex flex-col divide-y divide-slate-200 text-[12px] text-slate-600">
+                    <div className="pb-3 space-y-1.5">
+                      <div>
+                        <span>Trafik Kaynağı: </span>
+                        <span className="text-slate-900 font-semibold">
+                          {(activeOrderDetails.metadata?.traffic_source as string) ||
+                            "Sosyal Ağ"}
+                        </span>
+                      </div>
+                      <div>
+                        <span>Yönlendiren: </span>
+                        <span className="text-[#1565c0] font-medium">
+                          {(activeOrderDetails.metadata?.referrer as string) ||
+                            "instagram.com"}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="py-3 space-y-1.5">
+                      <div>
+                        <span>Cihaz: </span>
+                        <span className="text-slate-900 font-semibold">
+                          {(activeOrderDetails.metadata?.device_type as string) ||
+                            "Akıllı Telefon - iOS - Safari"}
+                        </span>
+                      </div>
+                      <div>
+                        <span>Oturum Süresi: </span>
+                        <span className="text-slate-900 font-semibold">
+                          {(activeOrderDetails.metadata?.session_duration as string) ||
+                            "04:18 dk"}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="pt-3 space-y-1.5">
+                      <div className="text-slate-500 font-medium mb-1">
+                        UTM Bilgileri
+                      </div>
+                      <div>
+                        <span>utm_source: </span>
+                        <span className="text-slate-900 font-semibold">
+                          {(activeOrderDetails.metadata?.utm_source as string) || "meta"}
+                        </span>
+                      </div>
+                      <div>
+                        <span>utm_medium: </span>
+                        <span className="text-slate-900 font-semibold">
+                          {(activeOrderDetails.metadata?.utm_medium as string) ||
+                            "paid-social"}
+                        </span>
+                      </div>
+                      <div>
+                        <span>utm_campaign: </span>
+                        <span className="text-slate-900 font-semibold">
+                          {(activeOrderDetails.metadata?.utm_campaign as string) ||
+                            "CBO|SALES|R-TARGET"}
+                        </span>
+                      </div>
+                      <div>
+                        <span>utm_term: </span>
+                        <span className="text-slate-900 font-semibold">
+                          {(activeOrderDetails.metadata?.utm_term as string) || "-"}
+                        </span>
+                      </div>
+                      <div>
+                        <span>utm_content: </span>
+                        <span className="text-slate-900 font-semibold">
+                          {(activeOrderDetails.metadata?.utm_content as string) || "-"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. Diğer */}
+                <div className="bg-white border border-slate-200 rounded-md overflow-hidden shadow-2xs">
+                  <div className="px-4 py-2.5 bg-[#f8fafc] border-b border-slate-200 flex items-center justify-between">
+                    <h4 className="text-[13px] font-bold text-slate-800">Diğer</h4>
                     {!editingInvoiceSeries ? (
-                      <button 
-                        onClick={() => { setEditingInvoiceSeries(true); setTempInvoiceSeriesText(activeOrderDetails.invoice_series || "-"); }}
-                        className="text-zinc-400 hover:text-zinc-650"
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingInvoiceSeries(true)
+                          setTempInvoiceSeriesText(
+                            activeOrderDetails.invoice_series || "-"
+                          )
+                        }}
+                        className="text-slate-500 hover:text-slate-800 p-1 rounded cursor-pointer"
                       >
-                        <Pencil className="w-3.5 h-3.5" />
+                        <Pencil className="w-4 h-4" />
                       </button>
                     ) : (
                       <div className="flex items-center gap-1.5">
-                        <button onClick={handleSaveInvoiceSeries} className="text-[11px] font-bold text-emerald-600 hover:underline">Kaydet</button>
-                        <button onClick={() => setEditingInvoiceSeries(false)} className="text-[11px] font-semibold text-zinc-450 hover:underline">İptal</button>
+                        <button
+                          type="button"
+                          onClick={handleSaveInvoiceSeries}
+                          className="text-[11px] font-bold text-emerald-600 hover:underline"
+                        >
+                          Kaydet
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingInvoiceSeries(false)}
+                          className="text-[11px] font-semibold text-slate-500 hover:underline"
+                        >
+                          İptal
+                        </button>
                       </div>
                     )}
                   </div>
-                  
-                  {editingInvoiceSeries ? (
-                    <input 
-                      type="text"
-                      value={tempInvoiceSeriesText}
-                      onChange={(e) => setTempInvoiceSeriesText(e.target.value)}
-                      className="w-full p-1.5 border border-zinc-300 rounded text-xs font-semibold text-zinc-800"
-                    />
-                  ) : (
-                    <div className="text-xs space-y-3 font-semibold text-zinc-500">
-                      <div className="flex justify-between">
-                        <span>Fatura Seri</span>
-                        <span className="text-zinc-900 font-bold">{activeOrderDetails.invoice_series || "-"}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Fatura Ek Kodlar</span>
-                        <span className="text-zinc-900 font-bold">-</span>
-                      </div>
-                    </div>
-                  )}
+                  <div className="p-4 text-[12px] space-y-2 text-slate-600">
+                    {editingInvoiceSeries ? (
+                      <input
+                        type="text"
+                        value={tempInvoiceSeriesText}
+                        onChange={(e) => setTempInvoiceSeriesText(e.target.value)}
+                        className="w-full p-1.5 border border-slate-300 rounded text-xs font-semibold text-slate-800"
+                      />
+                    ) : (
+                      <>
+                        <div className="flex justify-between">
+                          <span>Fatura Seri</span>
+                          <span className="text-slate-900 font-semibold">
+                            {activeOrderDetails.invoice_series || "-"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Fatura Ek Kodlar</span>
+                          <span className="text-slate-900 font-semibold">-</span>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
 
               </div>
-
             </div>
 
-            {/* Footer buttons row */}
-            <div className="bg-zinc-50 border-t border-zinc-200 px-6 py-4 flex items-center justify-between shrink-0 relative">
+            {/* ALT AKSİYON ÇUBUĞU (FOOTER - http://localhost:3095/ Birebir Tasarım) */}
+            <div className="bg-[#f8fafc] border-t border-slate-200 px-5 py-3 flex flex-wrap items-center justify-between gap-3 shrink-0 relative">
               <div className="flex items-center gap-2">
                 <div className="relative">
-                  <button 
+                  <button
+                    type="button"
                     onClick={() => setIsActionMenuOpen(!isActionMenuOpen)}
-                    className="bg-zinc-200 hover:bg-zinc-300 text-zinc-800 font-semibold text-[12px] h-9 px-4 rounded flex items-center gap-1.5 transition-colors"
+                    className="bg-white border border-slate-300 hover:bg-slate-50 text-slate-800 font-semibold text-[12px] h-9 px-3.5 rounded flex items-center gap-1.5 transition cursor-pointer"
                   >
                     <span>İşlemler</span>
-                    <svg className={`w-3 h-3 text-zinc-500 transition-transform ${isActionMenuOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                    </svg>
+                    <span className="text-[10px]">▲</span>
                   </button>
-                  
+
                   {isActionMenuOpen && (
-                    <div className="absolute bottom-full mb-1 left-0 w-48 bg-white border border-zinc-200 rounded shadow-lg overflow-hidden py-1 z-10 animate-fade-in">
-                      <button className="w-full text-left px-4 py-2 text-[11px] font-medium text-zinc-700 hover:bg-zinc-50 transition-colors">Risk Kriterlerine Ekle</button>
-                      
-                      <button 
+                    <div className="absolute bottom-full mb-1 left-0 w-48 bg-white border border-slate-200 rounded shadow-lg overflow-hidden py-1 z-20 animate-fade-in">
+                      <button
+                        type="button"
+                        className="w-full text-left px-4 py-2 text-[11px] font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+                      >
+                        Risk Kriterlerine Ekle
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => {
-                          setStatusModalTargetIds([activeOrderDetails.id]);
-                          setNewStatusValue(activeOrderDetails.status);
-                          setShowStatusModal(true);
-                          setIsActionMenuOpen(false);
+                          setStatusModalTargetIds([activeOrderDetails.id])
+                          setNewStatusValue(activeOrderDetails.status)
+                          setShowStatusModal(true)
+                          setIsActionMenuOpen(false)
                         }}
-                        className="w-full text-left px-4 py-2 text-[11px] font-medium text-zinc-700 hover:bg-zinc-50 transition-colors cursor-pointer"
+                        className="w-full text-left px-4 py-2 text-[11px] font-medium text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
                       >
                         Durumu Değiştir
                       </button>
-
-                      <button className="w-full text-left px-4 py-2 text-[11px] font-medium text-zinc-700 hover:bg-zinc-50 transition-colors">SMS & E-Posta Gönder</button>
-                      <button className="w-full text-left px-4 py-2 text-[11px] font-medium text-zinc-700 hover:bg-zinc-50 transition-colors">Sözleşmeler</button>
+                      <button
+                        type="button"
+                        className="w-full text-left px-4 py-2 text-[11px] font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+                      >
+                        SMS & E-Posta Gönder
+                      </button>
+                      <button
+                        type="button"
+                        className="w-full text-left px-4 py-2 text-[11px] font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+                      >
+                        Sözleşmeler
+                      </button>
                     </div>
                   )}
                 </div>
-                
-                {activeOrderDetails.status !== "kargolanan" && activeOrderDetails.status !== "teslim_edilen" && activeOrderDetails.status !== "iptal_edilen" && (
-                  <button 
-                    onClick={() => {
-                      setShipmentModalTargetIds([activeOrderDetails.id]);
-                      setShowShipmentModal(true);
-                      setIsActionMenuOpen(false);
-                    }}
-                    className="bg-[#00c853] hover:bg-[#00b248] text-white font-semibold text-[13px] h-9 px-5 rounded transition-all cursor-pointer shadow-sm"
-                  >
-                    Siparişi Kargola
-                  </button>
-                )}
+
+                {activeOrderDetails.status !== "kargolanan" &&
+                  activeOrderDetails.status !== "teslim_edilen" &&
+                  activeOrderDetails.status !== "iptal_edilen" && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShipmentModalTargetIds([activeOrderDetails.id])
+                        setShowShipmentModal(true)
+                        setIsActionMenuOpen(false)
+                      }}
+                      className="bg-[#10b981] hover:bg-[#059669] text-white font-bold text-[12px] h-9 px-4 rounded shadow-2xs transition cursor-pointer"
+                    >
+                      Siparişi Kargola
+                    </button>
+                  )}
 
                 {activeOrderDetails.status !== "iptal_edilen" && (
-                  <button 
+                  <button
+                    type="button"
                     onClick={() => handleCancelOrder(activeOrderDetails.id)}
-                    className="bg-[#ff4d4d] hover:bg-[#ff3333] text-white font-semibold text-[13px] h-9 px-5 rounded transition-all cursor-pointer shadow-sm"
+                    className="bg-[#ef4444] hover:bg-[#dc2626] text-white font-bold text-[12px] h-9 px-4 rounded shadow-2xs transition cursor-pointer"
                   >
                     Siparişi İptal Et
                   </button>
                 )}
               </div>
 
-              {/* Print buttons row */}
-              <div className="flex items-center gap-2">
-                <button 
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
                   onClick={() => triggerPrintSimulation("e-Fatura", activeOrderDetails.id)}
-                  className="bg-orange-50 border border-orange-200 hover:bg-orange-100 text-orange-800 font-bold text-[12px] h-9 px-4 rounded flex items-center gap-1.5 transition-colors cursor-pointer"
+                  className="bg-white border border-slate-300 hover:bg-slate-50 text-slate-800 font-semibold text-[12px] h-9 px-3.5 rounded flex items-center gap-1.5 transition cursor-pointer"
                 >
                   {activeOrderDetails.metadata?.efatura?.source === "TRENDYOL_API" ? (
-                    <span className="text-emerald-600 font-bold">✔</span>
+                    <span className="text-emerald-600 font-extrabold text-[11px]">✓</span>
                   ) : (
-                    <span className="text-orange-600 font-bold">e</span>
+                    <span className="text-red-500 font-extrabold text-[11px]">✕</span>
                   )}
-                  <span>Trendyol E-Fatura</span>
+                  <span>E-Fatura</span>
                 </button>
-                <button 
+                <button
+                  type="button"
                   onClick={() => triggerPrintSimulation("Fatura", activeOrderDetails.id)}
-                  className="bg-zinc-100 border border-zinc-200 hover:bg-zinc-200 text-zinc-700 font-semibold text-[12px] h-9 px-4 rounded flex items-center gap-1.5 transition-colors"
+                  className="bg-white border border-slate-300 hover:bg-slate-50 text-slate-800 font-semibold text-[12px] h-9 px-3.5 rounded flex items-center gap-1.5 transition cursor-pointer"
                 >
-                  <span className="text-rose-600 font-bold">✕</span>
+                  <span className="text-red-500 font-extrabold text-[11px]">✕</span>
                   <span>Fatura</span>
                 </button>
-                <button 
+                <button
+                  type="button"
                   onClick={() => triggerPrintSimulation("Kargo Fişi", activeOrderDetails.id)}
-                  className="bg-zinc-100 border border-zinc-200 hover:bg-zinc-200 text-zinc-700 font-semibold text-[12px] h-9 px-4 rounded flex items-center gap-1.5 transition-colors"
+                  className="bg-white border border-slate-300 hover:bg-slate-50 text-slate-800 font-semibold text-[12px] h-9 px-3.5 rounded flex items-center gap-1.5 transition cursor-pointer"
                 >
-                  <span className="text-emerald-600 font-bold">✔</span>
+                  <span className="text-red-500 font-extrabold text-[11px]">✕</span>
                   <span>Kargo Fişi</span>
                 </button>
-                <button 
-                  onClick={() => triggerPrintSimulation("Fiş", activeOrderDetails.id)}
-                  className="bg-zinc-100 border border-zinc-200 hover:bg-zinc-200 text-zinc-700 font-semibold text-[12px] h-9 px-4 rounded flex items-center gap-1.5 transition-colors"
+                <button
+                  type="button"
+                  onClick={() => triggerPrintSimulation("Paket Fişi", activeOrderDetails.id)}
+                  className="bg-white border border-slate-300 hover:bg-slate-50 text-slate-800 font-semibold text-[12px] h-9 px-3.5 rounded flex items-center gap-1.5 transition cursor-pointer"
                 >
-                  <span className="text-rose-600 font-bold">✕</span>
+                  <span className="text-red-500 font-extrabold text-[11px]">✕</span>
                   <span>Fiş</span>
                 </button>
-                <button 
+                <button
+                  type="button"
                   onClick={() => triggerPrintSimulation("PDF", activeOrderDetails.id)}
-                  className="bg-zinc-100 border border-zinc-200 hover:bg-zinc-200 text-zinc-700 font-semibold text-[12px] h-9 px-4 rounded flex items-center gap-1.5 transition-colors"
+                  className="bg-white border border-slate-300 hover:bg-slate-50 text-slate-800 font-semibold text-[12px] h-9 px-3.5 rounded flex items-center gap-1.5 transition cursor-pointer"
                 >
-                  <span className="text-rose-600 font-bold">✕</span>
+                  <span className="text-red-500 font-extrabold text-[11px]">✕</span>
                   <span>PDF</span>
                 </button>
               </div>
@@ -2743,9 +2978,10 @@ const SiparisYonetimiPage = () => {
           </div>
         </div>
       )}
+
       {/* Inner Modal for Status Change */}
       {showStatusModal && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+        <div style={{ zIndex: 100010 }} className="fixed inset-0 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-zinc-900/40 backdrop-blur-sm" onClick={() => setShowStatusModal(false)} />
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-[420px] flex flex-col relative animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
             {/* Header */}
@@ -2859,7 +3095,7 @@ const SiparisYonetimiPage = () => {
 
       {/* Inner Modal for Shipment (Siparişi Kargola) */}
       {showShipmentModal && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+        <div style={{ zIndex: 100010 }} className="fixed inset-0 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-zinc-900/40 backdrop-blur-sm" onClick={() => setShowShipmentModal(false)} />
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-[420px] flex flex-col relative animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
             {/* Header */}
@@ -2945,7 +3181,7 @@ const SiparisYonetimiPage = () => {
 
       {/* Inner Modal for Print Actions */}
       {showPrintModal && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+        <div style={{ zIndex: 100010 }} className="fixed inset-0 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-zinc-900/40 backdrop-blur-sm" onClick={() => setShowPrintModal(false)} />
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-[420px] flex flex-col relative animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
             {/* Header */}
@@ -3040,7 +3276,7 @@ const SiparisYonetimiPage = () => {
 
       {/* Success Modal */}
       {successModal && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+        <div style={{ zIndex: 100020 }} className="fixed inset-0 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-zinc-900/40 backdrop-blur-sm" onClick={() => setSuccessModal(null)} />
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-[380px] flex flex-col relative animate-in fade-in zoom-in-95 duration-200 overflow-hidden text-center">
             <div className="p-8 flex flex-col items-center gap-5">
@@ -3068,7 +3304,7 @@ const SiparisYonetimiPage = () => {
 
       {/* ADD PRODUCT MODAL */}
       {showProductSearchModal && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 animate-fade-in">
+        <div style={{ zIndex: 100005 }} className="fixed inset-0 flex items-center justify-center p-4 animate-fade-in">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowProductSearchModal(false)} />
           <div className="bg-zinc-100 rounded-lg border border-zinc-200 shadow-2xl w-full max-w-[900px] h-[80vh] flex flex-col overflow-hidden relative z-10 animate-scale-up">
             
@@ -3155,6 +3391,7 @@ const SiparisYonetimiPage = () => {
 }
 
 import { defineWidgetConfig } from "@medusajs/admin-sdk"
+import { ENTEGRESHOP_LOGO_BLACK } from "../routes/dashboard/page"
 export const config = defineWidgetConfig({
   zone: "order.list.before",
 })
