@@ -2620,57 +2620,75 @@ const SiparisYonetimiPage = () => {
           <>
 
 
-        {/* SEARCH, FILTERS BUTTON & BULK OPERATIONS ROW (Görsel 4) */}
-        <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-3">
-          <div className="flex items-center gap-2 flex-1">
+        {/* SEARCH, FILTERS BUTTON & BULK OPERATIONS ROW (Görsel 4 & Preview Birebir) */}
+        <div>
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div className="flex items-center gap-2.5 flex-1">
             <button
               type="button"
               onClick={() => setShowFilters(!showFilters)}
-              className={`bg-white border ${
-                showFilters ? "border-[#3b82f6]" : "border-zinc-200"
-              } px-3.5 h-9 rounded-md text-[12.5px] font-medium text-zinc-800 hover:bg-zinc-50 flex items-center gap-3 shadow-2xs transition-all cursor-pointer`}
+              className={`h-10 px-4 bg-white ${
+                showFilters
+                  ? "border-t border-l border-r border-[#3b82f6] rounded-t-md relative z-10 -mb-px"
+                  : "border border-slate-300 rounded-md shadow-2xs mb-1"
+              } flex items-center gap-3 text-[12.5px] font-bold text-slate-800 hover:bg-slate-50 transition-all cursor-pointer`}
             >
-              <Adjustments className="w-4 h-4 text-zinc-700" />
+              <svg className="w-[17px] h-[17px] text-slate-700" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                <line x1="4" y1="6" x2="20" y2="6" />
+                <line x1="4" y1="12" x2="20" y2="12" />
+                <line x1="4" y1="18" x2="20" y2="18" />
+                <circle cx="8" cy="6" r="2" fill="white" />
+                <circle cx="16" cy="12" r="2" fill="white" />
+                <circle cx="10" cy="18" r="2" fill="white" />
+              </svg>
               <span>Filtreler</span>
               <svg
-                className={`w-3.5 h-3.5 text-zinc-500 transition-transform ${showFilters ? "rotate-180" : ""}`}
+                className={`w-3.5 h-3.5 text-slate-500 ml-1 transition-transform ${showFilters ? "rotate-180" : ""}`}
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
-                strokeWidth="2"
+                strokeWidth="2.2"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                <polyline points="6 9 12 15 18 9" />
               </svg>
             </button>
 
-            <div className="relative w-full max-w-[260px]">
+            <div className="relative w-64 sm:w-80 mb-1">
               <svg
-                className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+                className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
-                strokeWidth="2"
+                strokeWidth="2.2"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
               </svg>
               <input
                 type="text"
                 placeholder="Hızlı ara.."
                 value={quickSearch}
                 onChange={(e) => setQuickSearch(e.target.value)}
-                className="w-full h-9 bg-white border border-zinc-200 rounded-md pl-9 pr-3 text-[12.5px] text-zinc-700 focus:outline-none focus:border-[#3b82f6] transition-all shadow-2xs"
+                className="w-full h-9 bg-white border border-slate-300 rounded-md pl-9 pr-3 text-[12.5px] text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#1565c0] transition-all"
               />
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2 shrink-0 mb-1">
             <div className="relative">
               <button
                 type="button"
                 onClick={() => setIsBulkActionMenuOpen(!isBulkActionMenuOpen)}
-                className="bg-white border border-zinc-200 px-3.5 h-9 rounded-md text-[12.5px] font-medium text-zinc-800 hover:bg-zinc-50 flex items-center gap-2 shadow-2xs transition-all cursor-pointer"
+                className="h-9 px-4 bg-white hover:bg-slate-50 border border-slate-300 rounded-md flex items-center gap-2.5 text-[12.5px] font-bold text-slate-800 shadow-2xs transition cursor-pointer"
               >
-                <Adjustments className="w-4 h-4 text-zinc-700" />
+                <svg className="w-[17px] h-[17px] text-slate-700" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                  <line x1="4" y1="6" x2="20" y2="6" />
+                  <line x1="4" y1="12" x2="20" y2="12" />
+                  <line x1="4" y1="18" x2="20" y2="18" />
+                  <circle cx="8" cy="6" r="2" fill="white" />
+                  <circle cx="16" cy="12" r="2" fill="white" />
+                  <circle cx="10" cy="18" r="2" fill="white" />
+                </svg>
                 <span>Toplu İşlemler</span>
               </button>
 
@@ -2714,7 +2732,7 @@ const SiparisYonetimiPage = () => {
 
         {/* EXPANDABLE FILTER GRID (Görsel 4 Birebir Tasarım) */}
         {showFilters && (
-          <div className="bg-white border border-[#3b82f6] rounded-md p-5 shadow-2xs flex flex-col gap-4 animate-fade-in">
+          <div className="bg-white border border-[#3b82f6] rounded-b-md rounded-tr-md p-5 shadow-2xs flex flex-col gap-4 animate-fade-in">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-5 gap-y-3.5">
               {/* Row 1 */}
               <div className="flex flex-col gap-1">
@@ -3102,41 +3120,42 @@ const SiparisYonetimiPage = () => {
             </div>
           </div>
         )}
+        </div>
 
-        {/* ORDER LIST TABLE (Görsel 1) */}
+        {/* ORDER LIST TABLE (Görsel 1 & Preview Birebir) */}
         {loading ? (
-          <div className="bg-white border border-zinc-200 rounded-2xl p-16 flex flex-col items-center justify-center gap-3 shadow-sm">
-            <div className="w-10 h-10 border-4 border-violet-500 border-t-transparent rounded-full animate-spin" />
-            <span className="text-xs font-bold text-zinc-500">Sipariş verileri yükleniyor...</span>
+          <div className="bg-white border border-slate-200 rounded-md p-16 flex flex-col items-center justify-center gap-3 shadow-2xs">
+            <div className="w-10 h-10 border-4 border-[#1565c0] border-t-transparent rounded-full animate-spin" />
+            <span className="text-xs font-bold text-slate-500">Sipariş verileri yükleniyor...</span>
           </div>
         ) : (
-          <div className="bg-white border border-zinc-200 rounded-xl shadow-sm overflow-hidden">
+          <div className="bg-white border border-slate-200 rounded-md shadow-2xs overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse border-hidden text-left bg-white text-[12px]">
+              <table className="w-full border-collapse text-left bg-white text-[12.5px]">
                 <thead>
-                  <tr className="bg-zinc-50/80 border-b border-zinc-200 text-[11px] font-bold text-zinc-800 tracking-wide divide-x divide-zinc-200">
-                    <th className="py-3 px-4 w-12 text-center">
+                  <tr className="bg-[#f8fafc] border-b border-slate-200 text-[12.5px] font-bold text-slate-800 divide-x divide-slate-200/70">
+                    <th className="py-3.5 px-3 w-11 text-center">
                       <input 
                         type="checkbox"
                         checked={filteredOrdersList.length > 0 && selectedOrderIds.length === filteredOrdersList.length}
                         onChange={(e) => handleSelectAll(e.target.checked)}
-                        className="w-4 h-4 rounded border-zinc-300 text-violet-600 focus:ring-violet-500 cursor-pointer"
+                        className="w-4 h-4 rounded border-slate-300 text-[#1565c0] focus:ring-[#1565c0] cursor-pointer"
                       />
                     </th>
-                    <th className="py-3 px-4 font-semibold text-zinc-800">Sipariş Bilgileri</th>
-                    <th className="py-3 px-4 font-semibold text-zinc-800">Müşteri Bilgileri</th>
-                    <th className="py-3 px-4 font-semibold text-zinc-800">Tutar</th>
-                    <th className="py-3 px-4 font-semibold text-zinc-800">Durum</th>
-                    <th className="py-3 px-4 font-semibold text-zinc-800">Kargo</th>
-                    <th className="py-3 px-4 font-semibold text-zinc-800">Tarih</th>
-                    <th className="py-3 px-4 font-semibold text-zinc-800">Yazdır</th>
-                    <th className="py-3 px-4 font-semibold text-zinc-800 w-32">İşlemler</th>
+                    <th className="py-3.5 px-4 font-bold text-slate-800">Sipariş Bilgileri</th>
+                    <th className="py-3.5 px-4 font-bold text-slate-800">Müşteri Bilgileri</th>
+                    <th className="py-3.5 px-4 font-bold text-slate-800">Tutar</th>
+                    <th className="py-3.5 px-4 font-bold text-slate-800">Durum</th>
+                    <th className="py-3.5 px-4 font-bold text-slate-800">Kargo</th>
+                    <th className="py-3.5 px-4 font-bold text-slate-800">Tarih</th>
+                    <th className="py-3.5 px-4 font-bold text-slate-800">Yazdır</th>
+                    <th className="py-3.5 px-4 font-bold text-slate-800 w-44">İşlemler</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-zinc-200 text-zinc-700">
+                <tbody className="divide-y divide-slate-200 text-slate-700">
                   {filteredOrdersList.length === 0 ? (
                     <tr>
-                      <td colSpan={9} className="py-16 text-center text-zinc-400 font-bold">Aramaya uygun sipariş kaydı bulunmamaktadır.</td>
+                      <td colSpan={9} className="py-16 text-center text-slate-400 font-bold">Aramaya uygun sipariş kaydı bulunmamaktadır.</td>
                     </tr>
                   ) : (
                     filteredOrdersList.map((order, index) => {
@@ -3145,36 +3164,41 @@ const SiparisYonetimiPage = () => {
                       return (
                         <tr 
                           key={order.id} 
-                          className={`transition-colors divide-x divide-zinc-200 ${isSelected ? 'bg-blue-50/50' : altRow ? 'bg-zinc-50/30' : 'bg-white'} hover:bg-zinc-50`}
+                          className={`transition-colors border-b border-slate-200 divide-x divide-slate-200/70 ${
+                            isSelected
+                              ? "bg-[#e8f0fe]"
+                              : altRow
+                                ? "bg-[#e8f0fe]/65 hover:bg-[#e8f0fe]"
+                                : "bg-white hover:bg-slate-50/80"
+                          }`}
                         >
-                          <td className="py-3 px-4 text-center">
+                          <td className="py-3.5 px-3 text-center w-11">
                             <input 
                               type="checkbox"
                               checked={isSelected}
                               onChange={(e) => handleSelectRow(order.id, e.target.checked)}
-                              className="w-4 h-4 rounded border-zinc-300 text-violet-600 focus:ring-violet-500 cursor-pointer"
+                              className="w-4 h-4 rounded border-slate-300 text-[#1565c0] focus:ring-[#1565c0] cursor-pointer"
                             />
                           </td>
-                          <td className="py-3 px-4">
-                            <div className="flex flex-col">
+                          <td className="py-3.5 px-4 w-56">
+                            <div className="flex flex-col leading-snug">
                               <span 
                                 onClick={() => {
                                   setSelectedOrderId(order.id)
                                   setTempNotesText(order.admin_notes || "")
                                   setTempInvoiceSeriesText(order.invoice_series || "-")
                                 }}
-                                className="font-bold text-blue-600 hover:underline cursor-pointer flex items-center gap-1.5"
+                                className="font-bold text-[#1565c0] hover:underline text-[13px] cursor-pointer flex items-center gap-1.5"
                               >
-                                <span className="text-[13px] font-black text-zinc-800 uppercase tracking-widest">ÇİZGİ</span>
                                 {order.display_id}
                               </span>
-                              <span className="text-[11px] font-medium text-zinc-500 mt-0.5">{order.platform || "WhatsApp"}</span>
+                              <span className="text-[12px] font-medium text-slate-700 mt-0.5">{order.platform || "WhatsApp"}</span>
                             </div>
                           </td>
-                          <td className="py-3 px-4">
-                            <div className="flex flex-col">
+                          <td className="py-3.5 px-4 w-64">
+                            <div className="flex flex-col leading-snug">
                               <div className="flex items-center gap-2">
-                                <span className="font-semibold text-zinc-800 capitalize">{order.customer.first_name} {order.customer.last_name}</span>
+                                <span className="font-semibold text-slate-800 text-[12.5px]">{order.customer.first_name} {order.customer.last_name}</span>
                                 {(() => {
                                   // RISK KONTROLU
                                   const phone = order.customer?.phone || "";
@@ -3245,121 +3269,155 @@ const SiparisYonetimiPage = () => {
                                   ) : null;
                                 })()}
                               </div>
-                              <span className="text-[11px] font-medium text-zinc-500 mt-0.5">{order.customer.phone}</span>
+                              <span className="text-[12px] font-medium text-slate-600 mt-0.5">{order.customer.phone}</span>
                             </div>
                           </td>
-                          <td className="py-3 px-4">
-                            <div className="flex flex-col">
-                              <span className="font-semibold text-zinc-800">{order.total.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} TL</span>
-                              <span className="text-[11px] font-medium text-zinc-500 mt-0.5">{order.payment_method}</span>
+                          <td className="py-3.5 px-4 w-56">
+                            <div className="flex flex-col leading-snug">
+                              <span className="font-semibold text-slate-900 text-[12.5px]">{order.total.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} TL</span>
+                              <span className="text-[12px] font-medium text-slate-600 mt-0.5">{order.payment_method}</span>
                             </div>
                           </td>
-                          <td className="py-3 px-4">
+                          <td className="py-3.5 px-4 w-40">
                             {order.status === "teslim_edilen" && (
-                              <span className="inline-flex items-center px-3 py-1 rounded border border-emerald-500 text-[11px] font-semibold text-emerald-500 leading-none">
+                              <span className="inline-flex items-center justify-center h-[31px] px-3.5 rounded-[5px] border border-[#10b981] bg-white text-[#059669] text-[12.5px] font-semibold leading-none whitespace-nowrap">
                                 Teslim Edildi
                               </span>
                             )}
                             {order.status === "kargolanan" && (
-                              <span className="inline-flex items-center px-3 py-1 rounded border border-amber-500 text-[11px] font-semibold text-amber-500 leading-none">
+                              <span className="inline-flex items-center justify-center h-[31px] px-3.5 rounded-[5px] border border-[#f59e0b] bg-white text-[#d97706] text-[12.5px] font-semibold leading-none whitespace-nowrap">
                                 Kargolandı
                               </span>
                             )}
                             {order.status === "hazirlanan" && (
-                              <span className="inline-flex items-center px-3 py-1 rounded border border-blue-500 text-[11px] font-semibold text-blue-500 leading-none">
+                              <span className="inline-flex items-center justify-center h-[31px] px-3.5 rounded-[5px] border border-[#9333ea] bg-white text-[#9333ea] text-[12.5px] font-semibold leading-none whitespace-nowrap">
                                 Hazırlanıyor
                               </span>
                             )}
                             {order.status === "onay_bekleyen" && (
-                              <span className="inline-flex items-center px-3 py-1 rounded border border-zinc-400 text-[11px] font-semibold text-zinc-500 leading-none">
+                              <span className="inline-flex items-center justify-center h-[31px] px-3.5 rounded-[5px] border border-slate-400 bg-white text-slate-600 text-[12.5px] font-semibold leading-none whitespace-nowrap">
                                 Onay Bekliyor
                               </span>
                             )}
                             {order.status === "iptal_edilen" && (
-                              <span className="inline-flex items-center px-3 py-1 rounded border border-rose-500 text-[11px] font-semibold text-rose-500 leading-none">
+                              <span className="inline-flex items-center justify-center h-[31px] px-3.5 rounded-[5px] border border-rose-500 bg-white text-rose-600 text-[12.5px] font-semibold leading-none whitespace-nowrap">
                                 İptal Edildi
                               </span>
                             )}
                             {order.status === "odeme_hatasi" && (
-                              <span className="inline-flex items-center px-3 py-1 rounded border border-red-600 text-[11px] font-semibold text-red-600 leading-none">
+                              <span className="inline-flex items-center justify-center h-[31px] px-3.5 rounded-[5px] border border-red-600 bg-white text-red-600 text-[12.5px] font-semibold leading-none whitespace-nowrap">
                                 Ödeme Hatası
                               </span>
                             )}
                           </td>
-                          <td className="py-3 px-4 uppercase font-semibold text-[11px] text-zinc-800">
-                            {order.carrier_name || "KARGOİST"}
+                          <td className="py-3.5 px-4 font-medium text-slate-800 text-[12.5px] w-48">
+                            {order.carrier_name || "Yurtiçi Kargo"}
                           </td>
-                          <td className="py-3 px-4 font-medium text-[11px] text-zinc-800">
+                          <td className="py-3.5 px-4 font-medium text-slate-700 text-[12.5px] w-40">
                             {order.created_at}
                           </td>
-                          <td className="py-3 px-4">
-                            <div className="flex items-center gap-1.5">
+                          <td className="py-3.5 px-4 w-48">
+                            <div className="flex items-center gap-3.5 text-[#475569]">
+                              {/* 1. e-Fatura (e) */}
                               <button 
-                                title="e-Fatura" 
+                                type="button"
+                                title="e-Fatura Yazdır" 
                                 onClick={() => triggerPrintSimulation("e-Fatura", order.id)}
-                                className="w-7 h-7 flex items-center justify-center rounded border border-zinc-300 bg-white hover:bg-zinc-50 relative shadow-sm"
+                                className="hover:text-slate-950 font-black text-[19px] leading-none cursor-pointer relative"
                               >
-                                <span className="font-bold text-[14px] text-zinc-600 leading-none">e</span>
-                                {/* Checkmark if e-Fatura created */}
+                                e
                                 {order.metadata?.efatura?.source === "TRENDYOL_API" && (
-                                  <div className="absolute -top-1.5 -right-1.5 bg-white rounded-full">
-                                    <svg className="w-3.5 h-3.5 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
-                                  </div>
+                                  <svg className="w-[13px] h-[13px] text-[#10b981] absolute -top-2 -right-2.5" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                                    <polyline points="20 6 9 17 4 12" />
+                                  </svg>
                                 )}
                               </button>
+                              {/* 2. Fatura (Kıvrık Köşeli Çizgili Belge) */}
                               <button 
-                                title="Fatura" 
+                                type="button"
+                                title="Fatura Yazdır" 
                                 onClick={() => triggerPrintSimulation("Fatura", order.id)}
-                                className="w-7 h-7 flex items-center justify-center rounded border border-zinc-300 bg-white hover:bg-zinc-50 relative shadow-sm"
+                                className="hover:text-slate-950 cursor-pointer relative"
                               >
-                                <InvoiceIcon />
-                                {order.status === "teslim_edilen" && (
-                                  <div className="absolute -top-1.5 -right-1.5 bg-white rounded-full">
-                                    <svg className="w-3.5 h-3.5 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
-                                  </div>
-                                )}
+                                <svg className="w-[19px] h-[19px]" fill="currentColor" viewBox="0 0 24 24">
+                                  <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 14H8v-2h5v2zm3-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />
+                                </svg>
                               </button>
+                              {/* 3. Kargo Fişi (Üstünde Belirgin Yeşil ✓ Olan Kamyon İkonu) */}
                               <button 
-                                title="Kargo Fişi" 
+                                type="button"
+                                title="Kargo Fişi Yazdır" 
                                 onClick={() => triggerPrintSimulation("Kargo Fişi", order.id)}
-                                className="w-7 h-7 flex items-center justify-center rounded border border-zinc-300 bg-white hover:bg-zinc-50 shadow-sm"
+                                className="relative hover:text-slate-950 cursor-pointer"
                               >
-                                <TruckIcon />
+                                <svg className="w-[13px] h-[13px] text-[#10b981] absolute -top-2.5 -right-2" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                                  <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                                <svg className="w-[22px] h-[19px]" fill="currentColor" viewBox="0 0 24 24">
+                                  <path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm13.5-9l1.96 2.5H17V9.5h2.5zm-1.5 9c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z" />
+                                </svg>
                               </button>
+                              {/* 4. Fiş (Kare Liste/Fiş İkonu) */}
                               <button 
-                                title="Paket Fişi" 
+                                type="button"
+                                title="Sipariş Fişi Yazdır" 
                                 onClick={() => triggerPrintSimulation("Paket Fişi", order.id)}
-                                className="w-7 h-7 flex items-center justify-center rounded border border-zinc-300 bg-white hover:bg-zinc-50 shadow-sm"
+                                className="hover:text-slate-950 cursor-pointer"
                               >
-                                <PackageIcon />
+                                <svg className="w-[18px] h-[18px]" fill="currentColor" viewBox="0 0 24 24">
+                                  <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />
+                                </svg>
                               </button>
+                              {/* 5. PDF (Dolu Sayfa İkonu) */}
                               <button 
-                                title="PDF Fatura" 
+                                type="button"
+                                title="PDF İndir" 
                                 onClick={() => triggerPrintSimulation("PDF", order.id)}
-                                className="w-7 h-7 flex items-center justify-center rounded border border-zinc-300 bg-white hover:bg-zinc-50 shadow-sm"
+                                className="hover:text-slate-950 cursor-pointer"
                               >
-                                <PdfIcon />
+                                <svg className="w-[19px] h-[19px]" fill="currentColor" viewBox="0 0 24 24">
+                                  <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 7V3.5L18.5 9H13z" />
+                                </svg>
                               </button>
                             </div>
                           </td>
-                          <td className="py-3 px-4">
+                          <td className="py-3.5 px-4 w-44">
                             <div className="flex items-center gap-2">
                               <button
+                                type="button"
+                                title="Sipariş Detayını Görüntüle"
                                 onClick={() => {
                                   setSelectedOrderId(order.id)
                                   setTempNotesText(order.admin_notes || "")
                                   setTempInvoiceSeriesText(order.invoice_series || "-")
                                 }}
-                                className="w-7 h-7 rounded bg-[#9b66c4] hover:bg-purple-600 text-white flex items-center justify-center shadow-sm cursor-pointer transition-colors"
+                                className="w-[34px] h-[31px] rounded-[5px] bg-[#9c51b6] hover:bg-[#863da0] text-white flex items-center justify-center shadow-2xs transition cursor-pointer shrink-0"
                               >
-                                <EyeIcon />
+                                <svg className="w-[17px] h-[17px]" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                  <circle cx="12" cy="12" r="3" />
+                                </svg>
                               </button>
                               {order.status === "kargolanan" && (
                                 <button
+                                  type="button"
                                   onClick={() => handleMarkDelivered(order.id)}
-                                  className="h-7 px-3 rounded bg-[#10b981] hover:bg-emerald-600 text-white font-semibold text-[11px] shadow-sm cursor-pointer transition-colors whitespace-nowrap"
+                                  className="h-[31px] px-3.5 rounded-[5px] bg-[#10b981] hover:bg-[#059669] text-white text-[12.5px] font-bold shadow-2xs transition cursor-pointer whitespace-nowrap inline-flex items-center justify-center"
                                 >
                                   Teslim Et
+                                </button>
+                              )}
+                              {order.status === "hazirlanan" && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedOrderId(order.id)
+                                    setTempNotesText(order.admin_notes || "")
+                                    setTempInvoiceSeriesText(order.invoice_series || "-")
+                                  }}
+                                  className="h-[31px] px-3.5 rounded-[5px] bg-[#10b981] hover:bg-[#059669] text-white text-[12.5px] font-bold shadow-2xs transition cursor-pointer whitespace-nowrap inline-flex items-center justify-center"
+                                >
+                                  Kargola
                                 </button>
                               )}
                             </div>

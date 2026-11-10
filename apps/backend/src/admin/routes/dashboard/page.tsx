@@ -1802,12 +1802,19 @@ export const EntegreShopHeaderBar = ({
               })}
             </div>
 
-            {/* Right spacer or Pazaryeri integration badge */}
+            {/* Right spacer or Pazaryeri / Ürünler integration badge */}
             {activeCategoryLabel === "PAZARYERİ" ? (
               <div className="hidden sm:flex items-center justify-end gap-2" style={{ minWidth: "150px" }}>
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 border border-slate-200 text-[11px] font-bold text-slate-700">
                   <span className="w-2 h-2 rounded-full bg-emerald-500" />
                   12 Pazaryeri Entegrasyonu Hazır
+                </span>
+              </div>
+            ) : activeCategoryLabel === "ÜRÜNLER" ? (
+              <div className="hidden xl:flex items-center justify-end gap-2" style={{ minWidth: "150px" }}>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 border border-slate-200 text-[11px] font-bold text-slate-700">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                  Katalog &amp; Pazaryeri Fiyat Eşitleme Aktif
                 </span>
               </div>
             ) : (

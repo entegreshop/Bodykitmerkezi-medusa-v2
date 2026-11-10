@@ -1493,6 +1493,146 @@ const IkasProductsPage = () => {
   const [showCategoryModal, setShowCategoryModal] = useState(false)
   const [showCategoryTreeModal, setShowCategoryTreeModal] = useState(false)
   const [showCategoryMarketplaceModal, setShowCategoryMarketplaceModal] = useState(false)
+  const [marketplaceModalTitle, setMarketplaceModalTitle] = useState<string>("")
+
+  const renderCircularMarketplaceSvg = (key: string) => {
+    switch (key) {
+      case "n11":
+        return (
+          <svg width="28" height="28" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="18" cy="18" r="16.5" fill="#5B2D90" stroke="#4C1D95" strokeWidth="1" />
+            <circle cx="11" cy="10.5" r="2" fill="#F59E0B" />
+            <circle cx="18" cy="8.5" r="1.6" fill="#EF4444" />
+            <circle cx="24.5" cy="10.5" r="2" fill="#F59E0B" />
+            <circle cx="27.5" cy="17" r="1.7" fill="#10B981" />
+            <circle cx="8.5" cy="17" r="1.7" fill="#EC4899" />
+            <circle cx="11.5" cy="25.5" r="1.9" fill="#F59E0B" />
+            <circle cx="24.5" cy="25.5" r="1.9" fill="#F59E0B" />
+            <text x="18" y="21.5" textAnchor="middle" fill="#FFFFFF" fontFamily="Inter, Arial, sans-serif" fontWeight="900" fontSize="11" letterSpacing="-0.4">
+              n11
+            </text>
+          </svg>
+        )
+      case "hb":
+        return (
+          <svg width="28" height="28" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="18" cy="18" r="16.5" fill="#FFF7ED" stroke="#FDBA74" strokeWidth="1.2" />
+            <text x="18" y="15.5" textAnchor="middle" fill="#FF6000" fontFamily="Inter, Arial, sans-serif" fontWeight="800" fontSize="7.4" letterSpacing="-0.2">
+              hepsi
+            </text>
+            <text x="18" y="23" textAnchor="middle" fill="#FF6000" fontFamily="Inter, Arial, sans-serif" fontWeight="900" fontSize="7.4" letterSpacing="-0.2">
+              burada
+            </text>
+            <rect x="7" y="25.5" width="5.5" height="2.2" rx="1" fill="#FF6000" />
+            <rect x="13.2" y="25.5" width="4.5" height="2.2" rx="1" fill="#00B4D8" />
+            <rect x="18.4" y="25.5" width="4.5" height="2.2" rx="1" fill="#7209B7" />
+            <rect x="23.6" y="25.5" width="5" height="2.2" rx="1" fill="#2EC4B6" />
+          </svg>
+        )
+      case "ptt":
+        return (
+          <svg width="28" height="28" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="18" cy="18" r="16.5" fill="#1E40AF" stroke="#1D4ED8" strokeWidth="1" />
+            <path d="M10 4.5H26L24 7.5H12L10 4.5Z" fill="#FACC15" />
+            <text x="18" y="17" textAnchor="middle" fill="#FFFFFF" fontFamily="Inter, Arial, sans-serif" fontWeight="900" fontSize="9.5" letterSpacing="-0.2">
+              ptt
+            </text>
+            <text x="18" y="26.5" textAnchor="middle" fill="#FACC15" fontFamily="Inter, Arial, sans-serif" fontWeight="900" fontSize="8.8" letterSpacing="-0.2">
+              avm
+            </text>
+          </svg>
+        )
+      case "amz":
+        return (
+          <svg width="28" height="28" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="18" cy="18" r="16.5" fill="#FFFFFF" stroke="#CBD5E1" strokeWidth="1.2" />
+            <path d="M22.2 17.5V13.8C22.2 10.9 20.2 9 16.8 9C13.8 9 11.9 10.5 11.6 12.7L14.5 13.1C14.7 11.9 15.6 11.3 16.8 11.3C18.2 11.3 19 12 19 13.3V13.9L15.5 14.3C12.5 14.7 10.9 16.1 10.9 18.5C10.9 20.9 12.7 22.5 15.2 22.5C17.1 22.5 18.5 21.7 19.3 20.4C19.5 21.1 19.8 21.7 20.4 22.2L22.9 20.7C22.4 20 22.2 19.1 22.2 17.5ZM19 17C19 18.7 17.8 20 16.1 20C14.8 20 14 19.3 14 18.3C14 17.1 15 16.4 16.8 16.2L19 15.9V17Z" fill="#0F172A" />
+            <path d="M8.5 25C12.8 28.2 19.8 28.8 26.5 25.2" stroke="#FF9900" strokeWidth="2.3" strokeLinecap="round" />
+            <path d="M24.5 23.5L27.5 24.9L26 27.8" stroke="#FF9900" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        )
+      case "ty":
+        return (
+          <svg width="28" height="28" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="18" cy="18" r="16.5" fill="#F27A1A" stroke="#EA580C" strokeWidth="1" />
+            <rect x="4.5" y="12.5" width="27" height="11" rx="2" fill="#111827" />
+            <text x="18" y="20" textAnchor="middle" fill="#FFFFFF" fontFamily="Inter, Arial, sans-serif" fontWeight="800" fontSize="6.2" letterSpacing="0.1">
+              trendyol
+            </text>
+          </svg>
+        )
+      case "cs":
+        return (
+          <svg width="28" height="28" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="18" cy="18" r="16.5" fill="#FFFFFF" stroke="#CBD5E1" strokeWidth="1.2" />
+            <path d="M16.5 16.5C16.5 10.5 10.5 7 7 10C4 13 9 16.5 16.5 16.5Z" fill="#84CC16" />
+            <path d="M19.5 16.5C19.5 10.5 25.5 7 29 10C32 13 27 16.5 19.5 16.5Z" fill="#F97316" />
+            <path d="M16.5 19.5C16.5 25.5 10.5 29 7 26C4 23 9 19.5 16.5 19.5Z" fill="#EF4444" />
+            <path d="M19.5 19.5C19.5 25.5 25.5 29 29 26C32 23 27 19.5 19.5 19.5Z" fill="#0EA5E9" />
+            <circle cx="18" cy="18" r="2.2" fill="#FFFFFF" />
+          </svg>
+        )
+      case "modanisa":
+        return (
+          <svg width="28" height="28" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="18" cy="18" r="16.5" fill="#FFF7ED" stroke="#FDBA74" strokeWidth="1.2" />
+            <g fill="#F26522">
+              <ellipse cx="18" cy="9.5" rx="2.8" ry="5.5" />
+              <ellipse cx="18" cy="26.5" rx="2.8" ry="5.5" />
+              <ellipse cx="9.5" cy="18" rx="5.5" ry="2.8" />
+              <ellipse cx="26.5" cy="18" rx="5.5" ry="2.8" />
+              <ellipse cx="12" cy="12" rx="2.8" ry="5.5" transform="rotate(-45 12 12)" />
+              <ellipse cx="24" cy="24" rx="2.8" ry="5.5" transform="rotate(-45 24 24)" />
+              <ellipse cx="24" cy="12" rx="2.8" ry="5.5" transform="rotate(45 24 12)" />
+              <ellipse cx="12" cy="24" rx="2.8" ry="5.5" transform="rotate(45 12 24)" />
+            </g>
+          </svg>
+        )
+      case "pzr":
+        return (
+          <svg width="28" height="28" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="18" cy="18" r="16.5" fill="#FFFFFF" stroke="#CBD5E1" strokeWidth="1.2" />
+            <path d="M10 29V14C10 9.5 13.6 6.5 18.5 6.5C23.2 6.5 26.5 9.5 26.5 14C26.5 18.5 23.2 21.5 18.5 21.5H14.5V29H10Z" fill="#1D4ED8" />
+            <path d="M18.5 6.5C23.2 6.5 26.5 9.5 26.5 14C26.5 18.5 23.2 21.5 18.5 21.5H15V17H18.5C20.5 17 22 15.7 22 14C22 12.3 20.5 11 18.5 11H14.5V6.5H18.5Z" fill="#EC4899" />
+            <circle cx="18.2" cy="14" r="3.4" fill="#FFFFFF" />
+          </svg>
+        )
+      case "idf":
+        return (
+          <svg width="28" height="28" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="18" cy="18" r="16.5" fill="#FFFFFF" stroke="#CBD5E1" strokeWidth="1.2" />
+            <rect x="15" y="6" width="6" height="5.5" rx="1" fill="#E11D48" />
+            <path d="M15 14.5L21 12.5V25.5L15 30.5V14.5Z" fill="#0284C7" />
+            <path d="M15 14.5L21 18V23L15 19.5V14.5Z" fill="#E11D48" />
+          </svg>
+        )
+      case "lcw":
+        return (
+          <svg width="28" height="28" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="18" cy="18" r="16.5" fill="#003876" stroke="#1E3A8A" strokeWidth="1" />
+            <text x="18" y="18.5" textAnchor="middle" fill="#FFFFFF" fontFamily="Inter, Arial, sans-serif" fontWeight="900" fontSize="9.5" letterSpacing="0.3">
+              LCW
+            </text>
+            <text x="18" y="25.5" textAnchor="middle" fill="#93C5FD" fontFamily="Inter, Arial, sans-serif" fontWeight="800" fontSize="5" letterSpacing="0.4">
+              LCW.COM
+            </text>
+          </svg>
+        )
+      case "temu":
+      default:
+        return (
+          <svg width="28" height="28" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="18" cy="18" r="16.5" fill="#FB7701" stroke="#EA580C" strokeWidth="1" />
+            <circle cx="11" cy="12" r="1.5" fill="#FFFFFF" />
+            <rect x="15.8" y="10.4" width="3.2" height="3.2" rx="0.8" fill="#FFFFFF" />
+            <path d="M22 13.6L23.8 10.4L25.6 13.6H22Z" fill="#FFFFFF" />
+            <text x="18" y="25" textAnchor="middle" fill="#FFFFFF" fontFamily="Inter, Arial, sans-serif" fontWeight="900" fontSize="8.2" letterSpacing="0.5">
+              TEMU
+            </text>
+          </svg>
+        )
+    }
+  }
   const [editingCategory, setEditingCategory] = useState<{
     id?: string
     name: string
@@ -3665,447 +3805,468 @@ const IkasProductsPage = () => {
             </div>
           ) : activeSubTab === "kategoriler" ? (
             /* GÖRSEL 3: KATEGORİLER (/product-management?tab=kategoriler) */
-            <div className="flex flex-col gap-4 max-w-[1600px] mx-auto">
-              {/* Top Action Bar */}
-              <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-                <div className="flex items-center gap-2 flex-1 max-w-[440px]">
-                  <button
-                    type="button"
-                    onClick={() => setShowCategoryFilters((prev) => !prev)}
-                    className={`bg-white border ${
-                      showCategoryFilters ? "border-[#3b82f6] text-zinc-900" : "border-zinc-300 text-zinc-700"
-                    } hover:bg-zinc-50 px-3.5 py-2 rounded-md text-xs font-semibold inline-flex items-center gap-2 shadow-2xs transition-colors cursor-pointer shrink-0`}
-                  >
-                    <svg className="w-3.5 h-3.5 text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-                    </svg>
-                    <span>Filtreler</span>
-                    <span className="text-[10px] text-zinc-500">⌄</span>
-                  </button>
-
-                  <div className="relative flex-1">
-                    <span className="absolute inset-y-0 left-3 flex items-center text-zinc-400 text-xs pointer-events-none">
-                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            <div className="flex flex-col gap-4 max-w-[1640px] mx-auto">
+              {/* Filtreler Sekmesi + Hızlı Ara + Sağ 4 Aksiyon Butonu + Mavi Çerçeveli Filtre Paneli */}
+              <div>
+                <div className="flex flex-wrap items-end justify-between gap-3">
+                  <div className="flex items-center gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => setShowCategoryFilters((prev) => !prev)}
+                      className={`h-10 px-4 bg-white ${
+                        showCategoryFilters
+                          ? "border-t border-l border-r border-[#3b82f6] rounded-t-md relative z-10 -mb-px"
+                          : "border border-slate-300 rounded-md"
+                      } flex items-center gap-3 text-xs font-bold text-slate-800 cursor-pointer`}
+                    >
+                      <svg className="w-4 h-4 text-slate-700" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                        <line x1="4" y1="6" x2="20" y2="6" />
+                        <line x1="4" y1="12" x2="20" y2="12" />
+                        <line x1="4" y1="18" x2="20" y2="18" />
+                        <circle cx="8" cy="6" r="2" fill="white" />
+                        <circle cx="16" cy="12" r="2" fill="white" />
+                        <circle cx="10" cy="18" r="2" fill="white" />
                       </svg>
-                    </span>
-                    <input
-                      type="text"
-                      placeholder="Hızlı ara.."
-                      value={catQuickSearch}
-                      onChange={(e) => setCatQuickSearch(e.target.value)}
-                      className="w-full bg-white border border-zinc-200 rounded-md pl-8 pr-3 py-2 text-xs font-medium text-zinc-800 focus:outline-none focus:border-[#3b82f6] shadow-2xs"
-                    />
+                      <span>Filtreler</span>
+                      <svg className="w-3.5 h-3.5 text-slate-500 ml-1" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                        <polyline points="6 9 12 15 18 9" />
+                      </svg>
+                    </button>
+
+                    <div className="relative w-64 sm:w-80 mb-1">
+                      <svg className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                        <circle cx="11" cy="11" r="8" />
+                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                      </svg>
+                      <input
+                        type="text"
+                        placeholder="Hızlı ara.."
+                        value={catQuickSearch}
+                        onChange={(e) => setCatQuickSearch(e.target.value)}
+                        className="w-full h-9 pl-8 pr-3 rounded-md bg-white border border-slate-300 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#1565c0]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Sağ 4 Aksiyon Butonu (+ Yeni Kategori | Kategori Ağacı | Pazaryeri Eşleştirmeleri | Excel İşlemleri) */}
+                  <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingCategory({
+                          name: "",
+                          handle: "",
+                          parent_category_id: "",
+                          is_active: true,
+                          rank: 0,
+                          description: "",
+                        })
+                        setShowCategoryModal(true)
+                      }}
+                      className="h-9 px-4 rounded-md bg-[#10b981] hover:bg-[#059669] text-white text-xs font-bold inline-flex items-center gap-2 shadow-2xs transition cursor-pointer"
+                    >
+                      <span className="text-base leading-none font-black">+</span>
+                      <span>Yeni Kategori</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowCategoryTreeModal(true)}
+                      className="h-9 px-3.5 rounded-md bg-[#f59e0b] hover:bg-[#d97706] text-white text-xs font-bold inline-flex items-center gap-2 shadow-2xs transition cursor-pointer"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                        <path d="M6 3v12" />
+                        <circle cx="18" cy="6" r="3" />
+                        <circle cx="6" cy="18" r="3" />
+                        <path d="M18 9a9 9 0 01-9 9" />
+                      </svg>
+                      <span>Kategori Ağacı</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMarketplaceModalTitle("Toplu Pazaryeri Kategori Eşleştirmeleri")
+                        setShowCategoryMarketplaceModal(true)
+                      }}
+                      className="h-9 px-3.5 rounded-md bg-[#1976d2] hover:bg-[#1565c0] text-white text-xs font-bold inline-flex items-center gap-2 shadow-2xs transition cursor-pointer"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                        <line x1="4" y1="9" x2="20" y2="9" />
+                        <line x1="4" y1="15" x2="20" y2="15" />
+                        <circle cx="9" cy="9" r="2" fill="currentColor" />
+                        <circle cx="15" cy="15" r="2" fill="currentColor" />
+                      </svg>
+                      <span>Pazaryeri Eşleştirmeleri</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const csvRows = [
+                          ["No", "Kategori Adı", "Üst Kategori", "Durum", "Sıra"].join(";"),
+                          ...categories.map((c: any, idx: number) => {
+                            const parentName =
+                              c.parent_category?.name ||
+                              categories.find((p: any) => p.id === c.parent_category_id)?.name ||
+                              "Ana Kategori"
+                            return [
+                              280 - idx,
+                              c.name,
+                              parentName,
+                              c.is_active !== false ? "Aktif" : "Pasif",
+                              c.rank ?? 0,
+                            ].join(";")
+                          }),
+                        ].join("\n")
+                        const blob = new Blob(["\uFEFF" + csvRows], { type: "text/csv;charset=utf-8;" })
+                        const url = URL.createObjectURL(blob)
+                        const a = document.createElement("a")
+                        a.href = url
+                        a.download = "kategoriler.csv"
+                        a.click()
+                      }}
+                      className="h-9 px-3.5 rounded-md bg-[#1976d2] hover:bg-[#1565c0] text-white text-xs font-bold inline-flex items-center gap-2 shadow-2xs transition cursor-pointer"
+                    >
+                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm1.8 18H14l-2-3.4-2 3.4H8.2l2.9-4.5L8.2 11H10l2 3.4 2-3.4h1.8l-2.9 4.5 2.9 4.5zM13 9V3.5L18.5 9H13z" />
+                      </svg>
+                      <span>Excel İşlemleri</span>
+                    </button>
                   </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditingCategory({
-                        name: "",
-                        handle: "",
-                        parent_category_id: "",
-                        is_active: true,
-                        rank: 0,
-                        description: "",
-                      })
-                      setShowCategoryModal(true)
-                    }}
-                    style={{ backgroundColor: "#00b259", color: "#ffffff" }}
-                    className="hover:opacity-95 text-white px-3.5 py-2 rounded-md text-xs font-bold inline-flex items-center gap-1.5 shadow-2xs transition-opacity cursor-pointer"
-                  >
-                    <span className="text-sm leading-none font-black">+</span>
-                    <span>Yeni Kategori</span>
-                  </button>
+                {/* Collapsible Blue-Bordered Category Filter Panel (Image 3) */}
+                {showCategoryFilters && (
+                  <div className="bg-white border border-[#3b82f6] rounded-b-md rounded-tr-md p-5 shadow-2xs">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5 text-xs">
+                      <div>
+                        <label className="block font-medium text-slate-600 mb-1.5">Arama Terimi</label>
+                        <div className="grid grid-cols-[1fr_175px] gap-2">
+                          <input
+                            type="text"
+                            value={catFilter.searchTerm}
+                            onChange={(e) => setCatFilter({ ...catFilter, searchTerm: e.target.value })}
+                            className="h-9 px-3 rounded border border-slate-300 text-slate-800 focus:outline-none focus:border-[#1565c0]"
+                          />
+                          <select
+                            value={catFilter.searchField}
+                            onChange={(e) => setCatFilter({ ...catFilter, searchField: e.target.value })}
+                            className="h-9 px-2.5 rounded border border-slate-300 bg-white text-slate-700 font-medium focus:outline-none focus:border-[#1565c0]"
+                          >
+                            <option value="Kategori No, Kategori Adı">Kategori No, Kategori Adı</option>
+                            <option value="Kategori No">Kategori No</option>
+                            <option value="Kategori Adı">Kategori Adı</option>
+                          </select>
+                        </div>
+                      </div>
 
-                  <button
-                    type="button"
-                    onClick={() => setShowCategoryTreeModal(true)}
-                    style={{ backgroundColor: "#f59e0b", color: "#ffffff" }}
-                    className="hover:opacity-95 text-white px-3.5 py-2 rounded-md text-xs font-bold inline-flex items-center gap-1.5 shadow-2xs transition-opacity cursor-pointer"
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16m-7 6h7" />
-                    </svg>
-                    <span>Kategori Ağacı</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setShowCategoryMarketplaceModal(true)}
-                    style={{ backgroundColor: "#1a73e8", color: "#ffffff" }}
-                    className="hover:opacity-95 text-white px-3.5 py-2 rounded-md text-xs font-bold inline-flex items-center gap-1.5 shadow-2xs transition-opacity cursor-pointer"
-                  >
-                    <span>=</span>
-                    <span>Pazaryeri Eşleştirmeleri</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const csvRows = [
-                        ["No", "Kategori Adı", "Üst Kategori", "Durum", "Sıra"].join(";"),
-                        ...categories.map((c: any, idx: number) => {
-                          const parentName =
-                            c.parent_category?.name ||
-                            categories.find((p: any) => p.id === c.parent_category_id)?.name ||
-                            "Ana Kategori"
-                          return [
-                            280 - idx,
-                            c.name,
-                            parentName,
-                            c.is_active !== false ? "Aktif" : "Pasif",
-                            c.rank ?? 0,
-                          ].join(";")
-                        }),
-                      ].join("\n")
-                      const blob = new Blob(["\uFEFF" + csvRows], { type: "text/csv;charset=utf-8;" })
-                      const url = URL.createObjectURL(blob)
-                      const a = document.createElement("a")
-                      a.href = url
-                      a.download = "kategoriler.csv"
-                      a.click()
-                    }}
-                    style={{ backgroundColor: "#1a73e8", color: "#ffffff" }}
-                    className="hover:opacity-95 text-white px-3.5 py-2 rounded-md text-xs font-bold inline-flex items-center gap-1.5 shadow-2xs transition-opacity cursor-pointer"
-                  >
-                    <span>📊</span>
-                    <span>Excel İşlemleri</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Collapsible Blue-Bordered Category Filter Panel (Image 3) */}
-              {showCategoryFilters && (
-                <div className="bg-white border border-[#3b82f6] rounded-md p-5 shadow-2xs">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-[11.5px] font-bold text-zinc-800 mb-1.5">Arama Terimi</label>
-                      <div className="flex items-center">
-                        <input
-                          type="text"
-                          value={catFilter.searchTerm}
-                          onChange={(e) => setCatFilter({ ...catFilter, searchTerm: e.target.value })}
-                          className="w-1/2 border border-zinc-200 rounded-l-md px-3 py-2 text-xs text-zinc-800 focus:outline-none focus:border-[#3b82f6]"
-                        />
+                      <div>
+                        <label className="block font-medium text-slate-600 mb-1.5">Üst Kategori</label>
                         <select
-                          value={catFilter.searchField}
-                          onChange={(e) => setCatFilter({ ...catFilter, searchField: e.target.value })}
-                          className="w-1/2 border border-l-0 border-zinc-200 rounded-r-md px-2.5 py-2 text-xs text-zinc-700 bg-white focus:outline-none focus:border-[#3b82f6]"
+                          value={catFilter.parentCategoryId}
+                          onChange={(e) => setCatFilter({ ...catFilter, parentCategoryId: e.target.value })}
+                          className="w-full h-9 px-3 rounded border border-slate-300 bg-white text-slate-700 font-medium focus:outline-none focus:border-[#1565c0]"
                         >
-                          <option value="Kategori No, Kategori Adı">Kategori No, Kategori Adı</option>
-                          <option value="Kategori No">Kategori No</option>
-                          <option value="Kategori Adı">Kategori Adı</option>
+                          <option value="">Kategori Seçilmedi</option>
+                          <option value="__root__">Ana Kategori</option>
+                          {categories.map((cat: any) => (
+                            <option key={cat.id} value={cat.id}>
+                              {cat.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block font-medium text-slate-600 mb-1.5">Gelişmiş Filtreleme</label>
+                        <select
+                          value={catFilter.advanced}
+                          onChange={(e) => setCatFilter({ ...catFilter, advanced: e.target.value })}
+                          className="w-full h-9 px-3 rounded border border-slate-300 bg-white text-slate-700 font-medium focus:outline-none focus:border-[#1565c0]"
+                        >
+                          <option value="Seçilmedi">Seçilmedi</option>
+                          <option value="Aktif Kategoriler">Aktif Kategoriler</option>
+                          <option value="Pasif Kategoriler">Pasif Kategoriler</option>
+                          <option value="Ana Kategoriler">Ana Kategoriler</option>
+                          <option value="Alt Kategoriler">Alt Kategoriler</option>
                         </select>
                       </div>
                     </div>
 
-                    <div>
-                      <label className="block text-[11.5px] font-bold text-zinc-800 mb-1.5">Üst Kategori</label>
-                      <select
-                        value={catFilter.parentCategoryId}
-                        onChange={(e) => setCatFilter({ ...catFilter, parentCategoryId: e.target.value })}
-                        className="w-full border border-zinc-200 rounded-md px-3 py-2 text-xs text-zinc-700 bg-white focus:outline-none focus:border-[#3b82f6]"
+                    <div className="mt-5 flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setAppliedCatFilter({ ...catFilter })}
+                        className="h-9 px-4 rounded bg-[#1976d2] hover:bg-[#1565c0] text-white text-xs font-bold shadow-2xs transition cursor-pointer"
                       >
-                        <option value="">Kategori Seçilmedi</option>
-                        <option value="__root__">Ana Kategori</option>
-                        {categories.map((cat: any) => (
-                          <option key={cat.id} value={cat.id}>
-                            {cat.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-[11.5px] font-bold text-zinc-800 mb-1.5">Gelişmiş Filtreleme</label>
-                      <select
-                        value={catFilter.advanced}
-                        onChange={(e) => setCatFilter({ ...catFilter, advanced: e.target.value })}
-                        className="w-full border border-zinc-200 rounded-md px-3 py-2 text-xs text-zinc-700 bg-white focus:outline-none focus:border-[#3b82f6]"
+                        Filtrele
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCatFilter({ ...DEFAULT_CATEGORY_FILTER })
+                          setAppliedCatFilter({ ...DEFAULT_CATEGORY_FILTER })
+                          setCatQuickSearch("")
+                        }}
+                        className="h-9 px-3 rounded text-slate-700 hover:text-slate-950 text-xs font-semibold transition cursor-pointer"
                       >
-                        <option value="Seçilmedi">Seçilmedi</option>
-                        <option value="Aktif Kategoriler">Aktif Kategoriler</option>
-                        <option value="Pasif Kategoriler">Pasif Kategoriler</option>
-                        <option value="Ana Kategoriler">Ana Kategoriler</option>
-                        <option value="Alt Kategoriler">Alt Kategoriler</option>
-                      </select>
+                        Temizle
+                      </button>
                     </div>
                   </div>
-
-                  <div className="flex items-center gap-2 mt-4">
-                    <button
-                      type="button"
-                      onClick={() => setAppliedCatFilter({ ...catFilter })}
-                      style={{ backgroundColor: "#1a73e8", color: "#ffffff" }}
-                      className="hover:opacity-95 text-white px-4 py-1.5 rounded text-xs font-bold shadow-2xs transition-opacity cursor-pointer"
-                    >
-                      Filtrele
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setCatFilter({ ...DEFAULT_CATEGORY_FILTER })
-                        setAppliedCatFilter({ ...DEFAULT_CATEGORY_FILTER })
-                        setCatQuickSearch("")
-                      }}
-                      className="bg-white hover:bg-zinc-50 text-zinc-700 border border-zinc-300 px-4 py-1.5 rounded text-xs font-semibold transition-colors cursor-pointer"
-                    >
-                      Temizle
-                    </button>
-                  </div>
-                </div>
-              )}
+                )}
+              </div>
 
               {/* Categories Table Card (Image 3) */}
-              <div className="bg-white border border-zinc-200 rounded-lg p-5 shadow-2xs flex flex-col gap-4">
-                <div className="border border-zinc-200 rounded overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <table className="w-full border-collapse text-left bg-white text-[12px]">
-                      <thead>
-                        <tr className="bg-white border-b border-zinc-200 text-[11.5px] font-bold text-zinc-800 divide-x divide-zinc-200">
-                          <th className="py-3 px-3 w-10 text-center">
-                            <input
-                              type="checkbox"
-                              checked={categories.length > 0 && selectedCategoryIds.length === categories.length}
-                              onChange={(e) =>
-                                setSelectedCategoryIds(
-                                  e.target.checked ? categories.map((c: any) => c.id) : []
-                                )
-                              }
-                              className="w-4 h-4 rounded border-zinc-300 cursor-pointer"
-                            />
-                          </th>
-                          <th className="py-3 px-3.5 w-[7%]">No</th>
-                          <th className="py-3 px-3.5 w-[21%]">Kategori Adı</th>
-                          <th className="py-3 px-3.5 w-[20%]">Üst Kategori</th>
-                          <th className="py-3 px-3.5 w-[7%]">Durum</th>
-                          <th className="py-3 px-3.5 w-[27%]">Pazaryeri Eşleştirmeleri</th>
-                          <th className="py-3 px-3.5 w-[7%]">Sıra</th>
-                          <th className="py-3 px-3.5 w-[11%]">İşlemler</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-zinc-200 text-zinc-700">
-                        {(() => {
-                          const getCategoryFullPath = (cat: any): string => {
-                            if (!cat.parent_category_id && !cat.parent_category) return "Ana Kategori"
-                            const chain: string[] = []
-                            let currentParentId = cat.parent_category_id || cat.parent_category?.id
-                            let guard = 0
-                            while (currentParentId && guard < 6) {
-                              const parentObj = categories.find((c: any) => c.id === currentParentId)
-                              if (parentObj) {
-                                chain.unshift(parentObj.name)
-                                currentParentId = parentObj.parent_category_id || parentObj.parent_category?.id
-                              } else if (cat.parent_category?.name && chain.length === 0) {
-                                chain.unshift(cat.parent_category.name)
-                                break
-                              } else {
-                                break
-                              }
-                              guard++
-                            }
-                            return chain.length > 0 ? chain.join(" > ") : "Ana Kategori"
-                          }
-
-                          const filteredCats = categories.filter((c: any, idx: number) => {
-                            const catNo = String(280 - idx)
-                            const name = String(c.name || "")
-                            if (catQuickSearch.trim()) {
-                              const q = catQuickSearch.toLowerCase().trim()
-                              if (!name.toLowerCase().includes(q) && !catNo.includes(q)) return false
-                            }
-                            if (appliedCatFilter.searchTerm.trim()) {
-                              const t = appliedCatFilter.searchTerm.toLowerCase().trim()
-                              if (appliedCatFilter.searchField === "Kategori No") {
-                                if (!catNo.includes(t)) return false
-                              } else if (appliedCatFilter.searchField === "Kategori Adı") {
-                                if (!name.toLowerCase().includes(t)) return false
-                              } else {
-                                if (!name.toLowerCase().includes(t) && !catNo.includes(t)) return false
-                              }
-                            }
-                            if (appliedCatFilter.parentCategoryId === "__root__") {
-                              if (c.parent_category_id) return false
-                            } else if (appliedCatFilter.parentCategoryId) {
-                              if (c.parent_category_id !== appliedCatFilter.parentCategoryId) return false
-                            }
-                            if (appliedCatFilter.advanced === "Aktif Kategoriler" && c.is_active === false) return false
-                            if (appliedCatFilter.advanced === "Pasif Kategoriler" && c.is_active !== false) return false
-                            if (appliedCatFilter.advanced === "Ana Kategoriler" && c.parent_category_id) return false
-                            if (appliedCatFilter.advanced === "Alt Kategoriler" && !c.parent_category_id) return false
-                            return true
-                          })
-
-                          if (filteredCats.length === 0) {
-                            return (
-                              <tr>
-                                <td colSpan={8} className="py-12 text-center text-zinc-400 font-semibold">
-                                  Kategori bulunamadı.
-                                </td>
-                              </tr>
+              <div className="bg-white border border-slate-200 rounded-md shadow-2xs overflow-x-auto">
+                <table className="w-full border-collapse text-left">
+                  <thead>
+                    <tr className="bg-[#f8fafc] border-b border-slate-200 text-xs font-bold text-slate-800 divide-x divide-slate-200/70">
+                      <th className="py-3 px-3 text-center w-10">
+                        <input
+                          type="checkbox"
+                          checked={categories.length > 0 && selectedCategoryIds.length === categories.length}
+                          onChange={(e) =>
+                            setSelectedCategoryIds(
+                              e.target.checked ? categories.map((c: any) => c.id) : []
                             )
                           }
+                          className="w-4 h-4 rounded border-slate-300 text-[#1565c0] cursor-pointer"
+                        />
+                      </th>
+                      <th className="py-3 px-3 w-16">No</th>
+                      <th className="py-3 px-4">Kategori Adı</th>
+                      <th className="py-3 px-4">Üst Kategori</th>
+                      <th className="py-3 px-4 text-center w-24">Durum</th>
+                      <th className="py-3 px-4">Pazaryeri Eşleştirmeleri</th>
+                      <th className="py-3 px-4 w-20">Sıra</th>
+                      <th className="py-3 px-4 w-32">İşlemler</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200">
+                    {(() => {
+                      const getCategoryFullPath = (cat: any): string => {
+                        if (!cat.parent_category_id && !cat.parent_category) return ""
+                        const chain: string[] = []
+                        let currentParentId = cat.parent_category_id || cat.parent_category?.id
+                        let guard = 0
+                        while (currentParentId && guard < 6) {
+                          const parentObj = categories.find((c: any) => c.id === currentParentId)
+                          if (parentObj) {
+                            chain.unshift(parentObj.name)
+                            currentParentId = parentObj.parent_category_id || parentObj.parent_category?.id
+                          } else if (cat.parent_category?.name && chain.length === 0) {
+                            chain.unshift(cat.parent_category.name)
+                            break
+                          } else {
+                            break
+                          }
+                          guard++
+                        }
+                        return chain.length > 0 ? chain.join(" > ") : ""
+                      }
 
-                          const mpBadges = [
-                            { key: "n11", label: "n11" },
-                            { key: "hb", label: "hb" },
-                            { key: "ptt", label: "Ptt" },
-                            { key: "amz", label: "a" },
-                            { key: "ty", label: "ty" },
-                            { key: "cs", label: "çs" },
-                            { key: "pzr", label: "pz" },
-                            { key: "alg", label: "A" },
-                            { key: "idf", label: "id" },
-                            { key: "lcw", label: "LCW" },
-                            { key: "byn", label: "B" },
-                          ]
+                      const filteredCats = categories.filter((c: any, idx: number) => {
+                        const catNo = String(280 - idx)
+                        const name = String(c.name || "")
+                        if (catQuickSearch.trim()) {
+                          const q = catQuickSearch.toLowerCase().trim()
+                          if (!name.toLowerCase().includes(q) && !catNo.includes(q)) return false
+                        }
+                        if (appliedCatFilter.searchTerm.trim()) {
+                          const t = appliedCatFilter.searchTerm.toLowerCase().trim()
+                          if (appliedCatFilter.searchField === "Kategori No") {
+                            if (!catNo.includes(t)) return false
+                          } else if (appliedCatFilter.searchField === "Kategori Adı") {
+                            if (!name.toLowerCase().includes(t)) return false
+                          } else {
+                            if (!name.toLowerCase().includes(t) && !catNo.includes(t)) return false
+                          }
+                        }
+                        if (appliedCatFilter.parentCategoryId === "__root__") {
+                          if (c.parent_category_id) return false
+                        } else if (appliedCatFilter.parentCategoryId) {
+                          if (c.parent_category_id !== appliedCatFilter.parentCategoryId) return false
+                        }
+                        if (appliedCatFilter.advanced === "Aktif Kategoriler" && c.is_active === false) return false
+                        if (appliedCatFilter.advanced === "Pasif Kategoriler" && c.is_active !== false) return false
+                        if (appliedCatFilter.advanced === "Ana Kategoriler" && c.parent_category_id) return false
+                        if (appliedCatFilter.advanced === "Alt Kategoriler" && !c.parent_category_id) return false
+                        return true
+                      })
 
-                          return filteredCats.slice(0, categoryPageSize).map((cat: any, idx: number) => {
-                            const catNo = 280 - idx
-                            const parentPath = getCategoryFullPath(cat)
-                            return (
-                              <tr
-                                key={cat.id}
-                                className={`divide-x divide-zinc-200 transition-colors ${
-                                  idx % 2 === 0 ? "bg-zinc-50/50" : "bg-white"
-                                } hover:bg-blue-50/20`}
+                      if (filteredCats.length === 0) {
+                        return (
+                          <tr>
+                            <td colSpan={8} className="py-12 text-center text-slate-400 font-semibold text-xs">
+                              Kategori bulunamadı.
+                            </td>
+                          </tr>
+                        )
+                      }
+
+                      const mpBadges = [
+                        { key: "n11", title: "N11 Kategori Eşleştirmesi" },
+                        { key: "hb", title: "Hepsiburada Kategori Eşleştirmesi" },
+                        { key: "ptt", title: "PttAVM Kategori Eşleştirmesi" },
+                        { key: "amz", title: "Amazon Türkiye Kategori Eşleştirmesi" },
+                        { key: "ty", title: "Trendyol Kategori Eşleştirmesi" },
+                        { key: "cs", title: "ÇiçekSepeti Kategori Eşleştirmesi" },
+                        { key: "modanisa", title: "Modanisa Kategori Eşleştirmesi" },
+                        { key: "pzr", title: "Pazarama Kategori Eşleştirmesi" },
+                        { key: "idf", title: "İdefix Kategori Eşleştirmesi" },
+                        { key: "lcw", title: "LC Waikiki Kategori Eşleştirmesi" },
+                        { key: "temu", title: "Temu Kategori Eşleştirmesi" },
+                      ]
+
+                      return filteredCats.slice(0, categoryPageSize).map((cat: any, idx: number) => {
+                        const catNo = 280 - idx
+                        const parentPath = getCategoryFullPath(cat)
+                        return (
+                          <tr
+                            key={cat.id}
+                            className={`border-b border-slate-200 transition ${
+                              idx % 2 === 1
+                                ? "bg-[#e8f0fe]/60 hover:bg-[#e8f0fe]"
+                                : "bg-white hover:bg-slate-50/80"
+                            }`}
+                          >
+                            <td className="py-3 px-3 text-center w-10">
+                              <input
+                                type="checkbox"
+                                checked={selectedCategoryIds.includes(cat.id)}
+                                onChange={(e) =>
+                                  setSelectedCategoryIds((prev) =>
+                                    e.target.checked ? [...prev, cat.id] : prev.filter((id) => id !== cat.id)
+                                  )
+                                }
+                                className="w-4 h-4 rounded border-slate-300 text-[#1565c0] cursor-pointer"
+                              />
+                            </td>
+                            <td className="py-3 px-3 font-extrabold text-[#1565c0] text-xs w-16">
+                              <span
+                                onClick={() => {
+                                  setEditingCategory({
+                                    id: cat.id,
+                                    name: cat.name || "",
+                                    handle: cat.handle || "",
+                                    parent_category_id: cat.parent_category_id || "",
+                                    is_active: cat.is_active !== false,
+                                    rank: cat.rank ?? 0,
+                                    description: cat.description || "",
+                                  })
+                                  setShowCategoryModal(true)
+                                }}
+                                className="hover:underline cursor-pointer"
                               >
-                                <td className="py-3 px-3 text-center">
-                                  <input
-                                    type="checkbox"
-                                    checked={selectedCategoryIds.includes(cat.id)}
-                                    onChange={(e) =>
-                                      setSelectedCategoryIds((prev) =>
-                                        e.target.checked ? [...prev, cat.id] : prev.filter((id) => id !== cat.id)
-                                      )
-                                    }
-                                    className="w-4 h-4 rounded border-zinc-300 cursor-pointer"
-                                  />
-                                </td>
-                                <td className="py-3 px-3.5">
-                                  <span
+                                {catNo}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 font-semibold text-slate-800 text-xs">{cat.name}</td>
+                            <td className="py-3 px-4 font-medium text-slate-700 text-xs">{parentPath}</td>
+                            <td className="py-3 px-4 text-center w-24">
+                              {cat.is_active !== false ? (
+                                <span className="inline-flex w-5 h-5 rounded-full border-[1.8px] border-emerald-500 text-emerald-600 items-center justify-center">
+                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                                    <polyline points="20 6 9 17 4 12" />
+                                  </svg>
+                                </span>
+                              ) : (
+                                <span className="inline-flex w-5 h-5 rounded-full border-[1.8px] border-rose-400 text-rose-500 items-center justify-center text-[10px] font-bold">
+                                  ✕
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                {mpBadges.map((mp) => (
+                                  <button
+                                    key={mp.key}
+                                    type="button"
+                                    title={mp.title}
                                     onClick={() => {
-                                      setEditingCategory({
-                                        id: cat.id,
-                                        name: cat.name || "",
-                                        handle: cat.handle || "",
-                                        parent_category_id: cat.parent_category_id || "",
-                                        is_active: cat.is_active !== false,
-                                        rank: cat.rank ?? 0,
-                                        description: cat.description || "",
-                                      })
-                                      setShowCategoryModal(true)
+                                      setMarketplaceModalTitle(`${cat.name} — ${mp.title}`)
+                                      setShowCategoryMarketplaceModal(true)
                                     }}
-                                    className="font-bold text-[#1a73e8] hover:underline cursor-pointer"
+                                    className="w-7 h-7 rounded-full flex items-center justify-center transition opacity-90 hover:opacity-100 hover:scale-110 cursor-pointer"
                                   >
-                                    {catNo}
-                                  </span>
-                                </td>
-                                <td className="py-3 px-3.5 font-medium text-zinc-700">{cat.name}</td>
-                                <td className="py-3 px-3.5 font-medium text-zinc-600">{parentPath}</td>
-                                <td className="py-3 px-3.5">
-                                  {cat.is_active !== false ? (
-                                    <span className="inline-flex items-center justify-center w-5 h-5 rounded-full border border-emerald-500 text-emerald-500">
-                                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                      </svg>
-                                    </span>
-                                  ) : (
-                                    <span className="inline-flex items-center justify-center w-5 h-5 rounded-full border border-rose-400 text-rose-500 text-[10px] font-bold">
-                                      ✕
-                                    </span>
-                                  )}
-                                </td>
-                                <td className="py-3 px-3.5">
-                                  <div className="flex items-center gap-1 flex-wrap">
-                                    {mpBadges.map((mp) => (
-                                      <span
-                                        key={mp.key}
-                                        title={mp.key.toUpperCase()}
-                                        onClick={() => setShowCategoryMarketplaceModal(true)}
-                                        className="w-6 h-6 rounded-full bg-zinc-200/80 hover:bg-zinc-300 text-zinc-500 text-[8.5px] font-extrabold inline-flex items-center justify-center select-none cursor-pointer transition-colors"
-                                      >
-                                        {mp.label}
-                                      </span>
-                                    ))}
-                                  </div>
-                                </td>
-                                <td className="py-3 px-3.5 text-zinc-700 font-medium">{cat.rank ?? 0}</td>
-                                <td className="py-3 px-3.5">
-                                  <div className="flex items-center gap-1.5">
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setEditingCategory({
-                                          id: cat.id,
-                                          name: cat.name || "",
-                                          handle: cat.handle || "",
-                                          parent_category_id: cat.parent_category_id || "",
-                                          is_active: cat.is_active !== false,
-                                          rank: cat.rank ?? 0,
-                                          description: cat.description || "",
-                                        })
-                                        setShowCategoryModal(true)
-                                      }}
-                                      style={{ backgroundColor: "#9353d3", color: "#ffffff" }}
-                                      className="w-7 h-7 rounded hover:opacity-90 text-white flex items-center justify-center shadow-2xs cursor-pointer transition-opacity"
-                                      title="Kategoriyi Düzenle"
-                                    >
-                                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                      </svg>
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        window.open(`https://bodykitmerkezi.com/categories/${cat.handle || slugify(cat.name)}`, "_blank")
-                                      }
-                                      className="w-7 h-7 rounded bg-zinc-100 border border-zinc-200 hover:bg-zinc-200 text-zinc-700 flex items-center justify-center shadow-2xs cursor-pointer transition-colors"
-                                      title="Sitede Görüntüle"
-                                    >
-                                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                                      </svg>
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => handleDeleteCategory(cat.id)}
-                                      style={{ backgroundColor: "#f31260", color: "#ffffff" }}
-                                      className="w-7 h-7 rounded hover:opacity-90 text-white flex items-center justify-center shadow-2xs cursor-pointer transition-opacity"
-                                      title="Kategoriyi Sil"
-                                    >
-                                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                      </svg>
-                                    </button>
-                                  </div>
-                                </td>
-                              </tr>
-                            )
-                          })
-                        })()}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
+                                    {renderCircularMarketplaceSvg(mp.key)}
+                                  </button>
+                                ))}
+                              </div>
+                            </td>
+                            <td className="py-3 px-4 font-semibold text-slate-700 text-xs w-20">{cat.rank ?? 0}</td>
+                            <td className="py-3 px-4 w-32">
+                              <div className="flex items-center gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditingCategory({
+                                      id: cat.id,
+                                      name: cat.name || "",
+                                      handle: cat.handle || "",
+                                      parent_category_id: cat.parent_category_id || "",
+                                      is_active: cat.is_active !== false,
+                                      rank: cat.rank ?? 0,
+                                      description: cat.description || "",
+                                    })
+                                    setShowCategoryModal(true)
+                                  }}
+                                  className="w-7 h-6 rounded bg-[#8b5cf6] hover:bg-[#7c3aed] text-white flex items-center justify-center shadow-2xs transition cursor-pointer"
+                                  title="Kategoriyi Düzenle"
+                                >
+                                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                    <circle cx="12" cy="12" r="3" />
+                                  </svg>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    window.open(`https://bodykitmerkezi.com/categories/${cat.handle || slugify(cat.name)}`, "_blank")
+                                  }
+                                  className="w-7 h-6 rounded bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 flex items-center justify-center transition cursor-pointer"
+                                  title="Kategori Bağlantısı"
+                                >
+                                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                                    <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
+                                    <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
+                                  </svg>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteCategory(cat.id)}
+                                  className="w-7 h-6 rounded bg-[#ef4444] hover:bg-[#dc2626] text-white flex items-center justify-center shadow-2xs transition cursor-pointer"
+                                  title="Kategoriyi Sil"
+                                >
+                                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                                    <polyline points="3 6 5 6 21 6" />
+                                    <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                                  </svg>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        )
+                      })
+                    })()}
+                  </tbody>
+                </table>
 
-                <div className="flex items-center justify-between pt-1">
+                <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200 bg-white">
                   <div className="flex items-center gap-2.5">
                     <select
                       value={categoryPageSize}
                       onChange={(e) => setCategoryPageSize(Number(e.target.value))}
-                      className="border border-zinc-200 rounded px-2.5 py-1.5 text-xs font-semibold text-zinc-700 bg-white focus:outline-none"
+                      className="border border-slate-200 rounded px-2.5 py-1.5 text-xs font-semibold text-slate-700 bg-white focus:outline-none"
                     >
                       <option value={15}>15</option>
                       <option value={30}>30</option>
                       <option value={50}>50</option>
                       <option value={100}>100</option>
                     </select>
-                    <span className="text-xs text-zinc-600">
+                    <span className="text-xs text-slate-600">
                       {categories.length} kayıttan {categories.length > 0 ? 1 : 0} ile {Math.min(categoryPageSize, categories.length)} arası gösteriliyor
                     </span>
                   </div>
@@ -4114,83 +4275,98 @@ const IkasProductsPage = () => {
             </div>
           ) : (
             /* GÖRSEL 1 & 2: ÜRÜNLER LİSTESİ VE FİLTRELEME ALANI (/product-management) */
-            <div className="flex flex-col gap-4 max-w-[1600px] mx-auto">
-              {/* Top Action Bar (Image 1 & 2) */}
-              <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-                <div className="flex items-center gap-2 flex-1 max-w-[440px]">
-                  <button
-                    type="button"
-                    onClick={() => setShowProductFilters((prev) => !prev)}
-                    className={`bg-white border ${
-                      showProductFilters ? "border-[#3b82f6] text-zinc-900" : "border-zinc-300 text-zinc-700"
-                    } hover:bg-zinc-50 px-3.5 py-2 rounded-md text-xs font-semibold inline-flex items-center gap-2 shadow-2xs transition-colors cursor-pointer shrink-0`}
-                  >
-                    <svg className="w-3.5 h-3.5 text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-                    </svg>
-                    <span>Filtreler</span>
-                    <span className="text-[10px] text-zinc-500">⌄</span>
-                  </button>
-
-                  <div className="relative flex-1">
-                    <span className="absolute inset-y-0 left-3 flex items-center text-zinc-400 text-xs pointer-events-none">
-                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            <div className="flex flex-col gap-4 max-w-[1640px] mx-auto">
+              {/* Top Action Bar + Connected Blue-Bordered Filter Panel */}
+              <div>
+                <div className="flex flex-wrap items-end justify-between gap-3">
+                  <div className="flex items-center gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => setShowProductFilters((prev) => !prev)}
+                      className={`h-10 px-4 bg-white ${
+                        showProductFilters
+                          ? "border-t border-l border-r border-[#3b82f6] rounded-t-md relative z-10 -mb-px"
+                          : "border border-slate-300 rounded-md"
+                      } flex items-center gap-3 text-xs font-bold text-slate-800 cursor-pointer`}
+                    >
+                      <svg className="w-4 h-4 text-slate-700" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                        <line x1="4" y1="6" x2="20" y2="6" />
+                        <line x1="4" y1="12" x2="20" y2="12" />
+                        <line x1="4" y1="18" x2="20" y2="18" />
+                        <circle cx="8" cy="6" r="2" fill="white" />
+                        <circle cx="16" cy="12" r="2" fill="white" />
+                        <circle cx="10" cy="18" r="2" fill="white" />
                       </svg>
-                    </span>
-                    <input
-                      type="text"
-                      placeholder="Hızlı ara.."
-                      value={searchQuery}
-                      onChange={(e) => {
-                        setSearchQuery(e.target.value)
-                        setCurrentPage(1)
+                      <span>Filtreler</span>
+                      <svg className="w-3.5 h-3.5 text-slate-500 ml-1" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                        <polyline points="6 9 12 15 18 9" />
+                      </svg>
+                    </button>
+
+                    <div className="relative w-64 sm:w-80 mb-1">
+                      <svg className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                        <circle cx="11" cy="11" r="8" />
+                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                      </svg>
+                      <input
+                        type="text"
+                        placeholder="Hızlı ara.."
+                        value={searchQuery}
+                        onChange={(e) => {
+                          setSearchQuery(e.target.value)
+                          setCurrentPage(1)
+                        }}
+                        className="w-full h-9 pl-8 pr-3 rounded-md bg-white border border-slate-300 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#1565c0]"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                    <button
+                      type="button"
+                      onClick={initCreateMode}
+                      className="h-9 px-4 rounded-md bg-[#10b981] hover:bg-[#059669] text-white text-xs font-bold inline-flex items-center gap-2 shadow-2xs transition cursor-pointer"
+                    >
+                      <span className="text-base leading-none font-black">+</span>
+                      <span>Yeni Ürün</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const nav = (window as any).__entegreshopNavigate
+                        if (typeof nav === "function") nav("/xml-operations?tab=import")
+                        else window.location.href = "/app/xml-operations?tab=import"
                       }}
-                      className="w-full bg-white border border-zinc-200 rounded-md pl-8 pr-3 py-2 text-xs font-medium text-zinc-800 focus:outline-none focus:border-[#3b82f6] shadow-2xs"
-                    />
+                      className="h-9 px-3.5 rounded-md bg-[#1976d2] hover:bg-[#1565c0] text-white text-xs font-bold inline-flex items-center gap-2 shadow-2xs transition cursor-pointer"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                        <polyline points="14 2 14 8 20 8" />
+                        <polyline points="10 13 8 15 10 17" />
+                        <polyline points="14 13 16 15 14 17" />
+                      </svg>
+                      <span>XML İşlemleri</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const nav = (window as any).__entegreshopNavigate
+                        if (typeof nav === "function") nav("/xml-operations?tab=excel")
+                        else window.location.href = "/app/xml-operations?tab=excel"
+                      }}
+                      className="h-9 px-3.5 rounded-md bg-[#1976d2] hover:bg-[#1565c0] text-white text-xs font-bold inline-flex items-center gap-2 shadow-2xs transition cursor-pointer"
+                    >
+                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm1.8 18H14l-2-3.4-2 3.4H8.2l2.9-4.5L8.2 11H10l2 3.4 2-3.4h1.8l-2.9 4.5 2.9 4.5zM13 9V3.5L18.5 9H13z" />
+                      </svg>
+                      <span>Excel İşlemleri</span>
+                    </button>
                   </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={initCreateMode}
-                    style={{ backgroundColor: "#00b259", color: "#ffffff" }}
-                    className="hover:opacity-95 text-white text-xs font-bold px-3.5 py-2 rounded-md shadow-2xs flex items-center gap-1.5 transition-opacity cursor-pointer"
-                  >
-                    <span className="text-sm leading-none font-black">+</span>
-                    <span>Yeni Ürün</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const nav = (window as any).__entegreshopNavigate
-                      if (typeof nav === "function") nav("/xml-operations?tab=import")
-                      else window.location.href = "/app/xml-operations?tab=import"
-                    }}
-                    style={{ backgroundColor: "#1a73e8", color: "#ffffff" }}
-                    className="hover:opacity-95 text-white text-xs font-bold px-3.5 py-2 rounded-md shadow-2xs transition-opacity flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <span>📄 XML İşlemleri</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const nav = (window as any).__entegreshopNavigate
-                      if (typeof nav === "function") nav("/xml-operations?tab=excel")
-                      else window.location.href = "/app/xml-operations?tab=excel"
-                    }}
-                    style={{ backgroundColor: "#1a73e8", color: "#ffffff" }}
-                    className="hover:opacity-95 text-white text-xs font-bold px-3.5 py-2 rounded-md shadow-2xs transition-opacity flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <span>📊 Excel İşlemleri</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Collapsible Blue-Bordered Product Filter Panel (Image 2) */}
-              {showProductFilters && (
-                <div className="bg-white border border-[#3b82f6] rounded-md p-5 shadow-2xs">
+                {/* Collapsible Blue-Bordered Product Filter Panel (Image 2) */}
+                {showProductFilters && (
+                  <div className="bg-white border border-[#3b82f6] rounded-b-md rounded-tr-md p-5 shadow-2xs">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-5 gap-y-4">
                     {/* Row 1 */}
                     <div>
@@ -4461,286 +4637,280 @@ const IkasProductsPage = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 mt-4">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAppliedProdFilter({ ...prodFilter })
-                        setCurrentPage(1)
-                      }}
-                      style={{ backgroundColor: "#1a73e8", color: "#ffffff" }}
-                      className="hover:opacity-95 text-white px-4 py-1.5 rounded text-xs font-bold shadow-2xs transition-opacity cursor-pointer"
-                    >
-                      Filtrele
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setProdFilter({ ...DEFAULT_PRODUCT_FILTER })
-                        setAppliedProdFilter({ ...DEFAULT_PRODUCT_FILTER })
-                        setSearchQuery("")
-                        setCurrentPage(1)
-                      }}
-                      className="bg-white hover:bg-zinc-50 text-zinc-700 border border-zinc-300 px-4 py-1.5 rounded text-xs font-semibold transition-colors cursor-pointer"
-                    >
-                      Temizle
-                    </button>
+                    <div className="mt-5 flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAppliedProdFilter({ ...prodFilter })
+                          setCurrentPage(1)
+                        }}
+                        className="h-9 px-4 rounded bg-[#1976d2] hover:bg-[#1565c0] text-white text-xs font-bold shadow-2xs transition cursor-pointer"
+                      >
+                        Filtrele
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setProdFilter({ ...DEFAULT_PRODUCT_FILTER })
+                          setAppliedProdFilter({ ...DEFAULT_PRODUCT_FILTER })
+                          setSearchQuery("")
+                          setCurrentPage(1)
+                        }}
+                        className="h-9 px-3 rounded text-slate-700 hover:text-slate-950 text-xs font-semibold transition cursor-pointer"
+                      >
+                        Temizle
+                      </button>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
 
               {/* Products Table (Image 1) */}
               {loading ? (
-                <div className="flex justify-center items-center py-20 text-slate-400 text-sm gap-2 bg-white border border-zinc-200 rounded-lg">
+                <div className="flex justify-center items-center py-20 text-slate-400 text-sm gap-2 bg-white border border-slate-200 rounded-md">
                   <ArrowPath className="w-4 h-4 animate-spin text-blue-600" />
                   <span>Ürünler yükleniyor...</span>
                 </div>
               ) : (
-                <div className="bg-white border border-zinc-200 rounded-lg p-5 shadow-2xs flex flex-col gap-4">
-                  <div className="border border-zinc-200 rounded overflow-hidden">
-                    <div className="overflow-x-auto">
-                      <table className="w-full border-collapse text-left bg-white text-[12px]">
-                        <thead>
-                          <tr className="bg-white border-b border-zinc-200 text-[11.5px] font-bold text-zinc-800 divide-x divide-zinc-200">
-                            <th className="py-3 px-3 w-10 text-center">
-                              <input
-                                type="checkbox"
-                                className="w-4 h-4 rounded border-zinc-300 cursor-pointer"
-                                checked={paginatedProducts.length > 0 && selectedProductIds.length === paginatedProducts.length}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    setSelectedProductIds(paginatedProducts.map((p) => p.id))
-                                  } else {
-                                    setSelectedProductIds([])
-                                  }
-                                }}
-                              />
-                            </th>
-                            <th className="py-3 px-3 w-[6%]">No</th>
-                            <th className="py-3 px-3 w-[7%]">Resim</th>
-                            <th className="py-3 px-3.5 w-[31%]">Ürün Bilgileri</th>
-                            <th className="py-3 px-3.5 w-[13%]">Site</th>
-                            <th className="py-3 px-3 w-[23%]">Pazaryerleri</th>
-                            <th className="py-3 px-3 w-[6%]">Desi</th>
-                            <th className="py-3 px-3 w-[6%]">Stok</th>
-                            <th className="py-3 px-3 w-[8%]">İşlemler</th>
+                <div className="bg-white border border-slate-200 rounded-md shadow-2xs flex flex-col">
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse text-left bg-white text-[12px]">
+                      <thead>
+                        <tr className="bg-[#f8fafc] border-b border-slate-200 text-xs font-bold text-slate-800 divide-x divide-slate-200/70">
+                          <th className="py-3 px-3 text-center w-10">
+                            <input
+                              type="checkbox"
+                              className="w-4 h-4 rounded border-slate-300 text-[#1565c0] cursor-pointer"
+                              checked={paginatedProducts.length > 0 && selectedProductIds.length === paginatedProducts.length}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedProductIds(paginatedProducts.map((p) => p.id))
+                                } else {
+                                  setSelectedProductIds([])
+                                }
+                              }}
+                            />
+                          </th>
+                          <th className="py-3 px-3 w-16">No</th>
+                          <th className="py-3 px-3 w-20">Resim</th>
+                          <th className="py-3 px-4">Ürün Bilgileri</th>
+                          <th className="py-3 px-4 text-center w-36">Site</th>
+                          <th className="py-3 px-4 text-center w-[320px]">Pazaryerleri</th>
+                          <th className="py-3 px-3 text-center w-16">Desi</th>
+                          <th className="py-3 px-3 text-center w-16">Stok</th>
+                          <th className="py-3 px-4 w-28">İşlemler</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200">
+                        {filteredProducts.length === 0 ? (
+                          <tr>
+                            <td colSpan={9} className="py-12 text-center text-slate-400 font-semibold">
+                              Hiç ürün bulunamadı.
+                            </td>
                           </tr>
-                        </thead>
-                        <tbody className="divide-y divide-zinc-200 text-zinc-700">
-                          {filteredProducts.length === 0 ? (
-                            <tr>
-                              <td colSpan={9} className="py-12 text-center text-zinc-400 font-semibold">
-                                Hiç ürün bulunamadı.
-                              </td>
-                            </tr>
-                          ) : (
-                            paginatedProducts.map((prod, idx) => {
-                              const globalIdx = (currentPage - 1) * pageSize + idx
-                              const prodNo = 5556 - globalIdx
-                              const firstV = prod.variants?.[0]
-                              const originalPrice =
-                                (firstV?.prices?.find((p: any) => p.currency_code === "try")?.amount || 0) / 100
-                              const salePrice = getSalePriceForVariant(firstV?.id) || originalPrice
-                              const costPrice = Number(firstV?.metadata?.cost_price || 0)
-                              const marketPrice = Number(firstV?.metadata?.market_price || (salePrice < originalPrice ? originalPrice : 0))
-                              const stockCount = getProductTotalStock(prod)
-                              const desi = Number(firstV?.metadata?.desi || prod.metadata?.desi || 0)
-                              const sku = firstV?.sku || prod.handle?.toUpperCase().slice(0, 14) || `BKM-${prodNo}`
-                              const barcode = firstV?.barcode || sku
-                              const catNames =
-                                (prod.categories || []).map((c: any) => c.name).filter(Boolean).join(" > ") ||
-                                "Genel Kategori"
-                              const colObj = collections.find((c: any) => c.id === prod.collection_id)
-                              const brandLabel = (colObj?.title || prod.metadata?.brand || "BODYKİT MERKEZİ").toUpperCase()
-                              const isPublished = prod.status !== "draft"
-                              const fmtPrice = (val: number) =>
-                                `${val.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TL`
+                        ) : (
+                          paginatedProducts.map((prod, idx) => {
+                            const globalIdx = (currentPage - 1) * pageSize + idx
+                            const prodNo = 5556 - globalIdx
+                            const firstV = prod.variants?.[0]
+                            const originalPrice =
+                              (firstV?.prices?.find((p: any) => p.currency_code === "try")?.amount || 0) / 100
+                            const salePrice = getSalePriceForVariant(firstV?.id) || originalPrice
+                            const costPrice = Number(firstV?.metadata?.cost_price || 0)
+                            const marketPrice = Number(firstV?.metadata?.market_price || (salePrice < originalPrice ? originalPrice : 0))
+                            const stockCount = getProductTotalStock(prod)
+                            const desi = Number(firstV?.metadata?.desi || prod.metadata?.desi || 0)
+                            const sku = firstV?.sku || prod.handle?.toUpperCase().slice(0, 14) || `BKM-${prodNo}`
+                            const barcode = firstV?.barcode || sku
+                            const catNames =
+                              (prod.categories || []).map((c: any) => c.name).filter(Boolean).join(" > ") ||
+                              "Genel Kategori"
+                            const colObj = collections.find((c: any) => c.id === prod.collection_id)
+                            const brandLabel = (colObj?.title || prod.metadata?.brand || "BODYKİT MERKEZİ").toUpperCase()
+                            const isPublished = prod.status !== "draft"
+                            const fmtPrice = (val: number) =>
+                              `${val.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TL`
 
-                              return (
-                                <tr
-                                  key={prod.id}
-                                  className={`divide-x divide-zinc-200 transition-colors ${
-                                    idx % 2 === 0 ? "bg-zinc-50/50" : "bg-white"
-                                  } hover:bg-blue-50/20`}
-                                >
-                                  <td className="py-3.5 px-3 text-center align-middle">
-                                    <input
-                                      type="checkbox"
-                                      className="w-4 h-4 rounded border-zinc-300 cursor-pointer"
-                                      checked={selectedProductIds.includes(prod.id)}
-                                      onChange={(e) => {
-                                        if (e.target.checked) {
-                                          setSelectedProductIds((prev) => [...prev, prod.id])
-                                        } else {
-                                          setSelectedProductIds((prev) => prev.filter((id) => id !== prod.id))
-                                        }
-                                      }}
-                                    />
-                                  </td>
+                            return (
+                              <tr
+                                key={prod.id}
+                                className={`border-b border-slate-200 transition ${
+                                  idx % 2 === 1
+                                    ? "bg-[#e8f0fe]/60 hover:bg-[#e8f0fe]"
+                                    : "bg-white hover:bg-slate-50/80"
+                                }`}
+                              >
+                                <td className="py-3.5 px-3 text-center w-10">
+                                  <input
+                                    type="checkbox"
+                                    className="w-4 h-4 rounded border-slate-300 text-[#1565c0] cursor-pointer"
+                                    checked={selectedProductIds.includes(prod.id)}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        setSelectedProductIds((prev) => [...prev, prod.id])
+                                      } else {
+                                        setSelectedProductIds((prev) => prev.filter((id) => id !== prod.id))
+                                      }
+                                    }}
+                                  />
+                                </td>
 
-                                  <td className="py-3.5 px-3 align-middle">
+                                <td className="py-3.5 px-3 font-extrabold text-[#1565c0] text-xs w-16">
+                                  <span
+                                    onClick={() => initEditMode(prod)}
+                                    className="hover:underline cursor-pointer"
+                                  >
+                                    {prodNo}
+                                  </span>
+                                </td>
+
+                                <td className="py-3.5 px-3 w-20">
+                                  <div
+                                    onClick={() => initEditMode(prod)}
+                                    className="w-12 h-16 bg-slate-50 border border-slate-200 rounded p-0.5 overflow-hidden flex items-center justify-center cursor-pointer"
+                                  >
+                                    {prod.thumbnail ? (
+                                      <img src={prod.thumbnail} alt={prod.title} className="w-full h-full object-cover rounded-xs" />
+                                    ) : (
+                                      <span className="text-slate-300 text-xs">Resim</span>
+                                    )}
+                                  </div>
+                                </td>
+
+                                <td className="py-3.5 px-4">
+                                  <div className="flex flex-col leading-snug">
                                     <span
                                       onClick={() => initEditMode(prod)}
-                                      className="font-bold text-[#1a73e8] hover:underline cursor-pointer"
+                                      className="font-bold text-slate-900 text-[12.5px] hover:text-[#1565c0] cursor-pointer"
                                     >
-                                      {prodNo}
+                                      {prod.title}
                                     </span>
-                                  </td>
+                                    <span className="text-[11.5px] text-slate-600 mt-0.5">
+                                      Kategori: <strong className="font-semibold text-slate-700">{catNames}</strong>
+                                    </span>
+                                    <span className="text-[11.5px] text-slate-600">Kodu: {sku}</span>
+                                    <span className="text-[11.5px] text-slate-600">Barkod: {barcode}</span>
+                                    <span className="text-[11px] font-semibold text-slate-500 mt-0.5">{brandLabel}</span>
+                                  </div>
+                                </td>
 
-                                  <td className="py-3.5 px-3 align-middle">
-                                    <div
-                                      onClick={() => initEditMode(prod)}
-                                      className="w-12 h-15 bg-white border border-zinc-200 rounded overflow-hidden flex items-center justify-center cursor-pointer mx-auto"
-                                    >
-                                      {prod.thumbnail ? (
-                                        <img src={prod.thumbnail} alt={prod.title} className="w-full h-full object-cover" />
-                                      ) : (
-                                        <span className="text-zinc-300 text-xs">Resim</span>
-                                      )}
-                                    </div>
-                                  </td>
+                                <td className="py-3.5 px-4 text-center w-36">
+                                  <div className="flex flex-col items-center leading-snug">
+                                    {isPublished ? (
+                                      <span className="w-5 h-5 rounded-full border-[1.8px] border-emerald-500 text-emerald-600 flex items-center justify-center mb-1">
+                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                                          <polyline points="20 6 9 17 4 12" />
+                                        </svg>
+                                      </span>
+                                    ) : (
+                                      <span className="w-5 h-5 rounded-full border-[1.8px] border-rose-400 text-rose-500 flex items-center justify-center mb-1 text-[9px] font-bold">
+                                        ✕
+                                      </span>
+                                    )}
+                                    <span className="font-bold text-slate-900 text-xs">{fmtPrice(salePrice)}</span>
+                                    <span className="text-[11px] text-slate-500">P: {fmtPrice(marketPrice)}</span>
+                                    <span className="text-[11px] text-slate-500">A: {fmtPrice(costPrice)}</span>
+                                  </div>
+                                </td>
 
-                                  <td className="py-3.5 px-3.5 align-middle">
-                                    <div className="flex flex-col gap-0.5 text-[11.5px] leading-snug">
-                                      <span
-                                        onClick={() => initEditMode(prod)}
-                                        className="font-bold text-zinc-800 hover:text-[#1a73e8] cursor-pointer"
+                                <td className="py-3.5 px-4 w-[320px]">
+                                  <div className="flex items-center justify-center gap-3">
+                                    {[
+                                      { key: "n11", label: "N11" },
+                                      { key: "hb", label: "Hepsiburada" },
+                                      { key: "ty", label: "Trendyol" },
+                                      { key: "cs", label: "ÇiçekSepeti" },
+                                    ].map((mp) => (
+                                      <div
+                                        key={mp.key}
+                                        className="flex flex-col items-center justify-center min-w-[68px]"
+                                        title={`${mp.label}: ${fmtPrice(salePrice)}`}
                                       >
-                                        {prod.title}
-                                      </span>
-                                      <div className="text-zinc-600">
-                                        <span className="font-bold text-zinc-700">Kategori:</span> {catNames}
-                                      </div>
-                                      <div className="text-zinc-600">
-                                        <span className="font-bold text-zinc-700">Kodu:</span> {sku}
-                                      </div>
-                                      <div className="text-zinc-600">
-                                        <span className="font-bold text-zinc-700">Barkod:</span> {barcode}
-                                      </div>
-                                      <div className="text-zinc-700 font-semibold">{brandLabel}</div>
-                                    </div>
-                                  </td>
-
-                                  <td className="py-3.5 px-3.5 align-middle">
-                                    <div className="flex flex-col gap-0.5 text-[11.5px]">
-                                      <div className="mb-0.5">
-                                        {isPublished ? (
-                                          <span className="inline-flex items-center justify-center w-4.5 h-4.5 rounded-full border border-emerald-500 text-emerald-500">
-                                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                            </svg>
-                                          </span>
-                                        ) : (
-                                          <span className="inline-flex items-center justify-center w-4.5 h-4.5 rounded-full border border-rose-400 text-rose-500 text-[9px] font-bold">
-                                            ✕
-                                          </span>
-                                        )}
-                                      </div>
-                                      <span className="font-bold text-zinc-800">{fmtPrice(salePrice)}</span>
-                                      <span className="text-zinc-600">
-                                        <strong className="text-zinc-700">P:</strong> {fmtPrice(marketPrice)}
-                                      </span>
-                                      <span className="text-zinc-600">
-                                        <strong className="text-zinc-700">A:</strong> {fmtPrice(costPrice)}
-                                      </span>
-                                    </div>
-                                  </td>
-
-                                  <td className="py-3.5 px-2.5 align-middle">
-                                    <div className="grid grid-cols-4 gap-1 text-center">
-                                      {[
-                                        { key: "n11", badge: "n11" },
-                                        { key: "hb", badge: "hb" },
-                                        { key: "ty", badge: "ty" },
-                                        { key: "cs", badge: "çs" },
-                                      ].map((mp) => (
-                                        <div key={mp.key} className="flex flex-col items-center gap-1">
-                                          <span className="w-7 h-7 rounded-full bg-zinc-200/80 text-zinc-500 text-[9px] font-extrabold inline-flex items-center justify-center select-none">
-                                            {mp.badge}
-                                          </span>
-                                          <span className="text-[10.5px] font-medium text-zinc-700 leading-tight">
-                                            {salePrice.toLocaleString("en-US", {
-                                              minimumFractionDigits: 2,
-                                              maximumFractionDigits: 2,
-                                            })}
-                                            <br />
-                                            TL
-                                          </span>
+                                        <div
+                                          className="w-7 h-7 flex items-center justify-center rounded-full shadow-2xs transition-transform hover:scale-110 cursor-pointer"
+                                          onClick={() => {
+                                            setMarketplaceModalTitle(`${mp.label} Fiyat & Stok (${prod.title})`)
+                                            setShowCategoryMarketplaceModal(true)
+                                          }}
+                                        >
+                                          {renderCircularMarketplaceSvg(mp.key)}
                                         </div>
-                                      ))}
-                                    </div>
-                                  </td>
+                                        <span className="text-[11px] font-semibold text-slate-800 mt-1">{fmtPrice(salePrice)}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </td>
 
-                                  <td className="py-3.5 px-3 align-middle text-zinc-700 font-medium">{desi}</td>
+                                <td className="py-3.5 px-3 text-center font-semibold text-slate-700 text-xs w-16">{desi}</td>
 
-                                  <td className="py-3.5 px-3 align-middle text-zinc-800 font-semibold">{stockCount}</td>
+                                <td className="py-3.5 px-3 text-center font-bold text-slate-800 text-xs w-16">{stockCount}</td>
 
-                                  <td className="py-3.5 px-3 align-middle">
-                                    <div className="grid grid-cols-2 gap-1.5 w-15">
-                                      <button
-                                        type="button"
-                                        onClick={() => initEditMode(prod)}
-                                        style={{ backgroundColor: "#9353d3", color: "#ffffff" }}
-                                        className="w-7 h-7 rounded hover:opacity-90 text-white flex items-center justify-center shadow-2xs cursor-pointer transition-opacity"
-                                        title="Ürünü Düzenle"
-                                      >
-                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                        </svg>
-                                      </button>
+                                <td className="py-3.5 px-4 w-28">
+                                  <div className="grid grid-cols-2 gap-1.5 w-[60px] mx-auto">
+                                    <button
+                                      type="button"
+                                      onClick={() => initEditMode(prod)}
+                                      className="w-7 h-6 rounded bg-[#8b5cf6] hover:bg-[#7c3aed] text-white flex items-center justify-center shadow-2xs transition cursor-pointer"
+                                      title="Ürünü Düzenle / Görüntüle"
+                                    >
+                                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                        <circle cx="12" cy="12" r="3" />
+                                      </svg>
+                                    </button>
 
-                                      <button
-                                        type="button"
-                                        onClick={() => handleDuplicateProduct(prod)}
-                                        className="w-7 h-7 rounded bg-zinc-100 border border-zinc-200 hover:bg-zinc-200 text-zinc-700 flex items-center justify-center shadow-2xs cursor-pointer transition-colors"
-                                        title="Ürünü Kopyala"
-                                      >
-                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                          <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                                        </svg>
-                                      </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDuplicateProduct(prod)}
+                                      className="w-7 h-6 rounded bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 flex items-center justify-center transition cursor-pointer"
+                                      title="Ürünü Kopyala"
+                                    >
+                                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                        <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+                                      </svg>
+                                    </button>
 
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          window.open(
-                                            `https://bodykitmerkezi.com/products/${prod.handle || slugify(prod.title)}`,
-                                            "_blank"
-                                          )
-                                        }
-                                        className="w-7 h-7 rounded bg-zinc-100 border border-zinc-200 hover:bg-zinc-200 text-zinc-700 flex items-center justify-center shadow-2xs cursor-pointer transition-colors"
-                                        title="Sitede Görüntüle"
-                                      >
-                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                          <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                                        </svg>
-                                      </button>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        window.open(
+                                          `https://bodykitmerkezi.com/products/${prod.handle || slugify(prod.title)}`,
+                                          "_blank"
+                                        )
+                                      }
+                                      className="w-7 h-6 rounded bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 flex items-center justify-center transition cursor-pointer"
+                                      title="Mağazada Görüntüle"
+                                    >
+                                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                                        <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
+                                        <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
+                                      </svg>
+                                    </button>
 
-                                      <button
-                                        type="button"
-                                        onClick={() => handleDeleteProduct(prod.id)}
-                                        style={{ backgroundColor: "#f31260", color: "#ffffff" }}
-                                        className="w-7 h-7 rounded hover:opacity-90 text-white flex items-center justify-center shadow-2xs cursor-pointer transition-opacity"
-                                        title="Ürünü Sil"
-                                      >
-                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                        </svg>
-                                      </button>
-                                    </div>
-                                  </td>
-                                </tr>
-                              )
-                            })
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteProduct(prod.id)}
+                                      className="w-7 h-6 rounded bg-[#ef4444] hover:bg-[#dc2626] text-white flex items-center justify-center shadow-2xs transition cursor-pointer"
+                                      title="Ürünü Sil"
+                                    >
+                                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                                        <polyline points="3 6 5 6 21 6" />
+                                        <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                                      </svg>
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            )
+                          })
+                        )}
+                      </tbody>
+                    </table>
                   </div>
 
                   {/* Pagination Footer */}
-                  <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-1 text-xs text-zinc-600 select-none">
+                  <div className="flex flex-col sm:flex-row justify-between items-center gap-4 px-5 py-3.5 border-t border-slate-200 text-xs text-slate-600 select-none">
                     <div className="flex items-center gap-3">
                       <select
                         value={pageSize}
@@ -4979,38 +5149,74 @@ const IkasProductsPage = () => {
       {/* PAZARYERİ EŞLEŞTİRMELERİ MODALI */}
       {showCategoryMarketplaceModal && (
         <div style={{ zIndex: 100025 }} className="fixed inset-0 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-zinc-900/50 backdrop-blur-[1px]" onClick={() => setShowCategoryMarketplaceModal(false)} />
-          <div className="bg-white rounded-lg shadow-2xl w-full max-w-[640px] flex flex-col relative z-10 overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200">
-              <h3 className="text-sm font-bold text-zinc-800">Pazaryeri Kategori Eşleştirmeleri</h3>
+          <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-[1px]" onClick={() => setShowCategoryMarketplaceModal(false)} />
+          <div className="bg-white rounded-lg shadow-2xl w-full max-w-[640px] flex flex-col relative z-10 overflow-hidden border border-slate-300">
+            <div
+              style={{
+                backgroundColor: "#e9ecf1",
+                backgroundImage:
+                  "repeating-linear-gradient(-45deg, rgba(255,255,255,0.35) 0px, rgba(255,255,255,0.35) 14px, transparent 14px, transparent 28px)",
+                borderBottom: "1px solid #cfd6e0",
+              }}
+              className="flex items-center justify-between px-6 py-4"
+            >
+              <div>
+                <div className="text-[11px] font-bold text-slate-600">Pazaryeri Entegrasyonu</div>
+                <h3 className="text-[15px] font-extrabold text-slate-900 mt-0.5">
+                  {marketplaceModalTitle || "Pazaryeri Kategori Eşleştirmeleri"}
+                </h3>
+              </div>
               <button
                 type="button"
                 onClick={() => setShowCategoryMarketplaceModal(false)}
-                className="text-zinc-400 hover:text-zinc-700 text-lg font-bold cursor-pointer"
+                className="w-8 h-8 rounded hover:bg-black/5 flex items-center justify-center text-slate-700 hover:text-slate-950 text-lg font-bold cursor-pointer"
               >
                 ✕
               </button>
             </div>
             <div className="p-6 text-xs space-y-3 max-h-[70vh] overflow-y-auto">
-              {["Trendyol", "Hepsiburada", "N11", "ÇiçekSepeti", "PttAVM", "Amazon", "Pazarama", "İdefix"].map((mp) => (
-                <div key={mp} className="flex items-center justify-between gap-4 border border-zinc-200 rounded-md p-3">
-                  <span className="font-bold text-zinc-800 w-36">{mp}</span>
+              {[
+                { key: "ty", label: "Trendyol" },
+                { key: "hb", label: "Hepsiburada" },
+                { key: "n11", label: "N11" },
+                { key: "cs", label: "ÇiçekSepeti" },
+                { key: "ptt", label: "PttAVM" },
+                { key: "amz", label: "Amazon" },
+                { key: "pzr", label: "Pazarama" },
+                { key: "idf", label: "İdefix" },
+                { key: "modanisa", label: "Modanisa" },
+                { key: "lcw", label: "LCW" },
+                { key: "temu", label: "Temu" },
+              ].map((mp) => (
+                <div key={mp.key} className="flex items-center justify-between gap-3 border border-slate-200 rounded-md p-2.5 bg-slate-50/50">
+                  <div className="flex items-center gap-2.5 w-40 shrink-0">
+                    <div className="w-7 h-7 flex items-center justify-center rounded-full shrink-0">
+                      {renderCircularMarketplaceSvg(mp.key)}
+                    </div>
+                    <span className="font-bold text-slate-800">{mp.label}</span>
+                  </div>
                   <input
                     type="text"
-                    placeholder={`${mp} kategori kodu veya adı ara...`}
-                    className="flex-1 border border-zinc-200 rounded px-3 py-1.5 text-xs focus:outline-none focus:border-[#3b82f6]"
+                    placeholder={`${mp.label} kategori kodu veya fiyat / stok ayarı...`}
+                    className="flex-1 bg-white border border-slate-300 rounded px-3 py-1.5 text-xs focus:outline-none focus:border-[#1565c0]"
                   />
                 </div>
               ))}
             </div>
-            <div className="flex items-center justify-end gap-2 px-6 py-4 bg-zinc-50 border-t border-zinc-200">
+            <div className="flex items-center justify-end gap-2 px-6 py-4 bg-slate-50 border-t border-slate-200">
               <button
                 type="button"
                 onClick={() => setShowCategoryMarketplaceModal(false)}
-                style={{ backgroundColor: "#1a73e8", color: "#ffffff" }}
-                className="px-5 py-2 rounded text-white text-xs font-bold hover:opacity-95 cursor-pointer"
+                className="h-9 px-4 rounded bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold transition cursor-pointer"
               >
-                Kaydet ve Kapat
+                Kapat
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowCategoryMarketplaceModal(false)}
+                className="h-9 px-5 rounded bg-[#1565c0] hover:bg-[#0d47a1] text-white text-xs font-bold shadow-2xs transition cursor-pointer"
+              >
+                Kaydet ve Senkronize Et
               </button>
             </div>
           </div>
