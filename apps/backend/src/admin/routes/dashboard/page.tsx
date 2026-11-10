@@ -343,7 +343,7 @@ export const getTopNavCategories = (prepOrdersBadge: number): TopNavCategory[] =
         items: [
           { label: "Arama Sonuçları", path: "/product-management?tab=arama-sonuclari" },
           { label: "Ürün Yorumları", path: "/product-management?tab=urun-yorumlari" },
-          { label: "Ürün Sıralama", path: "/categories" },
+          { label: "Ürün Sıralama", path: "/product-management?tab=urun-siralama" },
           { label: "Hızlı SEO Güncelleme", path: "/product-management?tab=hizli-seo" },
           { label: "Toplu Ürün Güncelleme", path: "/product-management?tab=toplu-guncelleme" },
         ],
@@ -780,6 +780,7 @@ export const EntegreShopHeaderBar = ({
     activeCategoryLabel === "ÜRÜNLER" &&
     (currentSearch.includes("tab=arama-sonuclari") ||
       currentSearch.includes("tab=urun-yorumlari") ||
+      currentSearch.includes("tab=urun-siralama") ||
       currentSearch.includes("tab=hizli-seo") ||
       currentSearch.includes("tab=toplu-guncelleme"))
 

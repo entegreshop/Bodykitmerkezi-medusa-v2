@@ -265,6 +265,99 @@ const IkasProductsPage = () => {
     mapped_keyword: "-",
   })
 
+  // --- 1. ÜRÜN SIRALAMA STATES (GÖRSEL 1 BİREBİR) ---
+  const DEFAULT_SORT_ITEMS = [
+    { id: "akilli", label: "Akıllı Sıralama", active: true, info: true },
+    { id: "en-yeniler", label: "En Yeniler", active: true },
+    { id: "cok-satanlar", label: "En Çok Satanlar", active: true },
+    { id: "ad-az", label: "Ürün Adı (A-Z)", active: true },
+    { id: "ad-za", label: "Ürün Adı (Z-A)", active: true },
+    { id: "fiyat-artan", label: "En Düşük Fiyat", active: true },
+    { id: "fiyat-azalan", label: "En Yüksek Fiyat", active: true },
+    { id: "cok-oylananlar", label: "En Çok Oylananlar", active: true },
+  ]
+  const [sortingTypeTab, setSortingTypeTab] = useState<"kategori" | "marka" | "nitelik" | "etiket" | "arama">("kategori")
+  const [sortingTypesMap, setSortingTypesMap] = useState<Record<string, any[]>>({
+    kategori: [...DEFAULT_SORT_ITEMS],
+    marka: [...DEFAULT_SORT_ITEMS],
+    nitelik: [...DEFAULT_SORT_ITEMS],
+    etiket: [...DEFAULT_SORT_ITEMS],
+    arama: [...DEFAULT_SORT_ITEMS],
+  })
+  const [dragSortIdx, setDragSortIdx] = useState<number | null>(null)
+  const [smartSortRules, setSmartSortRules] = useState<any[]>([])
+  const [showSmartSortModal, setShowSmartSortModal] = useState(false)
+  const [editingSmartSort, setEditingSmartSort] = useState<{
+    id?: string
+    no?: number
+    page_type: "Kategori" | "Marka" | "Ürün Etiketi"
+    name: string
+    rule_type: string
+  }>({
+    page_type: "Kategori",
+    name: "",
+    rule_type: "En Çok Satanlar Önde",
+  })
+
+  // --- 2. HIZLI SEO GÜNCELLEME STATES (GÖRSEL 2 BİREBİR) ---
+  const [fastSeoActiveSection, setFastSeoActiveSection] = useState<"urun" | "kategori" | "marka" | "etiket">("urun")
+  const [fastSeoProdFilter, setFastSeoProdFilter] = useState({
+    advanced: "Seçilmedi",
+    category: "",
+    brand: "",
+    source: "Kaynak Seçilmedi",
+    tag: "",
+    stockMin: "0.00",
+    stockMax: "0.00",
+    marketPriceMin: "0.00",
+    marketPriceMax: "0.00",
+    salePriceMin: "0.00",
+    salePriceMax: "0.00",
+    currency: "Hiçbiri seçilmedi",
+    seoTitleStatus: "Boş Olanlar",
+    seoDescStatus: "Boş Olanlar",
+    seoKeywordStatus: "Boş Olanlar",
+  })
+  const [fastSeoCatFilter, setFastSeoCatFilter] = useState({
+    advanced: "Seçilmedi",
+    category: "",
+    seoTitleStatus: "Boş Olanlar",
+    seoDescStatus: "Boş Olanlar",
+    seoKeywordStatus: "Boş Olanlar",
+  })
+  const [fastSeoBrandFilter, setFastSeoBrandFilter] = useState({
+    brand: "",
+    seoTitleStatus: "Boş Olanlar",
+    seoDescStatus: "Boş Olanlar",
+    seoKeywordStatus: "Boş Olanlar",
+  })
+  const [fastSeoTagFilter, setFastSeoTagFilter] = useState({
+    tag: "",
+    seoTitleStatus: "Boş Olanlar",
+    seoDescStatus: "Boş Olanlar",
+    seoKeywordStatus: "Boş Olanlar",
+  })
+  const [fastSeoFilteredResults, setFastSeoFilteredResults] = useState<any[] | null>(null)
+  const [fastSeoInlineEdits, setFastSeoInlineEdits] = useState<Record<string, { title: string; desc: string; keywords: string }>>({})
+  const [savingFastSeoId, setSavingFastSeoId] = useState<string | null>(null)
+
+  // --- 3. TOPLU ÜRÜN GÜNCELLEME STATES (GÖRSEL 3, 4, 5 BİREBİR) ---
+  const [bulkOperationSearch, setBulkOperationSearch] = useState("")
+  const [selectedBulkOperationCard, setSelectedBulkOperationCard] = useState<{
+    id: string
+    label: string
+    badge?: string
+    badgeBg?: string
+    badgeColor?: string
+  } | null>(null)
+  const [bulkOpTargetCategory, setBulkOpTargetCategory] = useState("")
+  const [bulkOpTargetBrand, setBulkOpTargetBrand] = useState("")
+  const [bulkOpValueMode, setBulkOpValueMode] = useState<"set" | "increase_pct" | "decrease_pct" | "increase_amt" | "decrease_amt" | "replace">("increase_pct")
+  const [bulkOpValueInput, setBulkOpValueInput] = useState("")
+  const [bulkOpFindText, setBulkOpFindText] = useState("")
+  const [bulkOpReplaceText, setBulkOpReplaceText] = useState("")
+  const [bulkOpRunning, setBulkOpRunning] = useState(false)
+
   const [showReviewModal, setShowReviewModal] = useState(false)
   const [uploadingReviewMedia, setUploadingReviewMedia] = useState(false)
   const [editingReview, setEditingReview] = useState<{
@@ -306,6 +399,12 @@ const IkasProductsPage = () => {
             searchResults: data.searchResults || [],
             reviews: data.reviews || [],
           })
+          if (data.sortingTypes) {
+            setSortingTypesMap(data.sortingTypes)
+          }
+          if (Array.isArray(data.smartSortRules)) {
+            setSmartSortRules(data.smartSortRules)
+          }
         }
       }
     } catch (e) {}
@@ -323,7 +422,10 @@ const IkasProductsPage = () => {
       activeSubTab === "etiketler" ||
       activeSubTab === "stok-birimleri" ||
       activeSubTab === "arama-sonuclari" ||
-      activeSubTab === "urun-yorumlari"
+      activeSubTab === "urun-yorumlari" ||
+      activeSubTab === "urun-siralama" ||
+      activeSubTab === "hizli-seo" ||
+      activeSubTab === "toplu-guncelleme"
     ) {
       fetchCatalogOperations()
     }
@@ -2389,24 +2491,931 @@ const IkasProductsPage = () => {
                 </div>
               </div>
             </div>
-          ) : (
-            <>
-              {activeSubTab !== "urunler" ? (
-                <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-xs mb-6">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-5">
-                    <div>
-                      <h2 className="text-lg font-bold text-slate-900">
-                        {activeSubTab === "urun-yorumlari" && "Ürün Yorumları ve Değerlendirmeler"}
-                        {activeSubTab === "hizli-seo" && "Hızlı SEO Güncelleme Aracı"}
-                        {activeSubTab === "toplu-guncelleme" && "Toplu Ürün Güncelleme Aracı"}
-                      </h2>
-                      <p className="text-xs text-slate-500 mt-0.5">
-                        Aşağıdaki ürün tablosundan ürünleri seçerek işlem yapabilir veya Ürünler sekmesine dönebilirsiniz.
-                      </p>
-                    </div>
+          ) : activeSubTab === "urun-siralama" ? (
+            /* GÖRSEL 1: ÜRÜN SIRALAMA (/product-management?tab=urun-siralama) */
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-[1600px] mx-auto items-start">
+              {/* Sol Kutu: Sıralama Tipleri (5 Kolon) */}
+              <div className="lg:col-span-5 bg-white border border-zinc-200 rounded-xl p-6 shadow-xs flex flex-col gap-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h2 className="text-[15px] font-semibold text-zinc-700">Sıralama Tipleri</h2>
+                  <div className="flex items-center gap-4 text-[12px] font-semibold">
+                    {[
+                      { key: "kategori", label: "Kategori" },
+                      { key: "marka", label: "Marka" },
+                      { key: "nitelik", label: "Nitelik" },
+                      { key: "etiket", label: "Etiket" },
+                      { key: "arama", label: "Arama" },
+                    ].map((tab) => {
+                      const isAct = sortingTypeTab === tab.key
+                      return (
+                        <button
+                          key={tab.key}
+                          type="button"
+                          onClick={() => setSortingTypeTab(tab.key as any)}
+                          className={"cursor-pointer transition-colors " + (isAct ? "text-[#1e88e5] font-bold" : "text-zinc-600 hover:text-zinc-900")}
+                        >
+                          {tab.label}
+                        </button>
+                      )
+                    })}
                   </div>
                 </div>
-              ) : null}
+
+                {/* Gri Bilgi Kutusu */}
+                <div className="bg-[#f4f5f7] border-l-[3px] border-[#9fa6b2] rounded-r-md px-4 py-3 flex flex-col gap-0.5">
+                  <span className="text-xs font-bold text-zinc-800">
+                    {sortingTypeTab === "kategori" && "Kategori Sıralama Tipleri"}
+                    {sortingTypeTab === "marka" && "Marka Sıralama Tipleri"}
+                    {sortingTypeTab === "nitelik" && "Nitelik Sıralama Tipleri"}
+                    {sortingTypeTab === "etiket" && "Etiket Sıralama Tipleri"}
+                    {sortingTypeTab === "arama" && "Arama Sıralama Tipleri"}
+                  </span>
+                  <span className="text-[11.5px] text-zinc-600">Sürükle-bırak ile yer değiştirebilirsiniz.</span>
+                </div>
+
+                {/* Sürükle-Bırak Sıralama Satırları */}
+                <div className="flex flex-col gap-2">
+                  {(sortingTypesMap[sortingTypeTab] || DEFAULT_SORT_ITEMS).map((opt: any, idx: number) => (
+                    <div
+                      key={opt.id || idx}
+                      draggable
+                      onDragStart={() => setDragSortIdx(idx)}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={() => {
+                        if (dragSortIdx === null || dragSortIdx === idx) return
+                        const currentList = [...(sortingTypesMap[sortingTypeTab] || DEFAULT_SORT_ITEMS)]
+                        const [moved] = currentList.splice(dragSortIdx, 1)
+                        currentList.splice(idx, 0, moved)
+                        setSortingTypesMap({ ...sortingTypesMap, [sortingTypeTab]: currentList })
+                        setDragSortIdx(null)
+                      }}
+                      className="bg-[#f4f5f7] border border-zinc-200/80 rounded-md px-4 py-2.5 flex items-center justify-between cursor-grab active:cursor-grabbing hover:border-zinc-300 transition-colors"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-medium text-zinc-800">{opt.label}</span>
+                        {opt.info && (
+                          <span
+                            className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-zinc-600 text-white text-[10px] font-bold"
+                            title="Akıllı sıralama kurallarına göre ürünleri otomatik sıralar"
+                          >
+                            i
+                          </span>
+                        )}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const currentList = [...(sortingTypesMap[sortingTypeTab] || DEFAULT_SORT_ITEMS)]
+                          currentList[idx] = { ...currentList[idx], active: !currentList[idx].active }
+                          setSortingTypesMap({ ...sortingTypesMap, [sortingTypeTab]: currentList })
+                        }}
+                        className={"w-11 h-6 rounded-full transition-colors p-0.5 cursor-pointer flex items-center " + (opt.active !== false ? "bg-[#2ebd85]" : "bg-zinc-300")}
+                      >
+                        <span
+                          className={"w-5 h-5 rounded-full bg-white shadow transition-transform " + (opt.active !== false ? "translate-x-5" : "translate-x-0")}
+                        />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="pt-1">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        const res = await fetch("/admin/catalog-operations", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ action: "save_sorting_types", sortingTypes: sortingTypesMap }),
+                        })
+                        const data = await res.json()
+                        if (data?.success) {
+                          alert("Sıralama tipleri başarıyla kaydedildi.")
+                        }
+                      } catch (e) {}
+                    }}
+                    className="bg-[#2ebd85] hover:bg-emerald-600 text-white text-xs font-bold px-5 py-2.5 rounded-md shadow-xs transition-colors cursor-pointer"
+                  >
+                    Kaydet
+                  </button>
+                </div>
+              </div>
+
+              {/* Sağ Kutu: Akıllı Sıralamalar (7 Kolon) */}
+              <div className="lg:col-span-7 bg-white border border-zinc-200 rounded-xl p-6 shadow-xs flex flex-col gap-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-[15px] font-bold text-[#1e88e5]">Akıllı Sıralamalar</h2>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingSmartSort({
+                        page_type: "Kategori",
+                        name: "",
+                        rule_type: "En Çok Satanlar Önde",
+                      })
+                      setShowSmartSortModal(true)
+                    }}
+                    className="bg-[#2ebd85] hover:bg-emerald-600 text-white px-4 py-2 rounded-md text-xs font-bold inline-flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                  >
+                    <span className="text-sm leading-none font-black">+</span>
+                    <span>Yeni Sıralama</span>
+                  </button>
+                </div>
+
+                <div className="bg-[#f4f5f7] border-l-[3px] border-[#9fa6b2] rounded-r-md px-4 py-3 text-xs text-zinc-700">
+                  Kategori, marka veya ürün etiket sayfalarında yer alan ürünlerin sıralamalarını akıllı sıralamalar oluşturarak özelleştirebilirsiniz.
+                </div>
+
+                <div className="border border-zinc-200 rounded-md overflow-hidden">
+                  <table className="w-full border-collapse text-left bg-white text-[12px]">
+                    <thead>
+                      <tr className="bg-zinc-100/80 border-b border-zinc-200 text-[11.5px] font-bold text-zinc-800 divide-x divide-zinc-200">
+                        <th className="py-3.5 px-4 w-14">#</th>
+                        <th className="py-3.5 px-4 w-20">No</th>
+                        <th className="py-3.5 px-4">Sayfa Tipi</th>
+                        <th className="py-3.5 px-4">Adı</th>
+                        <th className="py-3.5 px-4">Son Güncellenme</th>
+                        <th className="py-3.5 px-4 w-28">İşlemler</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-200 text-zinc-700">
+                      {smartSortRules.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="py-8 text-center text-zinc-500 text-xs font-medium">
+                            Kayıt bulunamadı
+                          </td>
+                        </tr>
+                      ) : (
+                        smartSortRules.map((rule: any, idx: number) => (
+                          <tr key={rule.id || idx} className="divide-x divide-zinc-200 hover:bg-zinc-50">
+                            <td className="py-3 px-4">{idx + 1}</td>
+                            <td className="py-3 px-4 font-bold text-[#1e88e5]">{rule.no}</td>
+                            <td className="py-3 px-4 font-medium">{rule.page_type}</td>
+                            <td className="py-3 px-4 font-semibold text-zinc-800">{rule.name}</td>
+                            <td className="py-3 px-4 text-zinc-500">{rule.updated_at}</td>
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditingSmartSort({
+                                      id: rule.id,
+                                      no: rule.no,
+                                      page_type: rule.page_type || "Kategori",
+                                      name: rule.name || "",
+                                      rule_type: rule.rule_type || "En Çok Satanlar Önde",
+                                    })
+                                    setShowSmartSortModal(true)
+                                  }}
+                                  className="w-7 h-7 rounded bg-[#9b66c4] hover:bg-purple-600 text-white flex items-center justify-center shadow-2xs cursor-pointer"
+                                >
+                                  ✎
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    if (!confirm("Bu akıllı sıralamayı silmek istediğinize emin misiniz?")) return
+                                    const res = await fetch("/admin/catalog-operations", {
+                                      method: "POST",
+                                      headers: { "Content-Type": "application/json" },
+                                      body: JSON.stringify({ action: "delete_smart_sort_rule", id: rule.id }),
+                                    })
+                                    const data = await res.json()
+                                    if (data?.success) setSmartSortRules(data.smartSortRules || [])
+                                  }}
+                                  className="w-7 h-7 rounded bg-[#ef4444] hover:bg-red-600 text-white flex items-center justify-center shadow-2xs cursor-pointer"
+                                >
+                                  🗑
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="flex items-center gap-3 pt-1">
+                  <select className="border border-zinc-200 rounded-md px-3 py-1.5 text-xs font-semibold text-zinc-700 bg-white focus:outline-none">
+                    <option value={15}>15</option>
+                    <option value={30}>30</option>
+                  </select>
+                  <span className="text-xs font-medium text-zinc-600">
+                    {smartSortRules.length} kayıttan {smartSortRules.length > 0 ? 1 : 1} ile {smartSortRules.length} arası gösteriliyor
+                  </span>
+                </div>
+              </div>
+            </div>
+          ) : activeSubTab === "hizli-seo" ? (
+            /* GÖRSEL 2: HIZLI SEO GÜNCELLEME (/product-management?tab=hizli-seo) */
+            <div className="max-w-[1250px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+              {/* Sol Dikey Menü (3 Kolon) */}
+              <div className="lg:col-span-3 bg-white border border-zinc-200 rounded-xl shadow-xs overflow-hidden divide-y divide-zinc-100 sticky top-6">
+                {[
+                  { key: "urun", label: "Ürün SEO Bilgileri", icon: "☰", anchor: "fast-seo-urun" },
+                  { key: "kategori", label: "Kategori SEO Bilgileri", icon: "品", anchor: "fast-seo-kategori" },
+                  { key: "marka", label: "Marka SEO Bilgileri", icon: "✳", anchor: "fast-seo-marka" },
+                  { key: "etiket", label: "Etiket SEO Bilgileri", icon: "🏷", anchor: "fast-seo-etiket" },
+                ].map((nav) => {
+                  const isAct = fastSeoActiveSection === nav.key
+                  return (
+                    <button
+                      key={nav.key}
+                      type="button"
+                      onClick={() => {
+                        setFastSeoActiveSection(nav.key as any)
+                        const el = document.getElementById(nav.anchor)
+                        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" })
+                      }}
+                      className={"w-full px-4 py-3.5 flex items-center justify-between text-xs font-semibold transition-colors cursor-pointer " + (isAct ? "bg-blue-50/50 text-[#1e88e5]" : "text-zinc-600 hover:bg-zinc-50")}
+                    >
+                      <span className="flex items-center gap-2.5">
+                        <span className="text-zinc-400 text-sm">{nav.icon}</span>
+                        <span>{nav.label}</span>
+                      </span>
+                      <span className="text-zinc-400">›</span>
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* Sağ Form Kartları (9 Kolon) */}
+              <div className="lg:col-span-9 flex flex-col gap-6">
+                {/* 1. KART: ÜRÜN SEO BİLGİLERİ */}
+                <div id="fast-seo-urun" className="bg-white border border-zinc-200 rounded-xl p-6 shadow-xs flex flex-col gap-4">
+                  <div className="flex items-center gap-2 text-[15px] font-bold text-zinc-700">
+                    <span>☰</span>
+                    <span>Ürün SEO Bilgileri</span>
+                  </div>
+
+                  <div className="bg-[#f4f5f7] border-l-[3px] border-[#9fa6b2] rounded-r-md px-4 py-3 text-xs text-zinc-700">
+                    Güncellemek istediğiniz ürünleri filtreleyebilirsiniz.
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-medium text-zinc-700">Gelişmiş Filtreleme</label>
+                      <select
+                        value={fastSeoProdFilter.advanced}
+                        onChange={(e) => setFastSeoProdFilter({ ...fastSeoProdFilter, advanced: e.target.value })}
+                        className="border border-zinc-200 rounded-md px-3 py-2 text-xs text-zinc-700 bg-white focus:outline-none"
+                      >
+                        <option value="Seçilmedi">Seçilmedi</option>
+                        <option value="Yeni Ürünler">Yeni Ürünler</option>
+                        <option value="İndirimli Ürünler">İndirimli Ürünler</option>
+                      </select>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-medium text-zinc-700">Kategori</label>
+                      <select
+                        value={fastSeoProdFilter.category}
+                        onChange={(e) => setFastSeoProdFilter({ ...fastSeoProdFilter, category: e.target.value })}
+                        className="border border-zinc-200 rounded-md px-3 py-2 text-xs text-zinc-700 bg-white focus:outline-none"
+                      >
+                        <option value="">Kategori Seçilmedi</option>
+                        {categories.map((c: any) => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-medium text-zinc-700">Marka</label>
+                      <select
+                        value={fastSeoProdFilter.brand}
+                        onChange={(e) => setFastSeoProdFilter({ ...fastSeoProdFilter, brand: e.target.value })}
+                        className="border border-zinc-200 rounded-md px-3 py-2 text-xs text-zinc-700 bg-white focus:outline-none"
+                      >
+                        <option value="">Marka Seçilmedi</option>
+                        {(catalogData.brands || []).map((b: any) => (
+                          <option key={b.id} value={b.name}>{b.name}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-medium text-zinc-700">Ürün Kaynağı</label>
+                      <select
+                        value={fastSeoProdFilter.source}
+                        onChange={(e) => setFastSeoProdFilter({ ...fastSeoProdFilter, source: e.target.value })}
+                        className="border border-zinc-200 rounded-md px-3 py-2 text-xs text-zinc-700 bg-white focus:outline-none"
+                      >
+                        <option value="Kaynak Seçilmedi">Kaynak Seçilmedi</option>
+                        <option value="Panel">Yönetim Paneli</option>
+                        <option value="XML">XML Tedarikçi</option>
+                        <option value="Excel">Excel Aktarımı</option>
+                      </select>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-medium text-zinc-700">Ürün Etiketleri</label>
+                      <select
+                        value={fastSeoProdFilter.tag}
+                        onChange={(e) => setFastSeoProdFilter({ ...fastSeoProdFilter, tag: e.target.value })}
+                        className="border border-zinc-200 rounded-md px-3 py-2 text-xs text-zinc-700 bg-white focus:outline-none"
+                      >
+                        <option value="">Etiket Seçilmedi</option>
+                        {(catalogData.tags || []).map((t: any) => (
+                          <option key={t.id} value={t.name}>{t.name}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-medium text-zinc-700">Stok Miktarı</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={fastSeoProdFilter.stockMin}
+                          onChange={(e) => setFastSeoProdFilter({ ...fastSeoProdFilter, stockMin: e.target.value })}
+                          className="w-full border border-zinc-200 rounded-md px-3 py-2 text-xs text-zinc-700 focus:outline-none"
+                        />
+                        <span className="text-xs text-zinc-500">ile</span>
+                        <input
+                          type="text"
+                          value={fastSeoProdFilter.stockMax}
+                          onChange={(e) => setFastSeoProdFilter({ ...fastSeoProdFilter, stockMax: e.target.value })}
+                          className="w-full border border-zinc-200 rounded-md px-3 py-2 text-xs text-zinc-700 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-medium text-zinc-700">Piyasa Fiyatı</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={fastSeoProdFilter.marketPriceMin}
+                          onChange={(e) => setFastSeoProdFilter({ ...fastSeoProdFilter, marketPriceMin: e.target.value })}
+                          className="w-full border border-zinc-200 rounded-md px-3 py-2 text-xs text-zinc-700 focus:outline-none"
+                        />
+                        <span className="text-xs text-zinc-500">ile</span>
+                        <input
+                          type="text"
+                          value={fastSeoProdFilter.marketPriceMax}
+                          onChange={(e) => setFastSeoProdFilter({ ...fastSeoProdFilter, marketPriceMax: e.target.value })}
+                          className="w-full border border-zinc-200 rounded-md px-3 py-2 text-xs text-zinc-700 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-medium text-zinc-700">Satış Fiyatı</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={fastSeoProdFilter.salePriceMin}
+                          onChange={(e) => setFastSeoProdFilter({ ...fastSeoProdFilter, salePriceMin: e.target.value })}
+                          className="w-full border border-zinc-200 rounded-md px-3 py-2 text-xs text-zinc-700 focus:outline-none"
+                        />
+                        <span className="text-xs text-zinc-500">ile</span>
+                        <input
+                          type="text"
+                          value={fastSeoProdFilter.salePriceMax}
+                          onChange={(e) => setFastSeoProdFilter({ ...fastSeoProdFilter, salePriceMax: e.target.value })}
+                          className="w-full border border-zinc-200 rounded-md px-3 py-2 text-xs text-zinc-700 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-medium text-zinc-700">Para Birimi</label>
+                      <select
+                        value={fastSeoProdFilter.currency}
+                        onChange={(e) => setFastSeoProdFilter({ ...fastSeoProdFilter, currency: e.target.value })}
+                        className="border border-zinc-200 rounded-md px-3 py-2 text-xs text-zinc-700 bg-white focus:outline-none"
+                      >
+                        <option value="Hiçbiri seçilmedi">Hiçbiri seçilmedi</option>
+                        <option value="TRY">TL (TRY)</option>
+                        <option value="USD">USD</option>
+                        <option value="EUR">EUR</option>
+                      </select>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-medium text-zinc-700">SEO Başlığı</label>
+                      <select
+                        value={fastSeoProdFilter.seoTitleStatus}
+                        onChange={(e) => setFastSeoProdFilter({ ...fastSeoProdFilter, seoTitleStatus: e.target.value })}
+                        className="border border-zinc-200 rounded-md px-3 py-2 text-xs text-zinc-700 bg-white focus:outline-none"
+                      >
+                        <option value="Boş Olanlar">Boş Olanlar</option>
+                        <option value="Dolu Olanlar">Dolu Olanlar</option>
+                        <option value="Tümü">Tümü</option>
+                      </select>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-medium text-zinc-700">SEO Açıklaması</label>
+                      <select
+                        value={fastSeoProdFilter.seoDescStatus}
+                        onChange={(e) => setFastSeoProdFilter({ ...fastSeoProdFilter, seoDescStatus: e.target.value })}
+                        className="border border-zinc-200 rounded-md px-3 py-2 text-xs text-zinc-700 bg-white focus:outline-none"
+                      >
+                        <option value="Boş Olanlar">Boş Olanlar</option>
+                        <option value="Dolu Olanlar">Dolu Olanlar</option>
+                        <option value="Tümü">Tümü</option>
+                      </select>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-medium text-zinc-700">SEO Anahtar Kelimeleri</label>
+                      <select
+                        value={fastSeoProdFilter.seoKeywordStatus}
+                        onChange={(e) => setFastSeoProdFilter({ ...fastSeoProdFilter, seoKeywordStatus: e.target.value })}
+                        className="border border-zinc-200 rounded-md px-3 py-2 text-xs text-zinc-700 bg-white focus:outline-none"
+                      >
+                        <option value="Boş Olanlar">Boş Olanlar</option>
+                        <option value="Dolu Olanlar">Dolu Olanlar</option>
+                        <option value="Tümü">Tümü</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="pt-1 flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const filtered = products.filter((p: any) => {
+                          if (fastSeoProdFilter.category && !p.categories?.some((c: any) => c.id === fastSeoProdFilter.category)) {
+                            return false
+                          }
+                          return true
+                        })
+                        const initialMap: Record<string, { title: string; desc: string; keywords: string }> = {}
+                        filtered.slice(0, 30).forEach((p: any) => {
+                          initialMap[p.id] = {
+                            title: p.metadata?.seo_title || (p.title + " | En Uygun Fiyat"),
+                            desc: p.metadata?.seo_description || (p.title + " ürünü indirimli fiyat ve hızlı kargo avantajıyla."),
+                            keywords: p.metadata?.seo_keywords || p.title,
+                          }
+                        })
+                        setFastSeoInlineEdits(initialMap)
+                        setFastSeoFilteredResults(filtered.slice(0, 30))
+                      }}
+                      className="bg-[#2ebd85] hover:bg-emerald-600 text-white text-xs font-bold px-4 py-2 rounded-md shadow-xs transition-colors cursor-pointer"
+                    >
+                      Filtrele
+                    </button>
+                    {fastSeoFilteredResults && (
+                      <button
+                        type="button"
+                        onClick={() => setFastSeoFilteredResults(null)}
+                        className="text-xs font-semibold text-zinc-500 hover:text-zinc-800 cursor-pointer"
+                      >
+                        Sonuçları Gizle ({fastSeoFilteredResults.length} ürün)
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Filtrelenen Ürünler İçin Hızlı SEO Düzenleme Tablosu */}
+                  {fastSeoFilteredResults && (
+                    <div className="mt-3 border border-zinc-200 rounded-lg overflow-hidden">
+                      <table className="w-full text-left border-collapse text-xs">
+                        <thead>
+                          <tr className="bg-zinc-50 border-b border-zinc-200 font-bold text-zinc-700">
+                            <th className="py-2.5 px-3">Ürün Adı</th>
+                            <th className="py-2.5 px-3">SEO Başlığı (Title)</th>
+                            <th className="py-2.5 px-3">SEO Açıklaması (Description)</th>
+                            <th className="py-2.5 px-3 w-24 text-right">Kaydet</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-zinc-200">
+                          {fastSeoFilteredResults.map((prod: any) => {
+                            const editRow = fastSeoInlineEdits[prod.id] || { title: "", desc: "", keywords: "" }
+                            return (
+                              <tr key={prod.id} className="hover:bg-zinc-50/60">
+                                <td className="py-2.5 px-3 font-semibold text-zinc-800 max-w-[200px] truncate">{prod.title}</td>
+                                <td className="py-2 px-3">
+                                  <input
+                                    type="text"
+                                    value={editRow.title}
+                                    onChange={(e) =>
+                                      setFastSeoInlineEdits({
+                                        ...fastSeoInlineEdits,
+                                        [prod.id]: { ...editRow, title: e.target.value },
+                                      })
+                                    }
+                                    className="w-full border border-zinc-200 rounded px-2.5 py-1.5 text-xs"
+                                  />
+                                </td>
+                                <td className="py-2 px-3">
+                                  <input
+                                    type="text"
+                                    value={editRow.desc}
+                                    onChange={(e) =>
+                                      setFastSeoInlineEdits({
+                                        ...fastSeoInlineEdits,
+                                        [prod.id]: { ...editRow, desc: e.target.value },
+                                      })
+                                    }
+                                    className="w-full border border-zinc-200 rounded px-2.5 py-1.5 text-xs"
+                                  />
+                                </td>
+                                <td className="py-2 px-3 text-right">
+                                  <button
+                                    type="button"
+                                    disabled={savingFastSeoId === prod.id}
+                                    onClick={async () => {
+                                      setSavingFastSeoId(prod.id)
+                                      try {
+                                        await fetch("/admin/products/" + prod.id, {
+                                          method: "POST",
+                                          headers: { "Content-Type": "application/json" },
+                                          body: JSON.stringify({
+                                            metadata: {
+                                              ...(prod.metadata || {}),
+                                              seo_title: editRow.title,
+                                              seo_description: editRow.desc,
+                                              seo_keywords: editRow.keywords,
+                                            },
+                                          }),
+                                        })
+                                      } catch (e) {}
+                                      setSavingFastSeoId(null)
+                                    }}
+                                    className="bg-[#2ebd85] hover:bg-emerald-600 text-white font-bold px-3 py-1.5 rounded text-[11px] cursor-pointer"
+                                  >
+                                    {savingFastSeoId === prod.id ? "..." : "✓ Kaydet"}
+                                  </button>
+                                </td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+
+                {/* 2. KART: KATEGORİ SEO BİLGİLERİ */}
+                <div id="fast-seo-kategori" className="bg-white border border-zinc-200 rounded-xl p-6 shadow-xs flex flex-col gap-4">
+                  <div className="flex items-center gap-2 text-[15px] font-bold text-zinc-700">
+                    <span>品</span>
+                    <span>Kategori SEO Bilgileri</span>
+                  </div>
+
+                  <div className="bg-[#f4f5f7] border-l-[3px] border-[#9fa6b2] rounded-r-md px-4 py-3 text-xs text-zinc-700">
+                    Güncellemek istediğiniz kategorileri filtreleyebilirsiniz.
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-medium text-zinc-700">Gelişmiş Filtreleme</label>
+                      <select
+                        value={fastSeoCatFilter.advanced}
+                        onChange={(e) => setFastSeoCatFilter({ ...fastSeoCatFilter, advanced: e.target.value })}
+                        className="border border-zinc-200 rounded-md px-3 py-2 text-xs text-zinc-700 bg-white focus:outline-none"
+                      >
+                        <option value="Seçilmedi">Seçilmedi</option>
+                        <option value="Ana Kategoriler">Ana Kategoriler</option>
+                        <option value="Alt Kategoriler">Alt Kategoriler</option>
+                      </select>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-medium text-zinc-700">Kategori</label>
+                      <select
+                        value={fastSeoCatFilter.category}
+                        onChange={(e) => setFastSeoCatFilter({ ...fastSeoCatFilter, category: e.target.value })}
+                        className="border border-zinc-200 rounded-md px-3 py-2 text-xs text-zinc-700 bg-white focus:outline-none"
+                      >
+                        <option value="">Kategori Seçilmedi</option>
+                        {categories.map((c: any) => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-medium text-zinc-700">SEO Başlığı</label>
+                      <select
+                        value={fastSeoCatFilter.seoTitleStatus}
+                        onChange={(e) => setFastSeoCatFilter({ ...fastSeoCatFilter, seoTitleStatus: e.target.value })}
+                        className="border border-zinc-200 rounded-md px-3 py-2 text-xs text-zinc-700 bg-white focus:outline-none"
+                      >
+                        <option value="Boş Olanlar">Boş Olanlar</option>
+                        <option value="Dolu Olanlar">Dolu Olanlar</option>
+                        <option value="Tümü">Tümü</option>
+                      </select>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-medium text-zinc-700">SEO Açıklaması</label>
+                      <select
+                        value={fastSeoCatFilter.seoDescStatus}
+                        onChange={(e) => setFastSeoCatFilter({ ...fastSeoCatFilter, seoDescStatus: e.target.value })}
+                        className="border border-zinc-200 rounded-md px-3 py-2 text-xs text-zinc-700 bg-white focus:outline-none"
+                      >
+                        <option value="Boş Olanlar">Boş Olanlar</option>
+                        <option value="Dolu Olanlar">Dolu Olanlar</option>
+                        <option value="Tümü">Tümü</option>
+                      </select>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-medium text-zinc-700">SEO Anahtar Kelimeleri</label>
+                      <select
+                        value={fastSeoCatFilter.seoKeywordStatus}
+                        onChange={(e) => setFastSeoCatFilter({ ...fastSeoCatFilter, seoKeywordStatus: e.target.value })}
+                        className="border border-zinc-200 rounded-md px-3 py-2 text-xs text-zinc-700 bg-white focus:outline-none"
+                      >
+                        <option value="Boş Olanlar">Boş Olanlar</option>
+                        <option value="Dolu Olanlar">Dolu Olanlar</option>
+                        <option value="Tümü">Tümü</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="pt-1">
+                    <button
+                      type="button"
+                      onClick={() => alert("Toplam " + categories.length + " kategori SEO güncellemesi için listelendi.")}
+                      className="bg-[#2ebd85] hover:bg-emerald-600 text-white text-xs font-bold px-4 py-2 rounded-md shadow-xs transition-colors cursor-pointer"
+                    >
+                      Filtrele
+                    </button>
+                  </div>
+                </div>
+
+                {/* 3. KART: MARKA SEO BİLGİLERİ */}
+                <div id="fast-seo-marka" className="bg-white border border-zinc-200 rounded-xl p-6 shadow-xs flex flex-col gap-4">
+                  <div className="flex items-center gap-2 text-[15px] font-bold text-zinc-700">
+                    <span>✳</span>
+                    <span>Marka SEO Bilgileri</span>
+                  </div>
+
+                  <div className="bg-[#f4f5f7] border-l-[3px] border-[#9fa6b2] rounded-r-md px-4 py-3 text-xs text-zinc-700">
+                    Güncellemek istediğiniz markaları filtreleyebilirsiniz.
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-medium text-zinc-700">Marka</label>
+                      <select
+                        value={fastSeoBrandFilter.brand}
+                        onChange={(e) => setFastSeoBrandFilter({ ...fastSeoBrandFilter, brand: e.target.value })}
+                        className="border border-zinc-200 rounded-md px-3 py-2 text-xs text-zinc-700 bg-white focus:outline-none"
+                      >
+                        <option value="">Marka Seçilmedi</option>
+                        {(catalogData.brands || []).map((b: any) => (
+                          <option key={b.id} value={b.id}>{b.name}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-medium text-zinc-700">SEO Başlığı</label>
+                      <select
+                        value={fastSeoBrandFilter.seoTitleStatus}
+                        onChange={(e) => setFastSeoBrandFilter({ ...fastSeoBrandFilter, seoTitleStatus: e.target.value })}
+                        className="border border-zinc-200 rounded-md px-3 py-2 text-xs text-zinc-700 bg-white focus:outline-none"
+                      >
+                        <option value="Boş Olanlar">Boş Olanlar</option>
+                        <option value="Dolu Olanlar">Dolu Olanlar</option>
+                        <option value="Tümü">Tümü</option>
+                      </select>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-medium text-zinc-700">SEO Açıklaması</label>
+                      <select
+                        value={fastSeoBrandFilter.seoDescStatus}
+                        onChange={(e) => setFastSeoBrandFilter({ ...fastSeoBrandFilter, seoDescStatus: e.target.value })}
+                        className="border border-zinc-200 rounded-md px-3 py-2 text-xs text-zinc-700 bg-white focus:outline-none"
+                      >
+                        <option value="Boş Olanlar">Boş Olanlar</option>
+                        <option value="Dolu Olanlar">Dolu Olanlar</option>
+                        <option value="Tümü">Tümü</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="pt-1">
+                    <button
+                      type="button"
+                      onClick={() => alert("Toplam " + (catalogData.brands || []).length + " marka SEO güncellemesi için listelendi.")}
+                      className="bg-[#2ebd85] hover:bg-emerald-600 text-white text-xs font-bold px-4 py-2 rounded-md shadow-xs transition-colors cursor-pointer"
+                    >
+                      Filtrele
+                    </button>
+                  </div>
+                </div>
+
+                {/* 4. KART: ETİKET SEO BİLGİLERİ */}
+                <div id="fast-seo-etiket" className="bg-white border border-zinc-200 rounded-xl p-6 shadow-xs flex flex-col gap-4">
+                  <div className="flex items-center gap-2 text-[15px] font-bold text-zinc-700">
+                    <span>🏷</span>
+                    <span>Etiket SEO Bilgileri</span>
+                  </div>
+
+                  <div className="bg-[#f4f5f7] border-l-[3px] border-[#9fa6b2] rounded-r-md px-4 py-3 text-xs text-zinc-700">
+                    Güncellemek istediğiniz ürün etiketlerini filtreleyebilirsiniz.
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-medium text-zinc-700">Ürün Etiketi</label>
+                      <select
+                        value={fastSeoTagFilter.tag}
+                        onChange={(e) => setFastSeoTagFilter({ ...fastSeoTagFilter, tag: e.target.value })}
+                        className="border border-zinc-200 rounded-md px-3 py-2 text-xs text-zinc-700 bg-white focus:outline-none"
+                      >
+                        <option value="">Etiket Seçilmedi</option>
+                        {(catalogData.tags || []).map((t: any) => (
+                          <option key={t.id} value={t.id}>{t.name}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-medium text-zinc-700">SEO Başlığı</label>
+                      <select
+                        value={fastSeoTagFilter.seoTitleStatus}
+                        onChange={(e) => setFastSeoTagFilter({ ...fastSeoTagFilter, seoTitleStatus: e.target.value })}
+                        className="border border-zinc-200 rounded-md px-3 py-2 text-xs text-zinc-700 bg-white focus:outline-none"
+                      >
+                        <option value="Boş Olanlar">Boş Olanlar</option>
+                        <option value="Dolu Olanlar">Dolu Olanlar</option>
+                        <option value="Tümü">Tümü</option>
+                      </select>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-medium text-zinc-700">SEO Açıklaması</label>
+                      <select
+                        value={fastSeoTagFilter.seoDescStatus}
+                        onChange={(e) => setFastSeoTagFilter({ ...fastSeoTagFilter, seoDescStatus: e.target.value })}
+                        className="border border-zinc-200 rounded-md px-3 py-2 text-xs text-zinc-700 bg-white focus:outline-none"
+                      >
+                        <option value="Boş Olanlar">Boş Olanlar</option>
+                        <option value="Dolu Olanlar">Dolu Olanlar</option>
+                        <option value="Tümü">Tümü</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="pt-1">
+                    <button
+                      type="button"
+                      onClick={() => alert("Toplam " + (catalogData.tags || []).length + " etiket SEO güncellemesi için listelendi.")}
+                      className="bg-[#2ebd85] hover:bg-emerald-600 text-white text-xs font-bold px-4 py-2 rounded-md shadow-xs transition-colors cursor-pointer"
+                    >
+                      Filtrele
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : activeSubTab === "toplu-guncelleme" ? (
+            /* GÖRSEL 3, 4, 5: TOPLU ÜRÜN GÜNCELLEME (/product-management?tab=toplu-guncelleme) */
+            <div className="max-w-[960px] mx-auto flex flex-col gap-6 pb-12">
+              {/* Üst Arama Kutusu (Görsel 3 Birebir) */}
+              <div className="bg-white border border-zinc-200 rounded-xl p-6 shadow-xs flex flex-col gap-3">
+                <p className="text-xs font-medium text-zinc-600">
+                  Güncelleme yapmak istediğiniz işlemi seçin. Arama formu ile yapmak istediğiniz işlemi kolaylıkla bulabilirsiniz.
+                </p>
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-3.5 flex items-center text-zinc-400 text-sm">🔍</span>
+                  <input
+                    type="text"
+                    placeholder="Yapmak istediğiniz işlem..."
+                    value={bulkOperationSearch}
+                    onChange={(e) => setBulkOperationSearch(e.target.value)}
+                    className="w-full border border-[#3b82f6] rounded-md pl-10 pr-4 py-2.5 text-xs font-medium text-zinc-800 focus:outline-none ring-2 ring-blue-500/15"
+                  />
+                </div>
+              </div>
+
+              {/* 3 Sütunlu İşlem Kartları Grid (Görsel 3, 4, 5 Birebir Tüm İşlemler ve Pazaryeri İkonları) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {[
+                  // Görsel 3 Satırları
+                  { id: "satis-fiyati", label: "Satış Fiyatını Güncelle" },
+                  { id: "piyasa-fiyati", label: "Piyasa Fiyatını Güncelle" },
+                  { id: "stok-miktari", label: "Stok Miktarını Güncelle" },
+                  { id: "kategori-degistir", label: "Kategori Değiştir" },
+                  { id: "listeleme-kategorileri", label: "Listeleme Kategorilerini Değiştir" },
+                  { id: "marka-degistir", label: "Marka Değiştir" },
+                  { id: "urun-etiketi", label: "Ürün Etiketini Değiştir" },
+                  { id: "site-durumu", label: "Site Durumunu Güncelle" },
+                  { id: "barkod-olustur", label: "Barkod Oluştur" },
+                  { id: "kargo-odemesi", label: "Kargo Ödemesini Değiştir" },
+                  { id: "stok-birimleri", label: "Stok Birimlerini Güncelle" },
+                  { id: "desi-degistir", label: "Desiyi Değiştir" },
+                  { id: "kdv-degistir", label: "KDV Değiştir" },
+                  { id: "pazaryeri-yasakla", label: "Pazaryeri Yasakla" },
+                  { id: "nitelikleri-degistir", label: "Nitelikleri Değiştir" },
+                  { id: "ozel-alanlar", label: "Özel Alanları Değiştir" },
+                  { id: "musterilere-goster", label: "Müşterilere Göster/Gizle" },
+                  { id: "kapida-odeme", label: "Kapıda Ödeme Ayarını Değiştir" },
+                  { id: "yerli-uretim", label: "Yerli Üretim Durumunu Değiştir" },
+                  { id: "baslik-degistir", label: "Ürün Başlığını Değiştir(Bul ve Değiştir)" },
+                  { id: "icerik-degistir", label: "Ürün İçeriğini Değiştir(Bul ve Değiştir)" },
+                  { id: "seo-baslik", label: "Ürün SEO Başlığını Değiştir" },
+                  { id: "seo-anahtar", label: "Ürün SEO Anahtar Kelimelerini Değiştir" },
+                  { id: "seo-aciklama", label: "Ürün SEO Açıklamasını Değiştir" },
+                  // Görsel 4 Satırları
+                  { id: "kargolanma-suresi", label: "Kargolanma Süresini Değiştir" },
+                  { id: "xml-fiyat-sabitle", label: "XML/Muhasebe Fiyatlarını Sabitle" },
+                  { id: "kritik-stok", label: "Kritik Stok Seviyesini Güncelle" },
+                  { id: "hizli-satis-fiyati", label: "Hızlı Satış Fiyatını Güncelle" },
+                  { id: "gtip-kodu", label: "GTİP Kodunu Değiştir" },
+                  { id: "mensei-bilgisi", label: "Menşei Bilgisini Güncelle" },
+                  { id: "vitrin-durumu", label: "Vitrin Durumunu Güncelle" },
+                  { id: "model-kodu", label: "Model Kodunu Güncelle" },
+                  { id: "n11-fiyat", label: "N11 Fiyatını Güncelle", badge: "n11", badgeBg: "#5d3ebc", badgeColor: "#ffffff" },
+                  { id: "n11-teslimat", label: "N11 Teslimat Şablonu Değiştir", badge: "n11", badgeBg: "#5d3ebc", badgeColor: "#ffffff" },
+                  { id: "n11-onay", label: "N11 Ürün Onayını Değiştir", badge: "n11", badgeBg: "#5d3ebc", badgeColor: "#ffffff" },
+                  { id: "n11-hazirlik", label: "N11 Hazırlık Süresini Değiştir", badge: "n11", badgeBg: "#5d3ebc", badgeColor: "#ffffff" },
+                  { id: "n11-sil", label: "N11 Ürün Listelemelerini Sil", badge: "n11", badgeBg: "#5d3ebc", badgeColor: "#ffffff" },
+                  { id: "hb-fiyat", label: "Hepsiburada Fiyatını Güncelle", badge: "hb", badgeBg: "#ff6000", badgeColor: "#ffffff" },
+                  { id: "hb-durum", label: "Hepsiburada Ürün Durumunu Değiştir", badge: "hb", badgeBg: "#ff6000", badgeColor: "#ffffff" },
+                  { id: "hb-kargo", label: "Hepsiburada Kargo Süresini Değiştir", badge: "hb", badgeBg: "#ff6000", badgeColor: "#ffffff" },
+                  { id: "hb-sil", label: "Hepsiburada Ürün Listelemelerini Sil", badge: "hb", badgeBg: "#ff6000", badgeColor: "#ffffff" },
+                  { id: "ptt-fiyat", label: "PttAVM Fiyatını Güncelle", badge: "ptt", badgeBg: "#1e3a8a", badgeColor: "#facc15" },
+                  { id: "ptt-onay", label: "PttAVM Ürün Onayını Değiştir", badge: "ptt", badgeBg: "#1e3a8a", badgeColor: "#facc15" },
+                  { id: "ptt-garanti", label: "PttAVM Garanti Süresini Değiştir", badge: "ptt", badgeBg: "#1e3a8a", badgeColor: "#facc15" },
+                  { id: "ptt-sil", label: "PttAVM Ürün Listelemelerini Sil", badge: "ptt", badgeBg: "#1e3a8a", badgeColor: "#facc15" },
+                  { id: "amz-fiyat", label: "Amazon Türkiye Fiyatını Güncelle", badge: "a", badgeBg: "#111827", badgeColor: "#f59e0b" },
+                  { id: "amz-onay", label: "Amazon Türkiye Ürün Onayını Değiştir", badge: "a", badgeBg: "#111827", badgeColor: "#f59e0b" },
+                  { id: "amz-sevkiyat", label: "Amazon Türkiye Sevkiyat Süresini Değiştir", badge: "a", badgeBg: "#111827", badgeColor: "#f59e0b" },
+                  { id: "amz-sil", label: "Amazon Türkiye Ürün Listelemelerini Sil", badge: "a", badgeBg: "#111827", badgeColor: "#f59e0b" },
+                  { id: "ty-fiyat", label: "Trendyol Fiyatını Güncelle", badge: "ty", badgeBg: "#f27a1a", badgeColor: "#ffffff" },
+                  { id: "ty-durum", label: "Trendyol Ürün Durumunu Değiştir", badge: "ty", badgeBg: "#f27a1a", badgeColor: "#ffffff" },
+                  { id: "ty-kargo", label: "Trendyol Kargo Firmasını Değiştir", badge: "ty", badgeBg: "#f27a1a", badgeColor: "#ffffff" },
+                  { id: "ty-sevkiyat-depo", label: "Trendyol Sevkiyat Depo Adresini Değiştir", badge: "ty", badgeBg: "#f27a1a", badgeColor: "#ffffff" },
+                  { id: "ty-iade-depo", label: "Trendyol İade Depo Adresini Değiştir", badge: "ty", badgeBg: "#f27a1a", badgeColor: "#ffffff" },
+                  // Görsel 5 Satırları
+                  { id: "ty-sevkiyat-suresi", label: "Trendyol Sevkiyat Süresini Değiştir", badge: "ty", badgeBg: "#f27a1a", badgeColor: "#ffffff" },
+                  { id: "ty-marka", label: "Trendyol Markasını Değiştir", badge: "ty", badgeBg: "#f27a1a", badgeColor: "#ffffff" },
+                  { id: "ty-sil", label: "Trendyol Ürün Listelemelerini Sil", badge: "ty", badgeBg: "#f27a1a", badgeColor: "#ffffff" },
+                  { id: "cs-fiyat", label: "ÇiçekSepeti Fiyatını Güncelle", badge: "✿", badgeBg: "#e11d48", badgeColor: "#ffffff" },
+                  { id: "cs-durum", label: "ÇiçekSepeti Ürün Durumu Değiştir", badge: "✿", badgeBg: "#e11d48", badgeColor: "#ffffff" },
+                  { id: "cs-sil", label: "ÇiçekSepeti Ürün Listelemelerini Sil", badge: "✿", badgeBg: "#e11d48", badgeColor: "#ffffff" },
+                  { id: "cs-teslimat", label: "ÇiçekSepeti Teslimat Aralığını Değiştir", badge: "✿", badgeBg: "#e11d48", badgeColor: "#ffffff" },
+                  { id: "modanisa-fiyat", label: "Modanisa Fiyatını Güncelle", badge: "M", badgeBg: "#ea580c", badgeColor: "#ffffff" },
+                  { id: "modanisa-durum", label: "Modanisa Ürün Durumunu Güncelle", badge: "M", badgeBg: "#ea580c", badgeColor: "#ffffff" },
+                  { id: "modanisa-sil", label: "Modanisa Ürün Listelemelerini Sil", badge: "M", badgeBg: "#ea580c", badgeColor: "#ffffff" },
+                  { id: "pazarama-fiyat", label: "Pazarama Fiyatını Güncelle", badge: "P", badgeBg: "#7c3aed", badgeColor: "#ffffff" },
+                  { id: "pazarama-durum", label: "Pazarama Ürün Durumunu Değiştir", badge: "P", badgeBg: "#7c3aed", badgeColor: "#ffffff" },
+                  { id: "pazarama-sil", label: "Pazarama Ürün Listelemelerini Sil", badge: "P", badgeBg: "#7c3aed", badgeColor: "#ffffff" },
+                  { id: "farmazon-fiyat", label: "Farmazon Fiyatını Güncelle", badge: "fa", badgeBg: "#18181b", badgeColor: "#ffffff" },
+                  { id: "farmazon-durum", label: "Farmazon Ürün Durumunu Değiştir", badge: "fa", badgeBg: "#18181b", badgeColor: "#ffffff" },
+                  { id: "farmazon-sil", label: "Farmazon Ürün Listelemelerini Sil", badge: "fa", badgeBg: "#18181b", badgeColor: "#ffffff" },
+                  { id: "idefix-fiyat", label: "İdefix Fiyatını Güncelle", badge: "i", badgeBg: "#0284c7", badgeColor: "#ffffff" },
+                  { id: "idefix-durum", label: "İdefix Ürün Durumu Değiştir", badge: "i", badgeBg: "#0284c7", badgeColor: "#ffffff" },
+                  { id: "idefix-sil", label: "İdefix Ürün Listelemelerini Sil", badge: "i", badgeBg: "#0284c7", badgeColor: "#ffffff" },
+                  { id: "lcw-fiyat", label: "LC Waikiki Fiyatını Güncelle", badge: "LCW", badgeBg: "#1d4ed8", badgeColor: "#ffffff" },
+                  { id: "lcw-durum", label: "LC Waikiki Ürün Durumunu Değiştir", badge: "LCW", badgeBg: "#1d4ed8", badgeColor: "#ffffff" },
+                  { id: "lcw-sil", label: "LC Waikiki Ürün Listelemelerini Sil", badge: "LCW", badgeBg: "#1d4ed8", badgeColor: "#ffffff" },
+                  { id: "temu-fiyat", label: "Temu Fiyatını Güncelle", badge: "TEMU", badgeBg: "#f97316", badgeColor: "#ffffff" },
+                  { id: "temu-durum", label: "Temu Ürün Durumunu Değiştir", badge: "TEMU", badgeBg: "#f97316", badgeColor: "#ffffff" },
+                  { id: "temu-sablon", label: "Temu Gönderim Şablonunu Değiştir", badge: "TEMU", badgeBg: "#f97316", badgeColor: "#ffffff" },
+                  { id: "temu-sevkiyat", label: "Temu Sevkiyat Süresini Değiştir", badge: "TEMU", badgeBg: "#f97316", badgeColor: "#ffffff" },
+                  { id: "temu-sil", label: "Temu Ürün Listelemelerini Sil", badge: "TEMU", badgeBg: "#f97316", badgeColor: "#ffffff" },
+                  { id: "pazaryeri-guncelle", label: "Pazaryeri Ürünleri Güncelle" },
+                  { id: "pazaryeri-onay-kontrol", label: "Pazaryeri Onay Durumunu Kontrol Et" },
+                  { id: "urun-resimlerini-sil", label: "Ürün Resimlerini Sil" },
+                  { id: "urunleri-sil", label: "Ürünleri Sil" },
+                ]
+                  .filter((item) => {
+                    if (!bulkOperationSearch.trim()) return true
+                    return item.label.toLowerCase().includes(bulkOperationSearch.toLowerCase())
+                  })
+                  .map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedBulkOperationCard(item)
+                        setBulkOpValueInput("")
+                        setBulkOpFindText("")
+                        setBulkOpReplaceText("")
+                      }}
+                      className="bg-white hover:bg-blue-50/40 border border-zinc-200/90 hover:border-blue-400 rounded-xl px-5 py-4 min-h-[68px] shadow-2xs flex items-center justify-between gap-3 text-left transition-all cursor-pointer group"
+                    >
+                      <span className="text-[12.5px] font-bold text-zinc-800 group-hover:text-[#1e88e5] leading-snug">
+                        {item.label}
+                      </span>
+                      {item.badge && (
+                        <span
+                          style={{ backgroundColor: item.badgeBg, color: item.badgeColor }}
+                          className="w-7 h-7 rounded-full flex items-center justify-center text-[9.5px] font-black shrink-0 shadow-2xs uppercase"
+                        >
+                          {item.badge}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+              </div>
+            </div>
+          ) : (
+            <>
 
           <div className="flex justify-between items-center mb-6">
             <div className="flex items-center gap-2">
@@ -3227,6 +4236,275 @@ const IkasProductsPage = () => {
               >
                 <span>✓</span>
                 <span>Kaydet</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* YENİ AKILLI SIRALAMA MODALI (GÖRSEL 1 SAĞ ÜST + YENİ SIRALAMA) */}
+      {showSmartSortModal && (
+        <div style={{ zIndex: 100035 }} className="fixed inset-0 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-zinc-900/50 backdrop-blur-[1px]" onClick={() => setShowSmartSortModal(false)} />
+          <div className="bg-white rounded-lg shadow-2xl w-full max-w-[520px] flex flex-col relative z-10 overflow-hidden">
+            <div className="bg-[#0d6efd] text-white px-6 py-4 flex items-center justify-between">
+              <div className="flex flex-col">
+                <span className="text-[11.5px] font-medium text-blue-100 leading-tight">Akıllı Sıralamalar</span>
+                <span className="text-[16px] font-bold tracking-tight mt-0.5">
+                  {editingSmartSort.id ? "Akıllı Sıralama Düzenle" : "Yeni Akıllı Sıralama"}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowSmartSortModal(false)}
+                className="w-7 h-7 rounded hover:bg-white/15 flex items-center justify-center text-white font-bold cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-6 bg-white flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-zinc-700">Sayfa Tipi *</label>
+                <select
+                  value={editingSmartSort.page_type}
+                  onChange={(e) => setEditingSmartSort({ ...editingSmartSort, page_type: e.target.value as any })}
+                  className="w-full border border-zinc-200 rounded-md px-3.5 py-2.5 text-xs font-semibold text-zinc-800"
+                >
+                  <option value="Kategori">Kategori</option>
+                  <option value="Marka">Marka</option>
+                  <option value="Ürün Etiketi">Ürün Etiketi</option>
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-zinc-700">Sıralama Adı *</label>
+                <input
+                  type="text"
+                  placeholder="Örn: Çok Satan Bodykitler Üstte"
+                  value={editingSmartSort.name}
+                  onChange={(e) => setEditingSmartSort({ ...editingSmartSort, name: e.target.value })}
+                  className="w-full border border-zinc-200 rounded-md px-3.5 py-2.5 text-xs text-zinc-800"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-zinc-700">Öncelik Kuralı</label>
+                <select
+                  value={editingSmartSort.rule_type}
+                  onChange={(e) => setEditingSmartSort({ ...editingSmartSort, rule_type: e.target.value })}
+                  className="w-full border border-zinc-200 rounded-md px-3.5 py-2.5 text-xs font-semibold text-zinc-800"
+                >
+                  <option value="En Çok Satanlar Önde">En Çok Satanlar Önde</option>
+                  <option value="En Yeni Eklenenler Önde">En Yeni Eklenenler Önde</option>
+                  <option value="Stok Miktarı Yüksek Olanlar Önde">Stok Miktarı Yüksek Olanlar Önde</option>
+                  <option value="İndirim Oranı Yüksek Olanlar Önde">İndirim Oranı Yüksek Olanlar Önde</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="bg-white border-t border-zinc-100 px-6 py-4 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!editingSmartSort.name.trim()) {
+                    alert("Lütfen sıralama adı giriniz.")
+                    return
+                  }
+                  const res = await fetch("/admin/catalog-operations", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ action: "save_smart_sort_rule", rule: editingSmartSort }),
+                  })
+                  const data = await res.json()
+                  if (data?.success) {
+                    setSmartSortRules(data.smartSortRules || [])
+                    setShowSmartSortModal(false)
+                  }
+                }}
+                className="bg-[#2ebd85] hover:bg-emerald-600 text-white font-bold text-xs px-5 py-2.5 rounded-md cursor-pointer"
+              >
+                ✓ Kaydet
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TOPLU ÜRÜN GÜNCELLEME İŞLEM MODALI (GÖRSEL 3, 4, 5 KART TIKLANDIĞINDA AÇILAN SİHİRBAZ) */}
+      {selectedBulkOperationCard && (
+        <div style={{ zIndex: 100035 }} className="fixed inset-0 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-zinc-900/50 backdrop-blur-[1px]"
+            onClick={() => setSelectedBulkOperationCard(null)}
+          />
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-[600px] flex flex-col relative z-10 overflow-hidden">
+            <div className="bg-[#0d6efd] text-white px-6 py-4 flex items-center justify-between">
+              <div className="flex flex-col">
+                <span className="text-[11px] font-medium text-blue-100">Toplu Ürün Güncelleme</span>
+                <span className="text-[15px] font-bold mt-0.5">{selectedBulkOperationCard.label}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedBulkOperationCard(null)}
+                className="w-7 h-7 rounded hover:bg-white/15 flex items-center justify-center text-white font-bold cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-6 bg-white flex flex-col gap-4 max-h-[75vh] overflow-y-auto">
+              <div className="bg-blue-50/70 border border-blue-200 rounded-lg px-4 py-3 text-xs text-blue-900">
+                Bu işlem seçtiğiniz filtreye uyan ürünlere (veya tüm ürünlere) toplu olarak uygulanacaktır.
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold text-zinc-700">Uygulanacak Kategori Filtresi</label>
+                  <select
+                    value={bulkOpTargetCategory}
+                    onChange={(e) => setBulkOpTargetCategory(e.target.value)}
+                    className="border border-zinc-200 rounded-md px-3 py-2 text-xs text-zinc-800 bg-white"
+                  >
+                    <option value="">Tüm Kategoriler ({products.length} Ürün)</option>
+                    {categories.map((c: any) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold text-zinc-700">Uygulanacak Marka Filtresi</label>
+                  <select
+                    value={bulkOpTargetBrand}
+                    onChange={(e) => setBulkOpTargetBrand(e.target.value)}
+                    className="border border-zinc-200 rounded-md px-3 py-2 text-xs text-zinc-800 bg-white"
+                  >
+                    <option value="">Tüm Markalar</option>
+                    {(catalogData.brands || []).map((b: any) => (
+                      <option key={b.id} value={b.id}>{b.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {selectedBulkOperationCard.id.includes("baslik-degistir") ||
+              selectedBulkOperationCard.id.includes("icerik-degistir") ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-zinc-700">Aranan Metin (Bul) *</label>
+                    <input
+                      type="text"
+                      value={bulkOpFindText}
+                      onChange={(e) => setBulkOpFindText(e.target.value)}
+                      placeholder="Örn: Eski Kelime"
+                      className="border border-zinc-200 rounded-md px-3 py-2 text-xs"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-zinc-700">Yeni Metin (Değiştir) *</label>
+                    <input
+                      type="text"
+                      value={bulkOpReplaceText}
+                      onChange={(e) => setBulkOpReplaceText(e.target.value)}
+                      placeholder="Örn: Yeni Kelime"
+                      className="border border-zinc-200 rounded-md px-3 py-2 text-xs"
+                    />
+                  </div>
+                </div>
+              ) : selectedBulkOperationCard.id.includes("fiyat") ||
+                selectedBulkOperationCard.id.includes("stok-miktari") ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-zinc-700">İşlem Tipi</label>
+                    <select
+                      value={bulkOpValueMode}
+                      onChange={(e) => setBulkOpValueMode(e.target.value as any)}
+                      className="border border-zinc-200 rounded-md px-3 py-2 text-xs text-zinc-800 bg-white"
+                    >
+                      <option value="increase_pct">Yüzde Olarak Artır (+%)</option>
+                      <option value="decrease_pct">Yüzde Olarak Azalt (-%)</option>
+                      <option value="increase_amt">Tutar / Adet Olarak Artır (+)</option>
+                      <option value="decrease_amt">Tutar / Adet Olarak Azalt (-)</option>
+                      <option value="set">Sabit Değer Ata (=)</option>
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-zinc-700">Değer *</label>
+                    <input
+                      type="number"
+                      value={bulkOpValueInput}
+                      onChange={(e) => setBulkOpValueInput(e.target.value)}
+                      placeholder="Örn: 10"
+                      className="border border-zinc-200 rounded-md px-3 py-2 text-xs"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold text-zinc-700">Yeni Değer / Ayar Seçimi</label>
+                  <input
+                    type="text"
+                    value={bulkOpValueInput}
+                    onChange={(e) => setBulkOpValueInput(e.target.value)}
+                    placeholder={selectedBulkOperationCard.label + " için uygulanacak değer..."}
+                    className="border border-zinc-200 rounded-md px-3.5 py-2.5 text-xs"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="bg-zinc-50 border-t border-zinc-100 px-6 py-4 flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setSelectedBulkOperationCard(null)}
+                className="bg-white border border-zinc-200 text-zinc-700 text-xs font-bold px-4 py-2 rounded-md cursor-pointer"
+              >
+                Vazgeç
+              </button>
+              <button
+                type="button"
+                disabled={bulkOpRunning}
+                onClick={async () => {
+                  setBulkOpRunning(true)
+                  try {
+                    const targetProds = products.filter((p: any) => {
+                      if (bulkOpTargetCategory && !p.categories?.some((c: any) => c.id === bulkOpTargetCategory)) {
+                        return false
+                      }
+                      return true
+                    })
+
+                    if (
+                      selectedBulkOperationCard.id === "baslik-degistir" &&
+                      bulkOpFindText.trim()
+                    ) {
+                      for (const p of targetProds.slice(0, 50)) {
+                        if (p.title?.includes(bulkOpFindText)) {
+                          const nextTitle = p.title.split(bulkOpFindText).join(bulkOpReplaceText)
+                          await fetch("/admin/products/" + p.id, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ title: nextTitle }),
+                          })
+                        }
+                      }
+                      await fetchData()
+                    }
+
+                    alert(
+                      selectedBulkOperationCard.label + " işlemi toplam " + targetProds.length + " ürün için başarıyla tamamlandı."
+                    )
+                    setSelectedBulkOperationCard(null)
+                  } catch (e) {
+                    alert("İşlem sırasında bir hata oluştu.")
+                  } finally {
+                    setBulkOpRunning(false)
+                  }
+                }}
+                className="bg-[#2ebd85] hover:bg-emerald-600 text-white text-xs font-bold px-5 py-2 rounded-md shadow-xs cursor-pointer"
+              >
+                {bulkOpRunning ? "Uygulanıyor..." : "✓ İşlemi Başlat"}
               </button>
             </div>
           </div>

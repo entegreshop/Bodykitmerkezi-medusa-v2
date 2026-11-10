@@ -80,12 +80,30 @@ export interface ProductReviewItem {
   source?: "admin" | "storefront"
 }
 
+export interface SortOptionItem {
+  id: string
+  label: string
+  active: boolean
+  info?: boolean
+}
+
+export interface SmartSortRuleItem {
+  id: string
+  no: number
+  page_type: "Kategori" | "Marka" | "Ürün Etiketi"
+  name: string
+  rule_type?: string
+  updated_at: string
+}
+
 export interface CatalogState {
   brands: BrandItem[]
   tags: ProductTagItem[]
   units: StockUnitItem[]
   searchResults: SearchResultItem[]
   reviews: ProductReviewItem[]
+  sortingTypes?: Record<string, SortOptionItem[]>
+  smartSortRules?: SmartSortRuleItem[]
 }
 
 const DEFAULT_BRANDS: BrandItem[] = [
@@ -185,6 +203,25 @@ export const DEFAULT_REVIEWS: ProductReviewItem[] = [
   },
 ]
 
+export const DEFAULT_SORT_OPTIONS: SortOptionItem[] = [
+  { id: "akilli", label: "Akıllı Sıralama", active: true, info: true },
+  { id: "en-yeniler", label: "En Yeniler", active: true },
+  { id: "cok-satanlar", label: "En Çok Satanlar", active: true },
+  { id: "ad-az", label: "Ürün Adı (A-Z)", active: true },
+  { id: "ad-za", label: "Ürün Adı (Z-A)", active: true },
+  { id: "fiyat-artan", label: "En Düşük Fiyat", active: true },
+  { id: "fiyat-azalan", label: "En Yüksek Fiyat", active: true },
+  { id: "cok-oylananlar", label: "En Çok Oylananlar", active: true },
+]
+
+export const DEFAULT_SORTING_TYPES: Record<string, SortOptionItem[]> = {
+  kategori: [...DEFAULT_SORT_OPTIONS],
+  marka: [...DEFAULT_SORT_OPTIONS],
+  nitelik: [...DEFAULT_SORT_OPTIONS],
+  etiket: [...DEFAULT_SORT_OPTIONS],
+  arama: [...DEFAULT_SORT_OPTIONS],
+}
+
 export function readCatalogState(): CatalogState {
   try {
     if (fs.existsSync(CATALOG_STATE_FILE)) {
@@ -196,6 +233,8 @@ export function readCatalogState(): CatalogState {
         units: Array.isArray(parsed.units) && parsed.units.length > 0 ? parsed.units : DEFAULT_UNITS,
         searchResults: Array.isArray(parsed.searchResults) && parsed.searchResults.length > 0 ? parsed.searchResults : DEFAULT_SEARCH_RESULTS,
         reviews: Array.isArray(parsed.reviews) ? parsed.reviews : DEFAULT_REVIEWS,
+        sortingTypes: parsed.sortingTypes || DEFAULT_SORTING_TYPES,
+        smartSortRules: Array.isArray(parsed.smartSortRules) ? parsed.smartSortRules : [],
       }
     }
   } catch (e) {}
@@ -205,6 +244,8 @@ export function readCatalogState(): CatalogState {
     units: DEFAULT_UNITS,
     searchResults: DEFAULT_SEARCH_RESULTS,
     reviews: DEFAULT_REVIEWS,
+    sortingTypes: DEFAULT_SORTING_TYPES,
+    smartSortRules: [],
   }
 }
 
@@ -527,6 +568,73 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
       state.reviews = (state.reviews || []).filter((r) => r.id !== id)
       writeCatalogState(state)
       return res.json({ success: true, reviews: state.reviews, message: "Yorum silindi." })
+    }
+
+    // 6. PRODUCT SORTING & SMART SORTING (ÜRÜN SIRALAMA - Görsel 1)
+    if (action === "save_sorting_types") {
+      if (body.sortingTypes) {
+        state.sortingTypes = body.sortingTypes
+        writeCatalogState(state)
+      }
+      return res.json({
+        success: true,
+        sortingTypes: state.sortingTypes,
+        message: "Sıralama tipleri kaydedildi.",
+      })
+    }
+
+    if (action === "save_smart_sort_rule") {
+      const { rule } = body
+      if (!rule || !String(rule.name || "").trim()) {
+        return res.status(400).json({ success: false, error: "Sıralama adı zorunludur." })
+      }
+      const list = [...(state.smartSortRules || [])]
+      const nowStr = new Date().toLocaleString("tr-TR", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+      if (rule.id) {
+        const idx = list.findIndex((x) => x.id === rule.id)
+        if (idx !== -1) {
+          list[idx] = {
+            ...list[idx],
+            page_type: rule.page_type || "Kategori",
+            name: String(rule.name).trim(),
+            rule_type: rule.rule_type || "En Çok Satanlar",
+            updated_at: nowStr,
+          }
+        }
+      } else {
+        const maxNo = list.reduce((max, x) => (x.no > max ? x.no : max), 0)
+        list.unshift({
+          id: `ssort_${Date.now()}`,
+          no: maxNo + 1,
+          page_type: rule.page_type || "Kategori",
+          name: String(rule.name).trim(),
+          rule_type: rule.rule_type || "En Çok Satanlar",
+          updated_at: nowStr,
+        })
+      }
+      state.smartSortRules = list
+      writeCatalogState(state)
+      return res.json({
+        success: true,
+        smartSortRules: state.smartSortRules,
+        message: "Akıllı sıralama kaydedildi.",
+      })
+    }
+
+    if (action === "delete_smart_sort_rule") {
+      state.smartSortRules = (state.smartSortRules || []).filter((x) => x.id !== id)
+      writeCatalogState(state)
+      return res.json({
+        success: true,
+        smartSortRules: state.smartSortRules,
+        message: "Akıllı sıralama silindi.",
+      })
     }
 
     return res.status(400).json({ success: false, error: "Geçersiz işlem" })
