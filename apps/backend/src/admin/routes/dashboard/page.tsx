@@ -1,6 +1,7 @@
 import { defineRouteConfig } from "@medusajs/admin-sdk"
 import { ChartBar } from "@medusajs/icons"
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useRef } from "react"
+import { createRoot } from "react-dom/client"
 import { useNavigate } from "react-router-dom"
 
 const ENTEGRESHOP_LOGO_BLACK = "data:image/png;base64,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"
@@ -247,6 +248,1405 @@ const PERIOD_PRESETS: Record<PeriodKey, PeriodPreset> = {
   },
 }
 
+
+export interface SubMenuItem {
+  icon: string
+  label: string
+  sub: string
+  path: string
+  badge?: string
+  badgeColor?: string
+}
+
+export interface SubMenuColumn {
+  title: string
+  items: SubMenuItem[]
+}
+
+export interface TopNavCategory {
+  label: string
+  path: string
+  icon: string
+  badgeDot?: boolean
+  alignRight?: boolean
+  columns?: SubMenuColumn[]
+}
+
+export const TOP_NAV_CATEGORIES: TopNavCategory[] = [
+  {
+    label: "ANA SAYFA",
+    path: "/dashboard",
+    icon: "home",
+  },
+  {
+    label: "SİPARİŞLER",
+    path: "/orders",
+    icon: "orders",
+    badgeDot: true,
+    columns: [
+      {
+        title: "SİPARİŞ DURUMLARI",
+        items: [
+          { icon: "📦", label: "Tüm Siparişler", sub: "Sipariş listesi, filtreleme ve toplu işlem", path: "/orders" },
+          { icon: "⏳", label: "Onay Bekleyenler", sub: "Yeni gelen siparişleri onayla", path: "/orders?status=pending", badge: "Yeni", badgeColor: "#16a34a" },
+          { icon: "🧺", label: "Hazırlanan Siparişler", sub: "Paketlenmekte olan siparişler", path: "/orders?status=processing" },
+          { icon: "🚚", label: "Kargolanan Siparişler", sub: "Kargoya teslim edilenler", path: "/orders?status=shipped" },
+          { icon: "✅", label: "Teslim Edilenler", sub: "Müşteriye ulaşan siparişler", path: "/orders?status=delivered" },
+          { icon: "↩️", label: "İade & İptal Edilenler", sub: "İade ve iptal talepleri", path: "/orders?status=canceled" },
+        ],
+      },
+      {
+        title: "FATURA, KARGO & ÖDEME",
+        items: [
+          { icon: "🧾", label: "E-Fatura (Trendyol)", sub: "Trendyol E-Faturam & GİB fatura kesimi", path: "/e-fatura", badge: "Canlı", badgeColor: "#2563eb" },
+          { icon: "🚛", label: "Kargo Ayarları", sub: "KargoNova & kargo entegrasyonları", path: "/shipping-settings" },
+          { icon: "💳", label: "Ödeme Yöntemleri", sub: "PayTR, Havale/EFT ve Kapıda Ödeme", path: "/payment-settings" },
+          { icon: "💬", label: "SMS Ayarları", sub: "Sipariş durumu SMS bildirimleri", path: "/sms-settings" },
+        ],
+      },
+    ],
+  },
+  {
+    label: "ÜRÜNLER",
+    path: "/products",
+    icon: "products",
+    columns: [
+      {
+        title: "KATALOG & ENVANTER",
+        items: [
+          { icon: "🏷️", label: "Ürünler", sub: "Tüm ürün kataloğu ve varyantlar", path: "/products" },
+          { icon: "⚡", label: "Ürün Yönetimi", sub: "Toplu fiyat, stok ve hızlı düzenleme", path: "/product-management", badge: "Gelişmiş", badgeColor: "#2563eb" },
+          { icon: "➕", label: "Yeni Ürün Ekle", sub: "Kataloğa hızlı yeni ürün girişi", path: "/products/create" },
+          { icon: "📦", label: "Envanter", sub: "Stok miktarları ve depo takibi", path: "/inventory" },
+          { icon: "🔒", label: "Stok Rezervasyonları", sub: "Sepet ve sipariş stok blokajları", path: "/reservations" },
+        ],
+      },
+      {
+        title: "ORGANİZASYON & AKTARIM",
+        items: [
+          { icon: "📂", label: "Kategoriler", sub: "Kategori ağacı ve vitrin sıralaması", path: "/categories" },
+          { icon: "✨", label: "Koleksiyonlar", sub: "Özel vitrin koleksiyonları", path: "/collections" },
+          { icon: "📋", label: "Fiyat Listeleri", sub: "B2B ve gruba özel fiyat listeleri", path: "/price-lists" },
+          { icon: "🔄", label: "XML İşlemleri", sub: "XML ürün içeri / dışarı aktarım", path: "/xml-operations" },
+          { icon: "🔖", label: "Ürün Türleri & Etiketler", sub: "Ürün tipleri ve etiket yönetimi", path: "/settings/product-types" },
+        ],
+      },
+    ],
+  },
+  {
+    label: "PAZARYERİ",
+    path: "/xml-operations",
+    icon: "marketplace",
+    columns: [
+      {
+        title: "PAZARYERİ & XML ENTEGRASYONLARI",
+        items: [
+          { icon: "🔄", label: "XML İşlemleri", sub: "Tedarikçi XML içe/dışa aktarım merkezi", path: "/xml-operations", badge: "Aktif", badgeColor: "#16a34a" },
+          { icon: "🧾", label: "E-Fatura (Trendyol)", sub: "Trendyol E-Faturam canlı entegrasyonu", path: "/e-fatura", badge: "Canlı", badgeColor: "#ea580c" },
+          { icon: "⚡", label: "Ürün Yönetimi", sub: "Pazaryeri toplu fiyat & stok eşitleme", path: "/product-management" },
+          { icon: "🏪", label: "Satış Kanalları", sub: "Mağaza ve pazaryeri satış kanalları", path: "/settings/sales-channels" },
+        ],
+      },
+    ],
+  },
+  {
+    label: "KAMPANYALAR",
+    path: "/kampanyalar",
+    icon: "campaigns",
+    columns: [
+      {
+        title: "KAMPANYA & İNDİRİM YÖNETİMİ",
+        items: [
+          { icon: "🎯", label: "Kampanya Kurguları", sub: "Sepete özel fırsat, BOGO, X Al Y Öde ve sayaç", path: "/kampanyalar", badge: "Popüler", badgeColor: "#db2777" },
+          { icon: "🎟️", label: "Promosyonlar", sub: "Standart indirim kodları ve kurallar", path: "/promotions" },
+          { icon: "➕", label: "Yeni Promosyon Oluştur", sub: "Yeni indirim kuponu tanımla", path: "/promotions/create" },
+          { icon: "📊", label: "Kampanya Bütçeleri", sub: "Kampanya grupları ve bütçe takibi", path: "/campaigns" },
+          { icon: "📋", label: "Fiyat Listeleri", sub: "Kampanyalı özel fiyat listeleri", path: "/price-lists" },
+        ],
+      },
+    ],
+  },
+  {
+    label: "MÜŞTERİLER",
+    path: "/customers",
+    icon: "customers",
+    columns: [
+      {
+        title: "MÜŞTERİ & İLETİŞİM YÖNETİMİ",
+        items: [
+          { icon: "👥", label: "Müşteriler", sub: "Kayıtlı üye ve müşteri listesi", path: "/customers" },
+          { icon: "🏅", label: "Müşteri Grupları", sub: "VIP, B2B ve özel müşteri segmentleri", path: "/customer-groups" },
+          { icon: "💬", label: "SMS Ayarları", sub: "Netgsm SMS şablonları ve gönderim", path: "/sms-settings" },
+          { icon: "📱", label: "Buton Ayarları", sub: "WhatsApp sipariş ve hızlı iletişim butonu", path: "/button-settings" },
+        ],
+      },
+    ],
+  },
+  {
+    label: "TASARIM",
+    path: "/hero-manager",
+    icon: "design",
+    alignRight: true,
+    columns: [
+      {
+        title: "VİTRİN & İÇERİK YÖNETİMİ",
+        items: [
+          { icon: "🎨", label: "Vitrin & Kategori Yönetimi", sub: "Ana sayfa slider, banner ve kategori vitrini", path: "/hero-manager", badge: "Vitrin", badgeColor: "#7c3aed" },
+          { icon: "📄", label: "Kurumsal Sayfalar", sub: "Hakkımızda, sözleşmeler ve bilgi sayfaları", path: "/sayfalar" },
+          { icon: "📱", label: "Buton Ayarları", sub: "WhatsApp ve yüzen aksiyon butonları", path: "/button-settings" },
+          { icon: "🏠", label: "Mağaza Ayarları", sub: "Logo, site başlığı ve genel görünüm", path: "/store-settings" },
+        ],
+      },
+    ],
+  },
+  {
+    label: "RAPORLAR",
+    path: "/dashboard",
+    icon: "reports",
+    alignRight: true,
+    columns: [
+      {
+        title: "ANALİTİK & FİNANS RAPORLARI",
+        items: [
+          { icon: "📊", label: "EntegreShop Panel", sub: "Canlı ciro, sepet özeti ve dönüşüm hunisi", path: "/dashboard", badge: "Canlı", badgeColor: "#16a34a" },
+          { icon: "📈", label: "Piksel Ayarları", sub: "GA4 & Meta Pixel dönüşüm izleme", path: "/pixel-settings" },
+          { icon: "🧾", label: "E-Fatura (Trendyol)", sub: "Kesilen faturalar ve kontör raporu", path: "/e-fatura" },
+          { icon: "📦", label: "Sipariş & Satış Raporları", sub: "Detaylı sipariş ve ciro filtreleme", path: "/orders" },
+        ],
+      },
+    ],
+  },
+  {
+    label: "ARAÇLAR",
+    path: "/e-fatura",
+    icon: "tools",
+    alignRight: true,
+    columns: [
+      {
+        title: "EKLENTİLER & OPERASYON",
+        items: [
+          { icon: "🧾", label: "E-Fatura (Trendyol)", sub: "Trendyol E-Faturam & GİB fatura kesimi", path: "/e-fatura", badge: "Canlı", badgeColor: "#2563eb" },
+          { icon: "🔄", label: "XML İşlemleri", sub: "XML import / export ve cron görevleri", path: "/xml-operations" },
+          { icon: "⚡", label: "Ürün Yönetimi", sub: "Toplu ürün ve fiyat operasyonları", path: "/product-management" },
+          { icon: "🎨", label: "Vitrin & Kategori Yönetimi", sub: "Banner ve vitrin düzenleyici", path: "/hero-manager" },
+          { icon: "📄", label: "Kurumsal Sayfalar", sub: "Sayfa ve sözleşme yönetimi", path: "/sayfalar" },
+        ],
+      },
+      {
+        title: "PAZARLAMA & BİLDİRİM",
+        items: [
+          { icon: "🎯", label: "Kampanya Kurguları", sub: "Dinamik indirim ve sepet otomasyonu", path: "/kampanyalar" },
+          { icon: "📈", label: "Piksel Ayarları", sub: "GA4, Meta Pixel ve CAPI", path: "/pixel-settings" },
+          { icon: "💬", label: "SMS Ayarları", sub: "Netgsm SMS otomasyonu", path: "/sms-settings" },
+          { icon: "📱", label: "Buton Ayarları", sub: "WhatsApp ve iletişim butonları", path: "/button-settings" },
+        ],
+      },
+    ],
+  },
+  {
+    label: "AYARLAR",
+    path: "/store-settings",
+    icon: "settings",
+    alignRight: true,
+    columns: [
+      {
+        title: "MAĞAZA & EKLENTİ AYARLARI",
+        items: [
+          { icon: "🏠", label: "Mağaza Ayarları", sub: "Site bilgileri, iletişim ve sosyal medya", path: "/store-settings" },
+          { icon: "💳", label: "Ödeme Yöntemleri", sub: "PayTR Sanal POS, Havale ve Kapıda Ödeme", path: "/payment-settings" },
+          { icon: "🚛", label: "Kargo Ayarları", sub: "KargoNova, sabit kargo ve ücretsiz kargo", path: "/shipping-settings" },
+          { icon: "💬", label: "SMS Ayarları", sub: "Netgsm API ve bildirim ayarları", path: "/sms-settings" },
+          { icon: "📈", label: "Piksel Ayarları", sub: "GA4 Measurement ID & Meta Pixel ID", path: "/pixel-settings" },
+          { icon: "📱", label: "Buton Ayarları", sub: "WhatsApp numarası ve buton konumu", path: "/button-settings" },
+          { icon: "🧾", label: "E-Fatura (Trendyol)", sub: "Trendyol E-Faturam API ve şirket bilgileri", path: "/e-fatura" },
+        ],
+      },
+      {
+        title: "SİSTEM & MEDUSA AYARLARI",
+        items: [
+          { icon: "⚙️", label: "Genel Sistem Ayarları", sub: "Medusa sistem ayarları merkezi", path: "/settings" },
+          { icon: "🌍", label: "Bölgeler & Para Birimleri", sub: "Ülke ve para birimi tanımları", path: "/settings/regions" },
+          { icon: "🏛️", label: "Vergi Bölgeleri (KDV)", sub: "KDV oranları ve vergi kuralları", path: "/settings/tax-regions" },
+          { icon: "🏪", label: "Satış Kanalları", sub: "Web ve mobil satış kanalları", path: "/settings/sales-channels" },
+          { icon: "🏭", label: "Depo & Stok Konumları", sub: "Fiziksel depo ve lokasyonlar", path: "/settings/locations" },
+          { icon: "👤", label: "Kullanıcılar & Ekip", sub: "Yönetici hesapları ve roller", path: "/settings/users" },
+          { icon: "🔑", label: "API Anahtarları", sub: "Publishable ve Secret API anahtarları", path: "/settings/publishable-api-keys" },
+          { icon: "🙋‍♂️", label: "Profil Ayarları", sub: "Kişisel hesap ve şifre ayarları", path: "/settings/profile" },
+        ],
+      },
+    ],
+  },
+]
+
+const ALL_SEARCHABLE_MENU_ITEMS: Array<SubMenuItem & { category: string }> = TOP_NAV_CATEGORIES.flatMap(
+  (cat) =>
+    (cat.columns || []).flatMap((col) =>
+      col.items.map((it) => ({ ...it, category: cat.label }))
+    )
+)
+
+const GLOBAL_NO_SIDEBAR_CSS = `
+  /* Medusa V2 Sol Menüyü (MainSidebar & SettingsSidebar) ve Üst Breadcrumb Barı Tamamen Gizle */
+  aside.flex.flex-1.flex-col.justify-between.overflow-y-auto,
+  aside.relative.flex.flex-1.flex-col.justify-between.overflow-y-auto,
+  div.w-\\[220px\\].border-e {
+    display: none !important;
+    width: 0 !important;
+    min-width: 0 !important;
+    max-width: 0 !important;
+    border: none !important;
+    overflow: hidden !important;
+  }
+  div.grid.w-full.grid-cols-2.border-b.p-3 {
+    display: none !important;
+  }
+  main > div.max-w-\\[1600px\\] {
+    max-width: 100% !important;
+    width: 100% !important;
+    padding: 0 !important;
+  }
+`
+
+export const renderNavCategoryIcon = (icon: string) => {
+  if (icon === "home") {
+    return (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M11.47 3.841a.75.75 0 0 1 1.06 0l8.69 8.69a.75.75 0 1 0 1.06-1.061l-8.689-8.69a2.25 2.25 0 0 0-3.182 0l-8.69 8.69a.75.75 0 1 0 1.061 1.06l8.69-8.689Z" />
+        <path d="m12 5.432 8.159 8.159c.03.03.06.058.091.086v6.198c0 1.035-.84 1.875-1.875 1.875H15a.75.75 0 0 1-.75-.75v-4.5a.75.75 0 0 0-.75-.75h-3a.75.75 0 0 0-.75.75V21a.75.75 0 0 1-.75.75H5.625a1.875 1.875 0 0 1-1.875-1.875v-6.198a2.29 2.29 0 0 0 .091-.086L12 5.432Z" />
+      </svg>
+    )
+  }
+  if (icon === "orders") {
+    return (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
+        <path d="m15 11-1 9" />
+        <path d="m19 11-4-7" />
+        <path d="M2 11h20" />
+        <path d="m3.5 11 1.6 7.4a2 2 0 0 0 2 1.6h9.8a2 2 0 0 0 2-1.6l1.7-7.4" />
+        <path d="M4.5 15.5h15" />
+        <path d="m5 11 4-7" />
+        <path d="m9 11 1 9" />
+      </svg>
+    )
+  }
+  if (icon === "products") {
+    return (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z" />
+        <circle cx="7.5" cy="7.5" r="1.5" fill="currentColor" />
+      </svg>
+    )
+  }
+  if (icon === "marketplace") {
+    return (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
+        <path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7" />
+        <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+        <path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4" />
+        <path d="M2 7h20" />
+        <path d="M22 7v3a2 2 0 0 1-2 2v0a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 16 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 12 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 8 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 4 12v0a2 2 0 0 1-2-2V7" />
+      </svg>
+    )
+  }
+  if (icon === "campaigns") {
+    return (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10" />
+        <path d="m15 9-6 6" />
+        <path d="M9 9h.01" />
+        <path d="M15 15h.01" />
+      </svg>
+    )
+  }
+  if (icon === "customers") {
+    return (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+      </svg>
+    )
+  }
+  if (icon === "design") {
+    return (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="13.5" cy="6.5" r=".5" fill="currentColor" />
+        <circle cx="17.5" cy="10.5" r=".5" fill="currentColor" />
+        <circle cx="8.5" cy="7.5" r=".5" fill="currentColor" />
+        <circle cx="6.5" cy="12.5" r=".5" fill="currentColor" />
+        <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z" />
+      </svg>
+    )
+  }
+  if (icon === "reports") {
+    return (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 3v18h18" />
+        <path d="M18 17V9" />
+        <path d="M13 17V5" />
+        <path d="M8 17v-3" />
+      </svg>
+    )
+  }
+  if (icon === "tools") {
+    return (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M19.439 7.85c-.049.322.059.648.289.878l1.568 1.568c.47.47.706 1.087.706 1.704s-.235 1.233-.706 1.704l-1.611 1.611a.98.98 0 0 1-.837.276c-.47-.07-.802-.48-.968-.925a2.501 2.501 0 1 0-3.214 3.214c.446.166.855.497.925.968a.979.979 0 0 1-.276.837l-1.61 1.61a2.404 2.404 0 0 1-1.705.707 2.402 2.402 0 0 1-1.704-.706l-1.568-1.568a1.026 1.026 0 0 0-.877-.29c-.493.074-.84.504-1.02.968a2.5 2.5 0 1 1-3.237-3.237c.464-.18.894-.527.967-1.02a1.026 1.026 0 0 0-.289-.877l-1.568-1.568A2.402 2.402 0 0 1 1.998 12c0-.617.236-1.234.706-1.704L4.23 8.77c.24-.24.581-.353.917-.303.515.077.877.528 1.073 1.01a2.5 2.5 0 1 0 3.259-3.259c-.482-.196-.933-.558-1.01-1.073-.05-.336.062-.676.303-.917l1.525-1.525A2.402 2.402 0 0 1 12 1.998c.617 0 1.234.236 1.704.706l1.568 1.568c.23.23.556.338.877.29.493-.074.84-.504 1.02-.968a2.5 2.5 0 1 1 3.237 3.237c-.464.18-.894.527-.967 1.02Z" />
+      </svg>
+    )
+  }
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  )
+}
+
+export const EntegreShopHeaderBar = ({
+  onNavigate,
+  activeUsersCount = 6,
+  newOrdersCount = 2,
+  onOpenLicenseModal,
+}: {
+  onNavigate: (path: string) => void
+  activeUsersCount?: number
+  newOrdersCount?: number
+  onOpenLicenseModal?: () => void
+}) => {
+  const [searchQuery, setSearchQuery] = useState("")
+  const [hoveredCategory, setHoveredCategory] = useState<string | null>(null)
+  const [openDropdown, setOpenDropdown] = useState<"notifications" | "account" | null>(null)
+  const [currentPathname, setCurrentPathname] = useState<string>(
+    typeof window !== "undefined" ? window.location.pathname : "/app/dashboard"
+  )
+  const closeTimeoutRef = useRef<any>(null)
+  const headerRef = useRef<HTMLElement>(null)
+
+  useEffect(() => {
+    const updatePath = () => {
+      if (typeof window !== "undefined") {
+        setCurrentPathname(window.location.pathname)
+      }
+    }
+    window.addEventListener("popstate", updatePath)
+    const interval = setInterval(updatePath, 400)
+    return () => {
+      window.removeEventListener("popstate", updatePath)
+      clearInterval(interval)
+    }
+  }, [])
+
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (headerRef.current && !headerRef.current.contains(e.target as Node)) {
+        setHoveredCategory(null)
+        setOpenDropdown(null)
+      }
+    }
+    document.addEventListener("mousedown", handleOutsideClick)
+    return () => document.removeEventListener("mousedown", handleOutsideClick)
+  }, [])
+
+  const handleCategoryEnter = (label: string) => {
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current)
+      closeTimeoutRef.current = null
+    }
+    setHoveredCategory(label)
+  }
+
+  const handleCategoryLeave = () => {
+    closeTimeoutRef.current = setTimeout(() => {
+      setHoveredCategory(null)
+    }, 150)
+  }
+
+  const getActiveCategoryLabel = () => {
+    const clean = currentPathname.replace(/^\/app/, "") || "/dashboard"
+    if (clean === "/dashboard" || clean === "/") return "ANA SAYFA"
+    if (clean.startsWith("/orders")) return "SİPARİŞLER"
+    if (
+      clean.startsWith("/products") ||
+      clean.startsWith("/product-management") ||
+      clean.startsWith("/inventory") ||
+      clean.startsWith("/reservations") ||
+      clean.startsWith("/categories") ||
+      clean.startsWith("/collections") ||
+      clean.startsWith("/price-lists")
+    ) {
+      return "ÜRÜNLER"
+    }
+    if (clean.startsWith("/xml-operations")) return "PAZARYERİ"
+    if (
+      clean.startsWith("/kampanyalar") ||
+      clean.startsWith("/promotions") ||
+      clean.startsWith("/campaigns")
+    ) {
+      return "KAMPANYALAR"
+    }
+    if (clean.startsWith("/customers") || clean.startsWith("/customer-groups")) {
+      return "MÜŞTERİLER"
+    }
+    if (clean.startsWith("/hero-manager") || clean.startsWith("/sayfalar")) {
+      return "TASARIM"
+    }
+    if (clean.startsWith("/e-fatura")) return "ARAÇLAR"
+    if (
+      clean.startsWith("/store-settings") ||
+      clean.startsWith("/payment-settings") ||
+      clean.startsWith("/shipping-settings") ||
+      clean.startsWith("/sms-settings") ||
+      clean.startsWith("/pixel-settings") ||
+      clean.startsWith("/button-settings") ||
+      clean.startsWith("/settings")
+    ) {
+      return "AYARLAR"
+    }
+    return "ANA SAYFA"
+  }
+
+  const activeCategoryLabel = getActiveCategoryLabel()
+
+  const searchResults =
+    searchQuery.trim().length > 0
+      ? ALL_SEARCHABLE_MENU_ITEMS.filter(
+          (it) =>
+            it.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            it.sub.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            it.category.toLowerCase().includes(searchQuery.toLowerCase())
+        ).slice(0, 8)
+      : []
+
+  return (
+    <header
+      ref={headerRef}
+      style={{
+        backgroundColor: "#e9ecf1",
+        backgroundImage:
+          "repeating-linear-gradient(-45deg, rgba(255,255,255,0.35) 0px, rgba(255,255,255,0.35) 14px, transparent 14px, transparent 28px)",
+        color: "#1e293b",
+        borderBottom: "1px solid #d5dbe3",
+        boxShadow: "0 1px 4px rgba(15, 23, 42, 0.05)",
+        position: "relative",
+        zIndex: 90,
+      }}
+    >
+      {/* Tier 1: Top Utility Bar */}
+      <div
+        style={{
+          backgroundColor: "#dfe4ec",
+          borderBottom: "1px solid #cfd6e0",
+        }}
+      >
+        <div
+          style={{
+            maxWidth: "1640px",
+            margin: "0 auto",
+            padding: "6px 24px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "12px",
+            flexWrap: "wrap",
+          }}
+        >
+          {/* Left: Version */}
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <span
+              style={{
+                fontSize: "11.5px",
+                fontWeight: 700,
+                color: "#334155",
+              }}
+            >
+              Versiyon 5.2.1
+            </span>
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "5px",
+                padding: "2px 8px",
+                borderRadius: "4px",
+                fontSize: "10px",
+                fontWeight: 700,
+                backgroundColor: "rgba(255,255,255,0.8)",
+                border: "1px solid #cbd5e1",
+                color: "#15803d",
+              }}
+            >
+              <span
+                style={{
+                  width: "6px",
+                  height: "6px",
+                  borderRadius: "9999px",
+                  backgroundColor: "#22c55e",
+                }}
+              />
+              GA4 & Pazaryeri Senkronizasyonu Aktif
+            </span>
+          </div>
+
+          {/* Right: Search + Siteyi Görüntüle + Destek Sistemi */}
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <div style={{ position: "relative", width: "260px" }}>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Yönetim panelinde ara.."
+                style={{
+                  width: "100%",
+                  height: "26px",
+                  paddingLeft: "28px",
+                  paddingRight: "10px",
+                  borderRadius: "4px",
+                  fontSize: "11px",
+                  color: "#1e293b",
+                  backgroundColor: "rgba(255, 255, 255, 0.9)",
+                  border: "1px solid #cbd5e1",
+                  outline: "none",
+                }}
+              />
+              <span
+                style={{
+                  position: "absolute",
+                  left: "8px",
+                  top: "5px",
+                  fontSize: "11px",
+                  opacity: 0.75,
+                }}
+              >
+                🔍
+              </span>
+
+              {searchResults.length > 0 && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "calc(100% + 6px)",
+                    left: 0,
+                    width: "340px",
+                    backgroundColor: "#ffffff",
+                    borderRadius: "10px",
+                    border: "1px solid #cbd5e1",
+                    boxShadow: "0 16px 32px rgba(15, 23, 42, 0.18)",
+                    overflow: "hidden",
+                    zIndex: 9999,
+                  }}
+                >
+                  <div
+                    style={{
+                      padding: "8px 12px",
+                      backgroundColor: "#f8fafc",
+                      borderBottom: "1px solid #e2e8f0",
+                      fontSize: "10px",
+                      fontWeight: 800,
+                      color: "#64748b",
+                      letterSpacing: "0.04em",
+                    }}
+                  >
+                    HIZLI MENÜ ARAMA SONUÇLARI
+                  </div>
+                  {searchResults.map((res, rIdx) => (
+                    <button
+                      key={rIdx}
+                      type="button"
+                      onClick={() => {
+                        setSearchQuery("")
+                        onNavigate(res.path)
+                      }}
+                      style={{
+                        width: "100%",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "10px",
+                        padding: "9px 12px",
+                        backgroundColor: "#ffffff",
+                        border: "none",
+                        borderBottom: "1px solid #f1f5f9",
+                        cursor: "pointer",
+                        textAlign: "left",
+                      }}
+                    >
+                      <span style={{ fontSize: "15px" }}>{res.icon}</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: "12px", fontWeight: 700, color: "#0f172a" }}>
+                          {res.label}
+                        </div>
+                        <div style={{ fontSize: "10.5px", color: "#64748b" }}>
+                          {res.category} • {res.sub}
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <a
+              href="https://bodykitmerkezi.com"
+              target="_blank"
+              rel="noreferrer"
+              style={{
+                height: "26px",
+                padding: "0 11px",
+                borderRadius: "4px",
+                backgroundColor: "rgba(255,255,255,0.88)",
+                border: "1px solid #cbd5e1",
+                color: "#334155",
+                fontSize: "11px",
+                fontWeight: 600,
+                display: "inline-flex",
+                alignItems: "center",
+                textDecoration: "none",
+              }}
+            >
+              Siteyi Görüntüle
+            </a>
+
+            <button
+              type="button"
+              onClick={() => onNavigate("/store-settings")}
+              style={{
+                height: "26px",
+                padding: "0 11px",
+                borderRadius: "4px",
+                backgroundColor: "rgba(255,255,255,0.88)",
+                border: "1px solid #cbd5e1",
+                color: "#334155",
+                fontSize: "11px",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Destek Sistemi
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Tier 2: Main Navigation Bar with Dropdown Sub-Menus under all Categories */}
+      <div
+        style={{
+          maxWidth: "1640px",
+          margin: "0 auto",
+          padding: "0 24px",
+          minHeight: "82px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "16px",
+        }}
+      >
+        {/* Left: EntegreShop Dark Logo */}
+        <div style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
+          <button
+            type="button"
+            onClick={() => onNavigate("/dashboard")}
+            style={{
+              background: "transparent",
+              border: "none",
+              padding: "4px 0",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+            }}
+            title="EntegreShop Yönetim Paneli"
+          >
+            <img
+              src={ENTEGRESHOP_LOGO_BLACK}
+              alt="EntegreShop"
+              style={{
+                height: "46px",
+                width: "auto",
+                objectFit: "contain",
+              }}
+            />
+          </button>
+        </div>
+
+        {/* Center: 10 Large & Bold Icon + Label Navigation Tabs + Dropdown Sub-Menus */}
+        <nav
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
+            padding: "8px 0",
+            position: "relative",
+          }}
+        >
+          {TOP_NAV_CATEGORIES.map((item) => {
+            const isActive = activeCategoryLabel === item.label
+            const isHovered = hoveredCategory === item.label
+            const hasSubMenu = Array.isArray(item.columns) && item.columns.length > 0
+
+            return (
+              <div
+                key={item.label}
+                style={{ position: "relative" }}
+                onMouseEnter={() => handleCategoryEnter(item.label)}
+                onMouseLeave={handleCategoryLeave}
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!hasSubMenu) {
+                      setHoveredCategory(null)
+                      onNavigate(item.path)
+                    } else if (isHovered) {
+                      setHoveredCategory(null)
+                      onNavigate(item.path)
+                    } else {
+                      setHoveredCategory(item.label)
+                    }
+                  }}
+                  style={{
+                    position: "relative",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "6px",
+                    padding: "10px 14px",
+                    borderRadius: "10px",
+                    fontSize: "11.5px",
+                    fontWeight: 800,
+                    letterSpacing: "0.02em",
+                    border:
+                      isActive || isHovered
+                        ? "1.5px solid #cbd5e1"
+                        : "1.5px solid transparent",
+                    cursor: "pointer",
+                    backgroundColor:
+                      isActive || isHovered ? "#ffffff" : "transparent",
+                    color: isActive || isHovered ? "#1565c0" : "#0f172a",
+                    boxShadow:
+                      isActive || isHovered
+                        ? "0 2px 6px rgba(15, 23, 42, 0.08)"
+                        : "none",
+                    transition: "all 0.15s ease",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {item.badgeDot && (
+                    <span
+                      style={{
+                        position: "absolute",
+                        top: "6px",
+                        right: "14px",
+                        width: "8px",
+                        height: "8px",
+                        borderRadius: "9999px",
+                        backgroundColor: "#ef4444",
+                        boxShadow: "0 0 0 2px #ffffff",
+                      }}
+                    />
+                  )}
+                  <span
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      width: "24px",
+                      height: "24px",
+                      color: isActive || isHovered ? "#1565c0" : "#0f172a",
+                    }}
+                  >
+                    {renderNavCategoryIcon(item.icon)}
+                  </span>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: "3px" }}>
+                    {item.label}
+                    {hasSubMenu && (
+                      <span
+                        style={{
+                          fontSize: "9px",
+                          opacity: 0.7,
+                          transform: isHovered ? "rotate(180deg)" : "none",
+                          transition: "transform 0.15s ease",
+                        }}
+                      >
+                        ▾
+                      </span>
+                    )}
+                  </span>
+                </button>
+
+                {/* Dropdown Mega-Menu underneath the Category Tab */}
+                {hasSubMenu && isHovered && item.columns && (
+                  <div
+                    onMouseEnter={() => handleCategoryEnter(item.label)}
+                    onMouseLeave={handleCategoryLeave}
+                    style={{
+                      position: "absolute",
+                      top: "100%",
+                      left: item.alignRight ? "auto" : 0,
+                      right: item.alignRight ? 0 : "auto",
+                      paddingTop: "8px",
+                      zIndex: 9999,
+                    }}
+                  >
+                    <div
+                      style={{
+                        minWidth: item.columns.length > 1 ? "580px" : "310px",
+                        backgroundColor: "#ffffff",
+                        borderRadius: "12px",
+                        border: "1px solid #cbd5e1",
+                        borderTop: "3px solid #1565c0",
+                        boxShadow: "0 20px 44px rgba(15, 23, 42, 0.18)",
+                        padding: "16px",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns:
+                            item.columns.length > 1
+                              ? "repeat(2, minmax(250px, 1fr))"
+                              : "minmax(270px, 1fr)",
+                          gap: "18px",
+                        }}
+                      >
+                        {item.columns.map((col, colIdx) => (
+                          <div key={colIdx}>
+                            <div
+                              style={{
+                                fontSize: "10.5px",
+                                fontWeight: 800,
+                                color: "#1565c0",
+                                letterSpacing: "0.05em",
+                                paddingBottom: "8px",
+                                marginBottom: "8px",
+                                borderBottom: "1px solid #e2e8f0",
+                              }}
+                            >
+                              {col.title}
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                              {col.items.map((sub, subIdx) => (
+                                <button
+                                  key={subIdx}
+                                  type="button"
+                                  onClick={() => {
+                                    setHoveredCategory(null)
+                                    onNavigate(sub.path)
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = "#eff6ff"
+                                    e.currentTarget.style.borderColor = "#bfdbfe"
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor = "#ffffff"
+                                    e.currentTarget.style.borderColor = "transparent"
+                                  }}
+                                  style={{
+                                    width: "100%",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "10px",
+                                    padding: "8px 10px",
+                                    borderRadius: "8px",
+                                    backgroundColor: "#ffffff",
+                                    border: "1px solid transparent",
+                                    cursor: "pointer",
+                                    textAlign: "left",
+                                    transition: "all 0.12s ease",
+                                  }}
+                                >
+                                  <span
+                                    style={{
+                                      width: "30px",
+                                      height: "30px",
+                                      borderRadius: "7px",
+                                      backgroundColor: "#f1f5f9",
+                                      border: "1px solid #e2e8f0",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                      fontSize: "14px",
+                                      flexShrink: 0,
+                                    }}
+                                  >
+                                    {sub.icon}
+                                  </span>
+                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div
+                                      style={{
+                                        fontSize: "12.5px",
+                                        fontWeight: 700,
+                                        color: "#0f172a",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "space-between",
+                                        gap: "6px",
+                                      }}
+                                    >
+                                      <span>{sub.label}</span>
+                                      {sub.badge && (
+                                        <span
+                                          style={{
+                                            padding: "1px 6px",
+                                            borderRadius: "9999px",
+                                            fontSize: "9.5px",
+                                            fontWeight: 800,
+                                            color: "#ffffff",
+                                            backgroundColor: sub.badgeColor || "#2563eb",
+                                          }}
+                                        >
+                                          {sub.badge}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div
+                                      style={{
+                                        fontSize: "10.5px",
+                                        color: "#64748b",
+                                        marginTop: "1px",
+                                        whiteSpace: "nowrap",
+                                        overflow: "hidden",
+                                        textOverflow: "ellipsis",
+                                      }}
+                                    >
+                                      {sub.sub}
+                                    </div>
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </nav>
+
+        {/* Right: Bildirimler & Kullanıcı Yönetimi */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            flexShrink: 0,
+            position: "relative",
+          }}
+        >
+          {/* 1. Bildirimler Button + Dropdown */}
+          <div style={{ position: "relative" }}>
+            <button
+              type="button"
+              title="Bildirimler"
+              onClick={() =>
+                setOpenDropdown((prev) =>
+                  prev === "notifications" ? null : "notifications"
+                )
+              }
+              style={{
+                position: "relative",
+                width: "44px",
+                height: "44px",
+                borderRadius: "12px",
+                backgroundColor: "#ffffff",
+                border:
+                  openDropdown === "notifications"
+                    ? "2px solid #1565c0"
+                    : "1.5px solid #cbd5e1",
+                color: "#0f172a",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                boxShadow: "0 1px 3px rgba(15,23,42,0.06)",
+              }}
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M5.85 3.5a.75.75 0 0 0-1.117-1 9.719 9.719 0 0 0-2.348 4.876.75.75 0 0 0 1.479.248A8.219 8.219 0 0 1 5.85 3.5ZM19.267 2.5a.75.75 0 1 0-1.118 1 8.22 8.22 0 0 1 1.987 4.124.75.75 0 0 0 1.48-.248A9.72 9.72 0 0 0 19.266 2.5Z" />
+                <path
+                  fillRule="evenodd"
+                  d="M12 2.25A6.75 6.75 0 0 0 5.25 9v.75a8.217 8.217 0 0 1-2.119 5.52.75.75 0 0 0 .298 1.206c1.544.57 3.16.99 4.831 1.243a3.75 3.75 0 1 0 7.48 0 24.583 24.583 0 0 0 4.83-1.244.75.75 0 0 0 .298-1.205 8.217 8.217 0 0 1-2.118-5.52V9A6.75 6.75 0 0 0 12 2.25ZM9.75 18c0-.034 0-.067.002-.1a25.05 25.05 0 0 0 4.496 0l.002.1a2.25 2.25 0 1 1-4.5 0Z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              <span
+                style={{
+                  position: "absolute",
+                  top: "-6px",
+                  right: "-6px",
+                  minWidth: "20px",
+                  height: "20px",
+                  padding: "0 5px",
+                  borderRadius: "9999px",
+                  backgroundColor: "#ef4444",
+                  color: "#ffffff",
+                  fontSize: "10.5px",
+                  fontWeight: 900,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  border: "2px solid #ffffff",
+                  boxShadow: "0 1px 2px rgba(0,0,0,0.2)",
+                }}
+              >
+                4
+              </span>
+            </button>
+
+            {openDropdown === "notifications" && (
+              <div
+                style={{
+                  position: "absolute",
+                  right: 0,
+                  marginTop: "10px",
+                  width: "285px",
+                  backgroundColor: "#ffffff",
+                  borderRadius: "8px",
+                  border: "1px solid #cbd5e1",
+                  boxShadow: "0 12px 28px rgba(15, 23, 42, 0.16)",
+                  overflow: "hidden",
+                  zIndex: 9999,
+                }}
+              >
+                <div
+                  style={{
+                    backgroundColor: "#f1f5f9",
+                    padding: "12px 16px",
+                    borderBottom: "1px solid #e2e8f0",
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: "12.5px",
+                      fontWeight: 700,
+                      color: "#1565c0",
+                    }}
+                  >
+                    Bildirimler (4)
+                  </span>
+                </div>
+                <div>
+                  {[
+                    {
+                      label: "Aktif Sepetler",
+                      count: activeUsersCount,
+                      path: "/orders",
+                    },
+                    {
+                      label: "Gelen Siparişler",
+                      count: newOrdersCount,
+                      path: "/orders",
+                    },
+                    {
+                      label: "E-Fatura (Trendyol)",
+                      count: 2,
+                      path: "/e-fatura",
+                    },
+                    {
+                      label: "Yorumlar & Ürünler",
+                      count: 3,
+                      path: "/products",
+                    },
+                  ].map((notif) => (
+                    <button
+                      key={notif.label}
+                      type="button"
+                      onClick={() => {
+                        setOpenDropdown(null)
+                        onNavigate(notif.path)
+                      }}
+                      style={{
+                        width: "100%",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "11px 16px",
+                        backgroundColor: "#ffffff",
+                        border: "none",
+                        borderBottom: "1px solid #f1f5f9",
+                        cursor: "pointer",
+                        textAlign: "left",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: "12.5px",
+                          fontWeight: 600,
+                          color: "#1e293b",
+                        }}
+                      >
+                        {notif.label}
+                      </span>
+                      <span
+                        style={{
+                          minWidth: "24px",
+                          height: "22px",
+                          padding: "0 6px",
+                          borderRadius: "4px",
+                          backgroundColor: "#f8fafc",
+                          border: "1px solid #e2e8f0",
+                          fontSize: "11px",
+                          fontWeight: 700,
+                          color: "#334155",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        {notif.count}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 2. Kullanıcı Yönetimi / Hesap Bilgilerim Button + Dropdown */}
+          <div style={{ position: "relative" }}>
+            <button
+              type="button"
+              title="Kullanıcı Yönetimi / Hesap Bilgilerim"
+              onClick={() =>
+                setOpenDropdown((prev) =>
+                  prev === "account" ? null : "account"
+                )
+              }
+              style={{
+                width: "44px",
+                height: "44px",
+                borderRadius: "12px",
+                backgroundColor: "#ffffff",
+                border:
+                  openDropdown === "account"
+                    ? "2px solid #1565c0"
+                    : "1.5px solid #cbd5e1",
+                color: "#0f172a",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                boxShadow: "0 1px 3px rgba(15,23,42,0.06)",
+              }}
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                <path
+                  fillRule="evenodd"
+                  d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </button>
+
+            {openDropdown === "account" && (
+              <div
+                style={{
+                  position: "absolute",
+                  right: 0,
+                  marginTop: "10px",
+                  width: "245px",
+                  backgroundColor: "#ffffff",
+                  borderRadius: "8px",
+                  border: "1px solid #cbd5e1",
+                  boxShadow: "0 12px 28px rgba(15, 23, 42, 0.16)",
+                  overflow: "hidden",
+                  zIndex: 9999,
+                }}
+              >
+                <div
+                  style={{
+                    backgroundColor: "#f1f5f9",
+                    padding: "12px 16px",
+                    borderBottom: "1px solid #e2e8f0",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: "12px",
+                      fontWeight: 700,
+                      color: "#1565c0",
+                    }}
+                  >
+                    Hesap Bilgilerim
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "13px",
+                      fontWeight: 700,
+                      color: "#1e293b",
+                      marginTop: "2px",
+                    }}
+                  >
+                    Hakkı Şahin
+                  </div>
+                </div>
+
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpenDropdown(null)
+                      onNavigate("/store-settings")
+                    }}
+                    style={{
+                      width: "100%",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px",
+                      padding: "11px 16px",
+                      backgroundColor: "#ffffff",
+                      border: "none",
+                      borderBottom: "1px solid #f1f5f9",
+                      cursor: "pointer",
+                      textAlign: "left",
+                    }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                    <span style={{ fontSize: "12.5px", fontWeight: 600, color: "#1e293b" }}>
+                      Mağaza & Sistem Ayarları
+                    </span>
+                  </button>
+
+                  {onOpenLicenseModal && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setOpenDropdown(null)
+                        onOpenLicenseModal()
+                      }}
+                      style={{
+                        width: "100%",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "12px",
+                        padding: "11px 16px",
+                        backgroundColor: "#ffffff",
+                        border: "none",
+                        borderBottom: "1px solid #f1f5f9",
+                        cursor: "pointer",
+                        textAlign: "left",
+                      }}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect width="20" height="14" x="2" y="5" rx="2" />
+                        <line x1="2" x2="22" y1="10" y2="10" />
+                      </svg>
+                      <span style={{ fontSize: "12.5px", fontWeight: 600, color: "#1e293b" }}>
+                        Lisans Bilgileri
+                      </span>
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpenDropdown(null)
+                      onNavigate("/login")
+                    }}
+                    style={{
+                      width: "100%",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px",
+                      padding: "11px 16px",
+                      backgroundColor: "#ffffff",
+                      border: "none",
+                      cursor: "pointer",
+                      textAlign: "left",
+                    }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                      <polyline points="16 17 21 12 16 7" />
+                      <line x1="21" x2="9" y1="12" y2="12" />
+                    </svg>
+                    <span style={{ fontSize: "12.5px", fontWeight: 600, color: "#dc2626" }}>
+                      Çıkış Yap
+                    </span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </header>
+  )
+}
+
+const GlobalShellTopBarWrapper = () => {
+  const [pathname, setPathname] = useState(
+    typeof window !== "undefined" ? window.location.pathname : ""
+  )
+
+  useEffect(() => {
+    const check = () => {
+      if (typeof window !== "undefined") {
+        setPathname(window.location.pathname)
+      }
+    }
+    window.addEventListener("popstate", check)
+    const timer = setInterval(check, 250)
+    return () => {
+      window.removeEventListener("popstate", check)
+      clearInterval(timer)
+    }
+  }, [])
+
+  // Hide on /dashboard (since dashboard page renders its own header) and /login
+  if (
+    pathname.endsWith("/dashboard") ||
+    pathname.endsWith("/login") ||
+    pathname.includes("/invite")
+  ) {
+    return null
+  }
+
+  const handleGlobalNavigate = (targetPath: string) => {
+    const globalNav = (window as any).__entegreshopNavigate
+    if (typeof globalNav === "function") {
+      globalNav(targetPath)
+    } else {
+      window.location.href = "/app" + targetPath
+    }
+  }
+
+  return <EntegreShopHeaderBar onNavigate={handleGlobalNavigate} />
+}
+
+if (typeof window !== "undefined" && typeof document !== "undefined") {
+  const ensureGlobalShellMounted = () => {
+    if (!document.getElementById("entegreshop-no-sidebar-style")) {
+      const styleEl = document.createElement("style")
+      styleEl.id = "entegreshop-no-sidebar-style"
+      styleEl.textContent = GLOBAL_NO_SIDEBAR_CSS
+      document.head.appendChild(styleEl)
+    }
+
+    const mainEl = document.querySelector("main")
+    if (mainEl && mainEl.parentElement && !document.getElementById("entegreshop-global-header-root")) {
+      const mountEl = document.createElement("div")
+      mountEl.id = "entegreshop-global-header-root"
+      mainEl.parentElement.insertBefore(mountEl, mainEl)
+      const root = createRoot(mountEl)
+      root.render(<GlobalShellTopBarWrapper />)
+    }
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", ensureGlobalShellMounted)
+  } else {
+    setTimeout(ensureGlobalShellMounted, 50)
+  }
+  setInterval(ensureGlobalShellMounted, 1000)
+}
+
 const QUICK_MENU_ITEMS: Record<
   QuickTabKey,
   Array<{ icon: string; title: string; sub: string; path: string }>
@@ -295,6 +1695,11 @@ const QUICK_MENU_ITEMS: Record<
 
 const EntegreShopDashboardPage = () => {
   const navigate = useNavigate()
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      ;(window as any).__entegreshopNavigate = navigate
+    }
+  }, [navigate])
   const [period, setPeriod] = useState<PeriodKey>("bu_ay")
   const [channel, setChannel] = useState("Hepsi")
   const [activeNav, setActiveNav] = useState("ANA SAYFA")
@@ -536,6 +1941,8 @@ const EntegreShopDashboardPage = () => {
       }}
     >
       <style>{`
+        ${GLOBAL_NO_SIDEBAR_CSS}
+
         @keyframes tsxCirclePing {
           0% { transform: scale(0.88); opacity: 0.85; }
           75%, 100% { transform: scale(1.38); opacity: 0; }
@@ -554,681 +1961,12 @@ const EntegreShopDashboardPage = () => {
 
       <div>
         {/* ==================== TOP SILVER GREY (GÜMÜŞ GRİ) 2-TIER HEADER ==================== */}
-        <header
-          style={{
-            backgroundColor: "#e9ecf1",
-            backgroundImage:
-              "repeating-linear-gradient(-45deg, rgba(255,255,255,0.35) 0px, rgba(255,255,255,0.35) 14px, transparent 14px, transparent 28px)",
-            color: "#1e293b",
-            borderBottom: "1px solid #d5dbe3",
-            boxShadow: "0 1px 4px rgba(15, 23, 42, 0.05)",
-          }}
-        >
-          {/* Tier 1: Top Utility Bar */}
-          <div
-            style={{
-              backgroundColor: "#dfe4ec",
-              borderBottom: "1px solid #cfd6e0",
-            }}
-          >
-            <div
-              style={{
-                maxWidth: "1640px",
-                margin: "0 auto",
-                padding: "6px 24px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: "12px",
-                flexWrap: "wrap",
-              }}
-            >
-              {/* Left: Version */}
-              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                <span
-                  style={{
-                    fontSize: "11.5px",
-                    fontWeight: 700,
-                    color: "#334155",
-                  }}
-                >
-                  Versiyon 5.2.1
-                </span>
-                <span
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "5px",
-                    padding: "2px 8px",
-                    borderRadius: "4px",
-                    fontSize: "10px",
-                    fontWeight: 700,
-                    backgroundColor: "rgba(255,255,255,0.8)",
-                    border: "1px solid #cbd5e1",
-                    color: "#15803d",
-                  }}
-                >
-                  <span
-                    style={{
-                      width: "6px",
-                      height: "6px",
-                      borderRadius: "9999px",
-                      backgroundColor: "#22c55e",
-                    }}
-                  />
-                  GA4 & Pazaryeri Senkronizasyonu Aktif
-                </span>
-              </div>
-
-              {/* Right: Search + Siteyi Görüntüle + Destek Sistemi + Rocket */}
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <div style={{ position: "relative", width: "260px" }}>
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Yönetim panelinde ara.."
-                    style={{
-                      width: "100%",
-                      height: "26px",
-                      paddingLeft: "28px",
-                      paddingRight: "10px",
-                      borderRadius: "4px",
-                      fontSize: "11px",
-                      color: "#1e293b",
-                      backgroundColor: "rgba(255, 255, 255, 0.9)",
-                      border: "1px solid #cbd5e1",
-                      outline: "none",
-                    }}
-                  />
-                  <span
-                    style={{
-                      position: "absolute",
-                      left: "8px",
-                      top: "5px",
-                      fontSize: "11px",
-                      opacity: 0.75,
-                    }}
-                  >
-                    🔍
-                  </span>
-                </div>
-
-                <a
-                  href="https://bodykitmerkezi.com"
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{
-                    height: "26px",
-                    padding: "0 11px",
-                    borderRadius: "4px",
-                    backgroundColor: "rgba(255,255,255,0.88)",
-                    border: "1px solid #cbd5e1",
-                    color: "#334155",
-                    fontSize: "11px",
-                    fontWeight: 600,
-                    display: "inline-flex",
-                    alignItems: "center",
-                    textDecoration: "none",
-                  }}
-                >
-                  Siteyi Görüntüle
-                </a>
-
-                <button
-                  type="button"
-                  onClick={() => navigate("/settings")}
-                  style={{
-                    height: "26px",
-                    padding: "0 11px",
-                    borderRadius: "4px",
-                    backgroundColor: "rgba(255,255,255,0.88)",
-                    border: "1px solid #cbd5e1",
-                    color: "#334155",
-                    fontSize: "11px",
-                    fontWeight: 600,
-                    cursor: "pointer",
-                  }}
-                >
-                  Destek Sistemi
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Tier 2: Main Navigation Bar (Silver Grey with Black EntegreShop Logo) */}
-          <div
-            style={{
-              maxWidth: "1640px",
-              margin: "0 auto",
-              padding: "0 24px",
-              minHeight: "82px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: "16px",
-            }}
-          >
-            {/* Left: ONLY EntegreShop Dark Logo */}
-            <div style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
-              <button
-                type="button"
-                onClick={() => navigate("/dashboard")}
-                style={{
-                  background: "transparent",
-                  border: "none",
-                  padding: "4px 0",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                }}
-                title="EntegreShop Yönetim Paneli"
-              >
-                <img
-                  src={ENTEGRESHOP_LOGO_BLACK}
-                  alt="EntegreShop"
-                  style={{
-                    height: "46px",
-                    width: "auto",
-                    objectFit: "contain",
-                  }}
-                />
-              </button>
-            </div>
-
-            {/* Center: 10 Large & Bold Icon + Label Navigation Tabs */}
-            <nav
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-                overflowX: "auto",
-                padding: "8px 0",
-              }}
-            >
-              {navItems.map((item) => {
-                const isActive = activeNav === item.label
-                return (
-                  <button
-                    key={item.label}
-                    type="button"
-                    onClick={() => {
-                      setActiveNav(item.label)
-                      if (item.path !== "/dashboard") {
-                        navigate(item.path)
-                      }
-                    }}
-                    style={{
-                      position: "relative",
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: "6px",
-                      padding: "10px 14px",
-                      borderRadius: "10px",
-                      fontSize: "11.5px",
-                      fontWeight: 800,
-                      letterSpacing: "0.02em",
-                      border: isActive ? "1.5px solid #cbd5e1" : "1.5px solid transparent",
-                      cursor: "pointer",
-                      backgroundColor: isActive ? "#ffffff" : "transparent",
-                      color: isActive ? "#1565c0" : "#0f172a",
-                      boxShadow: isActive
-                        ? "0 2px 6px rgba(15, 23, 42, 0.08)"
-                        : "none",
-                      transition: "all 0.15s ease",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {item.badgeDot && (
-                      <span
-                        style={{
-                          position: "absolute",
-                          top: "6px",
-                          right: "14px",
-                          width: "8px",
-                          height: "8px",
-                          borderRadius: "9999px",
-                          backgroundColor: "#ef4444",
-                          boxShadow: "0 0 0 2px #ffffff",
-                        }}
-                      />
-                    )}
-                    <span
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        width: "24px",
-                        height: "24px",
-                        color: isActive ? "#1565c0" : "#0f172a",
-                      }}
-                    >
-                      {item.icon === "home" && (
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M11.47 3.841a.75.75 0 0 1 1.06 0l8.69 8.69a.75.75 0 1 0 1.06-1.061l-8.689-8.69a2.25 2.25 0 0 0-3.182 0l-8.69 8.69a.75.75 0 1 0 1.061 1.06l8.69-8.689Z" />
-                          <path d="m12 5.432 8.159 8.159c.03.03.06.058.091.086v6.198c0 1.035-.84 1.875-1.875 1.875H15a.75.75 0 0 1-.75-.75v-4.5a.75.75 0 0 0-.75-.75h-3a.75.75 0 0 0-.75.75V21a.75.75 0 0 1-.75.75H5.625a1.875 1.875 0 0 1-1.875-1.875v-6.198a2.29 2.29 0 0 0 .091-.086L12 5.432Z" />
-                        </svg>
-                      )}
-                      {item.icon === "orders" && (
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="m15 11-1 9" />
-                          <path d="m19 11-4-7" />
-                          <path d="M2 11h20" />
-                          <path d="m3.5 11 1.6 7.4a2 2 0 0 0 2 1.6h9.8a2 2 0 0 0 2-1.6l1.7-7.4" />
-                          <path d="M4.5 15.5h15" />
-                          <path d="m5 11 4-7" />
-                          <path d="m9 11 1 9" />
-                        </svg>
-                      )}
-                      {item.icon === "products" && (
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z" />
-                          <circle cx="7.5" cy="7.5" r="1.5" fill="currentColor" />
-                        </svg>
-                      )}
-                      {item.icon === "marketplace" && (
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7" />
-                          <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
-                          <path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4" />
-                          <path d="M2 7h20" />
-                          <path d="M22 7v3a2 2 0 0 1-2 2v0a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 16 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 12 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 8 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 4 12v0a2 2 0 0 1-2-2V7" />
-                        </svg>
-                      )}
-                      {item.icon === "campaigns" && (
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
-                          <circle cx="12" cy="12" r="10" />
-                          <path d="m15 9-6 6" />
-                          <path d="M9 9h.01" />
-                          <path d="M15 15h.01" />
-                        </svg>
-                      )}
-                      {item.icon === "customers" && (
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                          <circle cx="9" cy="7" r="4" />
-                          <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-                          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                        </svg>
-                      )}
-                      {item.icon === "design" && (
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
-                          <circle cx="13.5" cy="6.5" r=".5" fill="currentColor" />
-                          <circle cx="17.5" cy="10.5" r=".5" fill="currentColor" />
-                          <circle cx="8.5" cy="7.5" r=".5" fill="currentColor" />
-                          <circle cx="6.5" cy="12.5" r=".5" fill="currentColor" />
-                          <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z" />
-                        </svg>
-                      )}
-                      {item.icon === "reports" && (
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M3 3v18h18" />
-                          <path d="M18 17V9" />
-                          <path d="M13 17V5" />
-                          <path d="M8 17v-3" />
-                        </svg>
-                      )}
-                      {item.icon === "tools" && (
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M19.439 7.85c-.049.322.059.648.289.878l1.568 1.568c.47.47.706 1.087.706 1.704s-.235 1.233-.706 1.704l-1.611 1.611a.98.98 0 0 1-.837.276c-.47-.07-.802-.48-.968-.925a2.501 2.501 0 1 0-3.214 3.214c.446.166.855.497.925.968a.979.979 0 0 1-.276.837l-1.61 1.61a2.404 2.404 0 0 1-1.705.707 2.402 2.402 0 0 1-1.704-.706l-1.568-1.568a1.026 1.026 0 0 0-.877-.29c-.493.074-.84.504-1.02.968a2.5 2.5 0 1 1-3.237-3.237c.464-.18.894-.527.967-1.02a1.026 1.026 0 0 0-.289-.877l-1.568-1.568A2.402 2.402 0 0 1 1.998 12c0-.617.236-1.234.706-1.704L4.23 8.77c.24-.24.581-.353.917-.303.515.077.877.528 1.073 1.01a2.5 2.5 0 1 0 3.259-3.259c-.482-.196-.933-.558-1.01-1.073-.05-.336.062-.676.303-.917l1.525-1.525A2.402 2.402 0 0 1 12 1.998c.617 0 1.234.236 1.704.706l1.568 1.568c.23.23.556.338.877.29.493-.074.84-.504 1.02-.968a2.5 2.5 0 1 1 3.237 3.237c-.464.18-.894.527-.967 1.02Z" />
-                        </svg>
-                      )}
-                      {item.icon === "settings" && (
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
-                          <circle cx="12" cy="12" r="3" />
-                        </svg>
-                      )}
-                    </span>
-                    <span>{item.label}</span>
-                  </button>
-                )
-              })}
-            </nav>
-
-            {/* Right: ONLY Bildirimler & Kullanıcı Yönetimi (Large & Prominent with Dropdowns) */}
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", flexShrink: 0, position: "relative" }}>
-              {/* 1. Bildirimler Button + Dropdown */}
-              <div style={{ position: "relative" }}>
-                <button
-                  type="button"
-                  title="Bildirimler"
-                  onClick={() =>
-                    setOpenDropdown((prev) =>
-                      prev === "notifications" ? null : "notifications"
-                    )
-                  }
-                  style={{
-                    position: "relative",
-                    width: "44px",
-                    height: "44px",
-                    borderRadius: "12px",
-                    backgroundColor: "#ffffff",
-                    border:
-                      openDropdown === "notifications"
-                        ? "2px solid #1565c0"
-                        : "1.5px solid #cbd5e1",
-                    color: "#0f172a",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    boxShadow: "0 1px 3px rgba(15,23,42,0.06)",
-                  }}
-                >
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M5.85 3.5a.75.75 0 0 0-1.117-1 9.719 9.719 0 0 0-2.348 4.876.75.75 0 0 0 1.479.248A8.219 8.219 0 0 1 5.85 3.5ZM19.267 2.5a.75.75 0 1 0-1.118 1 8.22 8.22 0 0 1 1.987 4.124.75.75 0 0 0 1.48-.248A9.72 9.72 0 0 0 19.266 2.5Z" />
-                    <path
-                      fillRule="evenodd"
-                      d="M12 2.25A6.75 6.75 0 0 0 5.25 9v.75a8.217 8.217 0 0 1-2.119 5.52.75.75 0 0 0 .298 1.206c1.544.57 3.16.99 4.831 1.243a3.75 3.75 0 1 0 7.48 0 24.583 24.583 0 0 0 4.83-1.244.75.75 0 0 0 .298-1.205 8.217 8.217 0 0 1-2.118-5.52V9A6.75 6.75 0 0 0 12 2.25ZM9.75 18c0-.034 0-.067.002-.1a25.05 25.05 0 0 0 4.496 0l.002.1a2.25 2.25 0 1 1-4.5 0Z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  <span
-                    style={{
-                      position: "absolute",
-                      top: "-6px",
-                      right: "-6px",
-                      minWidth: "20px",
-                      height: "20px",
-                      padding: "0 5px",
-                      borderRadius: "9999px",
-                      backgroundColor: "#ef4444",
-                      color: "#ffffff",
-                      fontSize: "10.5px",
-                      fontWeight: 900,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      border: "2px solid #ffffff",
-                      boxShadow: "0 1px 2px rgba(0,0,0,0.2)",
-                    }}
-                  >
-                    4
-                  </span>
-                </button>
-
-                {openDropdown === "notifications" && (
-                  <div
-                    style={{
-                      position: "absolute",
-                      right: 0,
-                      marginTop: "10px",
-                      width: "285px",
-                      backgroundColor: "#ffffff",
-                      borderRadius: "8px",
-                      border: "1px solid #cbd5e1",
-                      boxShadow: "0 12px 28px rgba(15, 23, 42, 0.16)",
-                      overflow: "hidden",
-                      zIndex: 100,
-                    }}
-                  >
-                    <div
-                      style={{
-                        backgroundColor: "#f1f5f9",
-                        padding: "12px 16px",
-                        borderBottom: "1px solid #e2e8f0",
-                      }}
-                    >
-                      <span
-                        style={{
-                          fontSize: "12.5px",
-                          fontWeight: 700,
-                          color: "#1565c0",
-                        }}
-                      >
-                        Bildirimler (4)
-                      </span>
-                    </div>
-                    <div>
-                      {[
-                        {
-                          label: "Aktif Sepetler",
-                          count: activeUsers,
-                          path: "/orders",
-                        },
-                        {
-                          label: "Gelen Siparişler",
-                          count: displayNewOrders,
-                          path: "/orders",
-                        },
-                        {
-                          label: "Destek Talepleri",
-                          count: 2,
-                          path: "/customers",
-                        },
-                        {
-                          label: "Yorumlar",
-                          count: 3,
-                          path: "/products",
-                        },
-                      ].map((notif) => (
-                        <button
-                          key={notif.label}
-                          type="button"
-                          onClick={() => {
-                            setOpenDropdown(null)
-                            navigate(notif.path)
-                          }}
-                          style={{
-                            width: "100%",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            padding: "11px 16px",
-                            backgroundColor: "#ffffff",
-                            border: "none",
-                            borderBottom: "1px solid #f1f5f9",
-                            cursor: "pointer",
-                            textAlign: "left",
-                          }}
-                        >
-                          <span
-                            style={{
-                              fontSize: "12.5px",
-                              fontWeight: 600,
-                              color: "#1e293b",
-                            }}
-                          >
-                            {notif.label}
-                          </span>
-                          <span
-                            style={{
-                              minWidth: "24px",
-                              height: "22px",
-                              padding: "0 6px",
-                              borderRadius: "4px",
-                              backgroundColor: "#f8fafc",
-                              border: "1px solid #e2e8f0",
-                              fontSize: "11px",
-                              fontWeight: 700,
-                              color: "#334155",
-                              display: "inline-flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                            }}
-                          >
-                            {notif.count}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* 2. Kullanıcı Yönetimi / Hesap Bilgilerim Button + Dropdown */}
-              <div style={{ position: "relative" }}>
-                <button
-                  type="button"
-                  title="Kullanıcı Yönetimi / Hesap Bilgilerim"
-                  onClick={() =>
-                    setOpenDropdown((prev) =>
-                      prev === "account" ? null : "account"
-                    )
-                  }
-                  style={{
-                    width: "44px",
-                    height: "44px",
-                    borderRadius: "12px",
-                    backgroundColor: "#ffffff",
-                    border:
-                      openDropdown === "account"
-                        ? "2px solid #1565c0"
-                        : "1.5px solid #cbd5e1",
-                    color: "#0f172a",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    boxShadow: "0 1px 3px rgba(15,23,42,0.06)",
-                  }}
-                >
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-                    <path
-                      fillRule="evenodd"
-                      d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </button>
-
-                {openDropdown === "account" && (
-                  <div
-                    style={{
-                      position: "absolute",
-                      right: 0,
-                      marginTop: "10px",
-                      width: "245px",
-                      backgroundColor: "#ffffff",
-                      borderRadius: "8px",
-                      border: "1px solid #cbd5e1",
-                      boxShadow: "0 12px 28px rgba(15, 23, 42, 0.16)",
-                      overflow: "hidden",
-                      zIndex: 100,
-                    }}
-                  >
-                    <div
-                      style={{
-                        backgroundColor: "#f1f5f9",
-                        padding: "12px 16px",
-                        borderBottom: "1px solid #e2e8f0",
-                      }}
-                    >
-                      <div
-                        style={{
-                          fontSize: "12px",
-                          fontWeight: 700,
-                          color: "#1565c0",
-                        }}
-                      >
-                        Hesap Bilgilerim
-                      </div>
-                      <div
-                        style={{
-                          fontSize: "13px",
-                          fontWeight: 700,
-                          color: "#1e293b",
-                          marginTop: "2px",
-                        }}
-                      >
-                        Hakkı
-                      </div>
-                    </div>
-
-                    <div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setOpenDropdown(null)
-                          navigate("/settings")
-                        }}
-                        style={{
-                          width: "100%",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "12px",
-                          padding: "11px 16px",
-                          backgroundColor: "#ffffff",
-                          border: "none",
-                          borderBottom: "1px solid #f1f5f9",
-                          cursor: "pointer",
-                          textAlign: "left",
-                        }}
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
-                          <circle cx="12" cy="12" r="3" />
-                        </svg>
-                        <span style={{ fontSize: "12.5px", fontWeight: 600, color: "#1e293b" }}>
-                          Ayarlar
-                        </span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setOpenDropdown(null)
-                          setShowLicenseModal(true)
-                        }}
-                        style={{
-                          width: "100%",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "12px",
-                          padding: "11px 16px",
-                          backgroundColor: "#ffffff",
-                          border: "none",
-                          borderBottom: "1px solid #f1f5f9",
-                          cursor: "pointer",
-                          textAlign: "left",
-                        }}
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <rect width="20" height="14" x="2" y="5" rx="2" />
-                          <line x1="2" x2="22" y1="10" y2="10" />
-                        </svg>
-                        <span style={{ fontSize: "12.5px", fontWeight: 600, color: "#1e293b" }}>
-                          Lisans Bilgileri
-                        </span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setOpenDropdown(null)
-                          navigate("/login")
-                        }}
-                        style={{
-                          width: "100%",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "12px",
-                          padding: "11px 16px",
-                          backgroundColor: "#ffffff",
-                          border: "none",
-                          cursor: "pointer",
-                          textAlign: "left",
-                        }}
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                          <polyline points="16 17 21 12 16 7" />
-                          <line x1="21" x2="9" y1="12" y2="12" />
-                        </svg>
-                        <span style={{ fontSize: "12.5px", fontWeight: 600, color: "#dc2626" }}>
-                          Çıkış Yap
-                        </span>
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </header>
+        <EntegreShopHeaderBar
+          onNavigate={(targetPath) => navigate(targetPath)}
+          activeUsersCount={activeUsers}
+          newOrdersCount={displayNewOrders}
+          onOpenLicenseModal={() => setShowLicenseModal(true)}
+        />
 
         {/* ==================== SUB-HEADER FILTER BAR ==================== */}
         <div
