@@ -215,8 +215,20 @@ const SiparisYonetimiPage = () => {
         if (prev === currentSearch) return prev
         const params = new URLSearchParams(currentSearch)
         const statusParam = params.get("status")
+        const tabParam = params.get("tab")
         const actionParam = params.get("action")
         if (
+          tabParam &&
+          [
+            "aktif-sepetler",
+            "terk-edilmis-sepetler",
+            "havale-bildirimleri",
+            "siparis-etiketleri",
+            "risk-kriterleri",
+          ].includes(tabParam)
+        ) {
+          setActiveTab(tabParam)
+        } else if (
           statusParam &&
           [
             "onay_bekleyen",
@@ -412,6 +424,118 @@ const SiparisYonetimiPage = () => {
     }
     fetchOrders()
   }, [])
+
+  // Order Operations Data (Ödeme Hatası / PayTR, Aktif Sepetler, Terk Edilmiş Sepetler, Havale Bildirimleri)
+  const [opsData, setOpsData] = useState<any>({
+    missingOrders: [],
+    activeCarts: {
+      stats: { totalCarts: 0, totalProducts: 0, totalQuantity: 0, avgQuantity: 0, avgAmount: 0, totalAmount: 0 },
+      items: [],
+    },
+    abandonedCarts: {
+      stats: { abandonedCount: 0, abandonedItemsCount: 0, abandonedTotal: 0, recoveredCount: 0, recoveredTotal: 0 },
+      automationActive: true,
+      items: [],
+    },
+    eftNotifications: [],
+  })
+  const [opsLoading, setOpsLoading] = useState(false)
+  const [selectedCartPreview, setSelectedCartPreview] = useState<any | null>(null)
+  const [creatingFromMissingId, setCreatingFromMissingId] = useState<string | null>(null)
+  const [eftPageSize, setEftPageSize] = useState<number>(15)
+
+  const fetchOrderOperations = async () => {
+    setOpsLoading(true)
+    try {
+      const res = await fetch("/admin/order-operations")
+      if (res.ok) {
+        const data = await res.json()
+        if (data && data.success) {
+          setOpsData(data)
+        }
+      }
+    } catch (err) {
+      console.error("Error loading order operations:", err)
+    } finally {
+      setOpsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    if (
+      activeTab === "odeme_hatasi" ||
+      activeTab === "aktif-sepetler" ||
+      activeTab === "terk-edilmis-sepetler" ||
+      activeTab === "havale-bildirimleri"
+    ) {
+      fetchOrderOperations()
+    }
+  }, [activeTab])
+
+  const handleCreateOrderFromMissing = async (item: any) => {
+    setCreatingFromMissingId(item.id)
+    try {
+      const res = await fetch("/admin/order-operations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "create_order_from_missing",
+          id: item.id,
+          cart_id: item.cart_id,
+          order_id: item.order_id,
+        }),
+      })
+      const data = await res.json()
+      if (data && data.success) {
+        showSuccess(data.message || "Sipariş başarıyla oluşturuldu.")
+        await fetchOrderOperations()
+        const refreshRes = await fetch("/admin/orders?limit=100&order=-created_at&fields=id,status,created_at,email,display_id,payment_status,fulfillment_status,total,currency_code,*customer,*sales_channel,*payment_collections,*items,*shipping_address,*billing_address,metadata")
+        if (refreshRes.ok) {
+          const refreshData = await refreshRes.json()
+          if (refreshData?.orders) setRealOrders(refreshData.orders)
+        }
+      }
+    } catch (err) {
+      alert("Sipariş oluşturulurken bir hata oluştu.")
+    } finally {
+      setCreatingFromMissingId(null)
+    }
+  }
+
+  const handleDeleteEftNotification = async (id: string) => {
+    if (!confirm("Bu havale bildirimini silmek istediğinize emin misiniz?")) return
+    try {
+      const res = await fetch("/admin/order-operations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "delete_eft_notification", id }),
+      })
+      if (res.ok) {
+        await fetchOrderOperations()
+        showSuccess("Havale bildirimi silindi.")
+      }
+    } catch (err) {}
+  }
+
+  const handleToggleCartAutomation = async () => {
+    try {
+      const res = await fetch("/admin/order-operations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "toggle_automation" }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setOpsData((prev: any) => ({
+          ...prev,
+          abandonedCarts: {
+            ...prev.abandonedCarts,
+            automationActive: data.automationActive,
+          },
+        }))
+      }
+    } catch (err) {}
+  }
 
   // Map Medusa V2 Real orders to our CustomOrder structure
   const mappedRealOrders = useMemo(() => {
@@ -1291,7 +1415,616 @@ const SiparisYonetimiPage = () => {
 
       {/* TOP HEADER REMOVED */}
 
-      <div className="p-8 max-w-[1600px] mx-auto flex flex-col gap-y-6">
+      <div className="p-6 md:p-8 max-w-[1640px] mx-auto flex flex-col gap-y-5">
+        {activeTab === "odeme_hatasi" ? (
+          /* GÖRSEL 2: ÖDEME HATASI ALINANLAR (PAYTR / KREDİ KARTI 3D YARIDA KALAN SİPARİŞLER) */
+          <div className="flex flex-col gap-4">
+            <div className="bg-white border border-zinc-200 rounded-lg px-5 py-3.5 text-[12px] font-semibold text-zinc-800 shadow-sm">
+              Ödeme/Kart 3D şifre girme adımlarında yarıda kalan veya sorun oluşan siparişler listelenmektedir. Bu siparişleri banka ekranınızdan kontrol edip oluşturabilirsiniz. Bu sayfada son 30 günün kayıtları tutulmaktadır.
+            </div>
+
+            <div className="relative w-full max-w-[330px]">
+              <span className="absolute inset-y-0 left-3 flex items-center text-zinc-400 text-xs">🔍</span>
+              <input
+                type="text"
+                placeholder="Hızlı ara.."
+                value={quickSearch}
+                onChange={(e) => setQuickSearch(e.target.value)}
+                className="w-full bg-white border border-zinc-200 rounded-lg pl-8 pr-4 py-2 text-xs font-medium focus:outline-none focus:border-zinc-300 text-zinc-800 shadow-sm"
+              />
+            </div>
+
+            <div className="bg-white border border-zinc-200 rounded-lg shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse text-left bg-white text-[12px]">
+                  <thead>
+                    <tr className="bg-zinc-50/80 border-b border-zinc-200 text-[11.5px] font-bold text-zinc-800 divide-x divide-zinc-200">
+                      <th className="py-3.5 px-4 w-[15%]">Sipariş No</th>
+                      <th className="py-3.5 px-4 w-[24%]">Müşteri Bilgileri</th>
+                      <th className="py-3.5 px-4 w-[16%]">Tutar</th>
+                      <th className="py-3.5 px-4 w-[19%]">Ödeme Kodu</th>
+                      <th className="py-3.5 px-4 w-[14%]">Tarih</th>
+                      <th className="py-3.5 px-4 w-[12%]">İşlemler</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-200 text-zinc-700">
+                    {(() => {
+                      const list = (opsData.missingOrders || []).filter((item: any) => {
+                        if (!quickSearch.trim()) return true
+                        const q = quickSearch.toLowerCase()
+                        return (
+                          String(item.order_no || "").toLowerCase().includes(q) ||
+                          String(item.customer_name || "").toLowerCase().includes(q) ||
+                          String(item.customer_phone || "").toLowerCase().includes(q) ||
+                          String(item.payment_code || "").toLowerCase().includes(q)
+                        )
+                      })
+                      if (opsLoading) {
+                        return (
+                          <tr>
+                            <td colSpan={6} className="py-12 text-center text-zinc-400 font-semibold">
+                              Yükleniyor...
+                            </td>
+                          </tr>
+                        )
+                      }
+                      if (list.length === 0) {
+                        return (
+                          <tr>
+                            <td colSpan={6} className="py-12 text-center text-zinc-400 font-semibold">
+                              Son 30 günde ödeme adımında yarıda kalan sipariş kaydı bulunmamaktadır.
+                            </td>
+                          </tr>
+                        )
+                      }
+                      return list.map((item: any, idx: number) => (
+                        <tr
+                          key={item.id || idx}
+                          className={`divide-x divide-zinc-200 transition-colors ${idx % 2 === 1 ? "bg-zinc-50/40" : "bg-white"} hover:bg-blue-50/30`}
+                        >
+                          <td className="py-3 px-4">
+                            <span
+                              onClick={() => setSelectedCartPreview(item)}
+                              className="font-semibold text-[#1976d2] hover:underline cursor-pointer"
+                            >
+                              {item.order_no}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="flex flex-col">
+                              <span className="font-medium text-zinc-800">{item.customer_name}</span>
+                              <span className="text-[11px] text-zinc-500 mt-0.5">{item.customer_phone}</span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="flex flex-col">
+                              <span className="font-medium text-zinc-800">
+                                {Number(item.amount || 0).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TL
+                              </span>
+                              <span className="text-[11px] text-zinc-500 mt-0.5">{item.payment_method || "PayTR"}</span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 font-medium text-zinc-600">
+                            {item.payment_code}
+                          </td>
+                          <td className="py-3 px-4 font-medium text-zinc-700">
+                            {item.created_at}
+                          </td>
+                          <td className="py-3 px-4">
+                            <button
+                              type="button"
+                              disabled={creatingFromMissingId === item.id}
+                              onClick={() => handleCreateOrderFromMissing(item)}
+                              className="bg-[#10b981] hover:bg-emerald-600 disabled:opacity-50 text-white font-semibold text-[11.5px] px-3.5 py-1.5 rounded shadow-sm transition-colors cursor-pointer whitespace-nowrap"
+                            >
+                              {creatingFromMissingId === item.id ? "Oluşturuluyor..." : "Siparişi Oluştur"}
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    })()}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        ) : activeTab === "aktif-sepetler" ? (
+          /* GÖRSEL 3: AKTİF SEPETLER */
+          <div className="flex flex-col gap-4">
+            <div className="bg-white border border-zinc-200 rounded-lg px-5 py-3.5 text-[12px] font-semibold text-zinc-800 shadow-sm">
+              Üyelik hesabı olan veya hesabı bulunmayan müşterilerin son 30 gün içerisinde oluşturduğu siparişi tamamlanmayan aktif sepetler listelenmektedir.
+            </div>
+
+            {/* 6 Sütunlu Aktif Sepet Özeti Kartı */}
+            <div className="bg-white border border-zinc-200 rounded-lg p-6 shadow-sm relative">
+              <div className="grid grid-cols-2 md:grid-cols-6 divide-y md:divide-y-0 md:divide-x divide-zinc-200">
+                <div className="px-4 py-1 flex flex-col gap-1.5 first:pl-0">
+                  <span className="text-[11.5px] font-medium text-zinc-500">Toplam Sepet Sayısı</span>
+                  <span className="text-[17px] font-bold text-zinc-900">
+                    {opsData.activeCarts?.stats?.totalCarts ?? 0}
+                  </span>
+                </div>
+                <div className="px-5 py-1 flex flex-col gap-1.5">
+                  <span className="text-[11.5px] font-medium text-zinc-500">Toplam Ürün Sayısı</span>
+                  <span className="text-[17px] font-bold text-zinc-900">
+                    {opsData.activeCarts?.stats?.totalProducts ?? 0}
+                  </span>
+                </div>
+                <div className="px-5 py-1 flex flex-col gap-1.5">
+                  <span className="text-[11.5px] font-medium text-zinc-500">Toplam Ürün Adeti</span>
+                  <span className="text-[17px] font-bold text-zinc-900">
+                    {opsData.activeCarts?.stats?.totalQuantity ?? 0}
+                  </span>
+                </div>
+                <div className="px-5 py-1 flex flex-col gap-1.5">
+                  <span className="text-[11.5px] font-medium text-zinc-500">Adet Ortalaması</span>
+                  <span className="text-[17px] font-bold text-zinc-900">
+                    {opsData.activeCarts?.stats?.avgQuantity ?? 0}
+                  </span>
+                </div>
+                <div className="px-5 py-1 flex flex-col gap-1.5">
+                  <span className="text-[11.5px] font-medium text-zinc-500">Tutar Ortalaması</span>
+                  <span className="text-[17px] font-bold text-zinc-900">
+                    {Number(opsData.activeCarts?.stats?.avgAmount || 0).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TL
+                  </span>
+                </div>
+                <div className="px-5 py-1 flex flex-col gap-1.5">
+                  <span className="text-[11.5px] font-medium text-zinc-500">Sepet Tutarı</span>
+                  <span className="text-[17px] font-bold text-zinc-900">
+                    {Number(opsData.activeCarts?.stats?.totalAmount || 0).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TL
+                  </span>
+                </div>
+              </div>
+              <div className="absolute bottom-2.5 right-4 flex items-center gap-1 text-[11px] font-medium text-zinc-500">
+                <svg className="w-3.5 h-3.5 text-zinc-500" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z" clipRule="evenodd" />
+                </svg>
+                <span>Son 30 gün</span>
+              </div>
+            </div>
+
+            {/* Aktif Sepetler Tablosu */}
+            <div className="bg-white border border-zinc-200 rounded-lg shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse text-left bg-white text-[12px]">
+                  <thead>
+                    <tr className="bg-zinc-50/80 border-b border-zinc-200 text-[11.5px] font-bold text-zinc-800 divide-x divide-zinc-200">
+                      <th className="py-3.5 px-4 w-[14%]">Sepet No</th>
+                      <th className="py-3.5 px-4 w-[28%]">Müşteri Bilgileri</th>
+                      <th className="py-3.5 px-4 w-[16%]">Tutar</th>
+                      <th className="py-3.5 px-4 w-[12%]">Ürün Adeti</th>
+                      <th className="py-3.5 px-4 w-[16%]">Tarih</th>
+                      <th className="py-3.5 px-4 w-[14%]">İşlemler</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-200 text-zinc-700">
+                    {(opsData.activeCarts?.items || []).length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="py-12 text-center text-zinc-400 font-semibold">
+                          {opsLoading ? "Yükleniyor..." : "Aktif sepet kaydı bulunmamaktadır."}
+                        </td>
+                      </tr>
+                    ) : (
+                      (opsData.activeCarts?.items || []).map((cart: any, idx: number) => (
+                        <tr
+                          key={cart.id || idx}
+                          className={`divide-x divide-zinc-200 transition-colors ${idx % 2 === 1 ? "bg-zinc-50/40" : "bg-white"} hover:bg-zinc-50`}
+                        >
+                          <td className="py-3 px-4">
+                            <span
+                              onClick={() => setSelectedCartPreview(cart)}
+                              className="font-semibold text-[#1976d2] hover:underline cursor-pointer"
+                            >
+                              {cart.cart_no}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 font-medium text-zinc-800">
+                            {cart.customer_name}
+                          </td>
+                          <td className="py-3 px-4 font-medium text-zinc-800">
+                            {Number(cart.amount || 0).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TL
+                          </td>
+                          <td className="py-3 px-4 font-medium text-zinc-800">
+                            {cart.quantity}
+                          </td>
+                          <td className="py-3 px-4 font-medium text-zinc-700">
+                            {cart.created_at}
+                          </td>
+                          <td className="py-3 px-4">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedCartPreview(cart)}
+                              className="w-7 h-7 rounded bg-[#9b66c4] hover:bg-purple-600 text-white flex items-center justify-center shadow-sm cursor-pointer transition-colors"
+                              title="Sepet Detayı"
+                            >
+                              <EyeIcon />
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        ) : activeTab === "terk-edilmis-sepetler" ? (
+          /* GÖRSEL 4: TERK EDİLMİŞ SEPETLER */
+          <div className="flex flex-col gap-4">
+            <div className="bg-white border border-zinc-200 rounded-lg px-5 py-3.5 text-[12px] font-medium text-zinc-800 leading-relaxed shadow-sm">
+              Kullanıcı hesabıyla giriş yapan müşterilerin veya ödeme sayfasında iletişim bilgilerini giren müşterilerin oluşturduğu sepetler listelenmektedir. Ödeme tamamlanmadan terkedilen sepetler, müşteriniz siteden ayrıldıktan 1 saat sonra görüntülenmektedir. Müşterilere belirli sürelerde otomatik e-posta, SMS, WhatsApp mesajı ve mobil uygulama bildirimi göndererek sepetleri hatırlatabilir ve terk edilmiş sepetler için özel hediye çekleri sunabilirsiniz.
+            </div>
+
+            {/* 5 Sütunlu Terk Edilmiş Sepet Özeti Kartı */}
+            <div className="bg-white border border-zinc-200 rounded-lg p-6 shadow-sm relative">
+              <div className="grid grid-cols-2 md:grid-cols-5 divide-y md:divide-y-0 md:divide-x divide-zinc-200">
+                <div className="px-4 py-1 flex flex-col gap-1.5 first:pl-0">
+                  <span className="text-[11.5px] font-medium text-zinc-500">Terk Edilmiş Sepet Sayısı</span>
+                  <span className="text-[17px] font-bold text-zinc-900">
+                    {opsData.abandonedCarts?.stats?.abandonedCount ?? 0}
+                  </span>
+                </div>
+                <div className="px-5 py-1 flex flex-col gap-1.5">
+                  <span className="text-[11.5px] font-medium text-zinc-500">Terk Edilmiş Ürün Sayısı</span>
+                  <span className="text-[17px] font-bold text-zinc-900">
+                    {opsData.abandonedCarts?.stats?.abandonedItemsCount ?? 0}
+                  </span>
+                </div>
+                <div className="px-5 py-1 flex flex-col gap-1.5">
+                  <span className="text-[11.5px] font-medium text-zinc-500">Terk Edilmiş Sepet Tutarı</span>
+                  <span className="text-[17px] font-bold text-zinc-900">
+                    {Number(opsData.abandonedCarts?.stats?.abandonedTotal || 0).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TL
+                  </span>
+                </div>
+                <div className="px-5 py-1 flex flex-col gap-1.5">
+                  <span className="text-[11.5px] font-medium text-zinc-500">Kurtarılan Sepet Sayısı</span>
+                  <span className="text-[17px] font-bold text-zinc-900">
+                    {opsData.abandonedCarts?.stats?.recoveredCount ?? 0}
+                  </span>
+                </div>
+                <div className="px-5 py-1 flex flex-col gap-1.5">
+                  <span className="text-[11.5px] font-medium text-zinc-500">Kurtarılan Sipariş Tutarı</span>
+                  <span className="text-[17px] font-bold text-zinc-900">
+                    {Number(opsData.abandonedCarts?.stats?.recoveredTotal || 0).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TL
+                  </span>
+                </div>
+              </div>
+              <div className="absolute bottom-2.5 right-4 flex items-center gap-1 text-[11px] font-medium text-zinc-500">
+                <svg className="w-3.5 h-3.5 text-zinc-500" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z" clipRule="evenodd" />
+                </svg>
+                <span>Son 30 gün</span>
+              </div>
+            </div>
+
+            {/* Filtreler, Arama ve Sepet Otomasyonu / Kurtarılan Siparişler Butonları */}
+            <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+              <div className="flex items-center gap-2 flex-1">
+                <button
+                  type="button"
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="bg-white border border-zinc-200 px-4 py-2 rounded-lg text-xs font-bold text-zinc-700 hover:bg-zinc-50 flex items-center gap-2 shadow-sm"
+                >
+                  <Adjustments className="w-4 h-4 text-zinc-500" />
+                  <span>Filtreler</span>
+                  <svg className="w-3.5 h-3.5 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                <div className="relative flex-1 max-w-[260px]">
+                  <span className="absolute inset-y-0 left-3 flex items-center text-zinc-400 text-xs">🔍</span>
+                  <input
+                    type="text"
+                    placeholder="Hızlı ara.."
+                    value={quickSearch}
+                    onChange={(e) => setQuickSearch(e.target.value)}
+                    className="w-full bg-white border border-zinc-200 rounded-lg pl-8 pr-4 py-2 text-xs font-medium focus:outline-none focus:border-zinc-300 text-zinc-800 shadow-sm"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleToggleCartAutomation}
+                  className="bg-[#10b981] hover:bg-emerald-600 text-white font-semibold text-xs px-4 py-2 rounded-md shadow-sm flex items-center gap-1.5 cursor-pointer transition-colors"
+                >
+                  <span>⚙️</span>
+                  <span>
+                    Sepet Otomasyonu ({opsData.abandonedCarts?.automationActive !== false ? "Aktif" : "Pasif"})
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("tum_siparisler")}
+                  className="bg-[#0284c7] hover:bg-sky-700 text-white font-semibold text-xs px-4 py-2 rounded-md shadow-sm flex items-center gap-1.5 cursor-pointer transition-colors"
+                >
+                  <span>📋</span>
+                  <span>Kurtarılan Siparişler</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Terk Edilmiş Sepetler Tablosu */}
+            <div className="bg-white border border-zinc-200 rounded-lg shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse text-left bg-white text-[12px]">
+                  <thead>
+                    <tr className="bg-zinc-50/80 border-b border-zinc-200 text-[11.5px] font-bold text-zinc-800 divide-x divide-zinc-200">
+                      <th className="py-3.5 px-4">Sepet No</th>
+                      <th className="py-3.5 px-4">Müşteri Bilgileri</th>
+                      <th className="py-3.5 px-4">E-Posta</th>
+                      <th className="py-3.5 px-4">SMS</th>
+                      <th className="py-3.5 px-4">WhatsApp</th>
+                      <th className="py-3.5 px-4">Mobil Uygulama</th>
+                      <th className="py-3.5 px-4">Tutar</th>
+                      <th className="py-3.5 px-4">Ürün Sayısı</th>
+                      <th className="py-3.5 px-4">Sepet Tarihi</th>
+                      <th className="py-3.5 px-4">İşlemler</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-200 text-zinc-700">
+                    {(() => {
+                      const list = (opsData.abandonedCarts?.items || []).filter((item: any) => {
+                        if (!quickSearch.trim()) return true
+                        const q = quickSearch.toLowerCase()
+                        return (
+                          String(item.cart_no || "").toLowerCase().includes(q) ||
+                          String(item.customer_name || "").toLowerCase().includes(q) ||
+                          String(item.email || "").toLowerCase().includes(q) ||
+                          String(item.phone || "").toLowerCase().includes(q)
+                        )
+                      })
+                      if (list.length === 0) {
+                        return (
+                          <tr>
+                            <td colSpan={10} className="py-12 text-center text-zinc-400 font-semibold">
+                              {opsLoading ? "Yükleniyor..." : "Terk edilmiş sepet kaydı bulunmamaktadır."}
+                            </td>
+                          </tr>
+                        )
+                      }
+                      return list.map((cart: any, idx: number) => (
+                        <tr
+                          key={cart.id || idx}
+                          className={`divide-x divide-zinc-200 transition-colors ${idx % 2 === 1 ? "bg-zinc-50/40" : "bg-white"} hover:bg-zinc-50`}
+                        >
+                          <td className="py-3.5 px-4">
+                            <span
+                              onClick={() => setSelectedCartPreview(cart)}
+                              className="font-semibold text-[#1976d2] hover:underline cursor-pointer"
+                            >
+                              {cart.cart_no}
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-4">
+                            <div className="flex flex-col">
+                              <span className="font-semibold text-zinc-800">{cart.customer_name}</span>
+                              <span className="text-[11px] text-zinc-600">{cart.email}</span>
+                              <span className="text-[11px] text-zinc-500">{cart.phone}</span>
+                            </div>
+                          </td>
+                          <td className="py-3.5 px-4">
+                            {cart.email_status === "Bekliyor" ? (
+                              <span className="inline-block border border-blue-500 text-blue-600 px-3 py-0.5 rounded text-[11px] font-semibold">
+                                Bekliyor
+                              </span>
+                            ) : (
+                              <div className="flex flex-col items-start gap-1">
+                                <span className="inline-block border border-emerald-500 text-emerald-600 px-3 py-0.5 rounded text-[11px] font-semibold">
+                                  Gönderildi
+                                </span>
+                                <span className="text-[10px] text-zinc-500">{cart.email_date}</span>
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-3.5 px-4">
+                            {cart.sms_status === "Bekliyor" ? (
+                              <span className="inline-block border border-blue-500 text-blue-600 px-3 py-0.5 rounded text-[11px] font-semibold">
+                                Bekliyor
+                              </span>
+                            ) : (
+                              <div className="flex flex-col items-start gap-0.5">
+                                <span className="inline-block border border-red-400 text-red-500 px-3 py-0.5 rounded text-[11px] font-semibold">
+                                  Gönderilmedi
+                                </span>
+                                <span className="text-[10px] text-zinc-600 mt-0.5">{cart.sms_reason}</span>
+                                <span className="text-[10px] text-zinc-400">{cart.sms_date}</span>
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-3.5 px-4">
+                            {cart.whatsapp_status === "Bekliyor" ? (
+                              <span className="inline-block border border-blue-500 text-blue-600 px-3 py-0.5 rounded text-[11px] font-semibold">
+                                Bekliyor
+                              </span>
+                            ) : (
+                              <div className="flex flex-col items-start gap-0.5">
+                                <span className="inline-block border border-red-400 text-red-500 px-3 py-0.5 rounded text-[11px] font-semibold">
+                                  Gönderilmedi
+                                </span>
+                                <span className="text-[10px] text-zinc-600 mt-0.5">{cart.whatsapp_reason}</span>
+                                <span className="text-[10px] text-zinc-400">{cart.whatsapp_date}</span>
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-3.5 px-4">
+                            {cart.mobile_status === "Bekliyor" ? (
+                              <span className="inline-block border border-blue-500 text-blue-600 px-3 py-0.5 rounded text-[11px] font-semibold">
+                                Bekliyor
+                              </span>
+                            ) : (
+                              <div className="flex flex-col items-start gap-0.5">
+                                <span className="inline-block border border-red-400 text-red-500 px-3 py-0.5 rounded text-[11px] font-semibold">
+                                  Gönderilmedi
+                                </span>
+                                <span className="text-[10px] text-zinc-600 mt-0.5">{cart.mobile_reason}</span>
+                                <span className="text-[10px] text-zinc-400">{cart.mobile_date}</span>
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-3.5 px-4 font-medium text-zinc-800 whitespace-nowrap">
+                            {Number(cart.amount || 0).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TL
+                          </td>
+                          <td className="py-3.5 px-4 font-medium text-zinc-800">
+                            {cart.quantity}
+                          </td>
+                          <td className="py-3.5 px-4 font-medium text-zinc-700 whitespace-nowrap">
+                            {cart.created_at}
+                          </td>
+                          <td className="py-3.5 px-4">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedCartPreview(cart)}
+                              className="w-7 h-7 rounded bg-[#9b66c4] hover:bg-purple-600 text-white flex items-center justify-center shadow-sm cursor-pointer transition-colors"
+                              title="Sepet Detayı"
+                            >
+                              <EyeIcon />
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    })()}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        ) : activeTab === "havale-bildirimleri" ? (
+          /* GÖRSEL 5: HAVALE BİLDİRİMLERİ */
+          <div className="bg-white border border-zinc-200 rounded-xl p-6 shadow-sm flex flex-col gap-5">
+            <div className="relative w-full max-w-[280px]">
+              <span className="absolute inset-y-0 left-3 flex items-center text-zinc-400 text-xs">🔍</span>
+              <input
+                type="text"
+                placeholder="Hızlı ara.."
+                value={quickSearch}
+                onChange={(e) => setQuickSearch(e.target.value)}
+                className="w-full bg-white border border-zinc-200 rounded-lg pl-8 pr-4 py-2 text-xs font-medium focus:outline-none focus:border-zinc-300 text-zinc-800"
+              />
+            </div>
+
+            <div className="border border-zinc-200 rounded-lg overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse text-left bg-white text-[12px]">
+                  <thead>
+                    <tr className="bg-zinc-50/80 border-b border-zinc-200 text-[11.5px] font-bold text-zinc-800 divide-x divide-zinc-200">
+                      <th className="py-3.5 px-4">Sipariş No</th>
+                      <th className="py-3.5 px-4">Ad Soyad</th>
+                      <th className="py-3.5 px-4">Telefon</th>
+                      <th className="py-3.5 px-4">Tutar</th>
+                      <th className="py-3.5 px-4">Banka</th>
+                      <th className="py-3.5 px-4">Banka Hesabı</th>
+                      <th className="py-3.5 px-4">Durum</th>
+                      <th className="py-3.5 px-4">Tarih</th>
+                      <th className="py-3.5 px-4 w-24">İşlemler</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-200 text-zinc-700">
+                    {(() => {
+                      const list = (opsData.eftNotifications || []).filter((item: any) => {
+                        if (!quickSearch.trim()) return true
+                        const q = quickSearch.toLowerCase()
+                        return (
+                          String(item.order_no || "").toLowerCase().includes(q) ||
+                          String(item.customer_name || "").toLowerCase().includes(q) ||
+                          String(item.phone || "").toLowerCase().includes(q) ||
+                          String(item.bank_name || "").toLowerCase().includes(q)
+                        )
+                      })
+                      if (list.length === 0) {
+                        return (
+                          <tr>
+                            <td colSpan={9} className="py-12 text-center text-zinc-400 font-semibold">
+                              {opsLoading ? "Yükleniyor..." : "Havale / EFT bildirimi bulunmamaktadır."}
+                            </td>
+                          </tr>
+                        )
+                      }
+                      return list.slice(0, eftPageSize).map((item: any, idx: number) => (
+                        <tr
+                          key={item.id || idx}
+                          className={`divide-x divide-zinc-200 transition-colors ${idx % 2 === 1 ? "bg-zinc-50/40" : "bg-white"} hover:bg-zinc-50`}
+                        >
+                          <td className="py-3 px-4">
+                            <span
+                              onClick={() => {
+                                if (item.order_id) {
+                                  setSelectedOrderId(item.order_id)
+                                }
+                              }}
+                              className="font-bold text-[#1976d2] hover:underline cursor-pointer"
+                            >
+                              {item.order_no}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 font-medium text-zinc-700">{item.customer_name}</td>
+                          <td className="py-3 px-4 font-medium text-zinc-700">{item.phone}</td>
+                          <td className="py-3 px-4 font-medium text-zinc-700">
+                            {Number(item.amount || 0).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TL
+                          </td>
+                          <td className="py-3 px-4 font-medium text-zinc-700">{item.bank_name}</td>
+                          <td className="py-3 px-4 font-medium text-zinc-700">{item.bank_account}</td>
+                          <td className="py-3 px-4">
+                            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full border border-emerald-500 text-emerald-500">
+                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                              </svg>
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 font-medium text-zinc-600">{item.created_at}</td>
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (item.order_id) {
+                                    setSelectedOrderId(item.order_id)
+                                  }
+                                }}
+                                className="w-7 h-7 rounded bg-[#9b66c4] hover:bg-purple-600 text-white flex items-center justify-center shadow-sm cursor-pointer transition-colors"
+                                title="Siparişi Görüntüle"
+                              >
+                                <EyeIcon />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteEftNotification(item.id)}
+                                className="w-7 h-7 rounded bg-[#ef4444] hover:bg-red-600 text-white flex items-center justify-center shadow-sm cursor-pointer transition-colors"
+                                title="Sil"
+                              >
+                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    })()}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 pt-1">
+              <select
+                value={eftPageSize}
+                onChange={(e) => setEftPageSize(Number(e.target.value))}
+                className="border border-zinc-200 rounded-lg px-3 py-1.5 text-xs font-semibold text-zinc-700 bg-white focus:outline-none"
+              >
+                <option value={15}>15</option>
+                <option value={30}>30</option>
+                <option value={50}>50</option>
+              </select>
+              <span className="text-xs font-medium text-zinc-600">
+                {(opsData.eftNotifications || []).length} kayıttan {(opsData.eftNotifications || []).length > 0 ? 1 : 0} ile {Math.min(eftPageSize, (opsData.eftNotifications || []).length)} arası gösteriliyor
+              </span>
+            </div>
+          </div>
+        ) : (
+          <>
+
 
         {/* SEARCH, FILTERS BUTTON & BULK OPERATIONS ROW */}
         <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4">
@@ -1977,8 +2710,124 @@ const SiparisYonetimiPage = () => {
             </div>
           </div>
         )}
-
+          </>
+        )}
       </div>
+
+      {/* CART PREVIEW MODAL (Aktif Sepetler / Terk Edilmiş Sepetler / Ödeme Hatası Detayı) */}
+      {selectedCartPreview && (
+        <div
+          style={{ zIndex: 100005 }}
+          className="fixed inset-0 bg-slate-900/55 backdrop-blur-[2px] flex items-center justify-center p-4 animate-fade-in"
+        >
+          <div className="absolute inset-0" onClick={() => setSelectedCartPreview(null)} />
+          <div className="bg-white rounded-xl border border-zinc-200 shadow-2xl w-full max-w-[680px] overflow-hidden relative z-10 flex flex-col max-h-[85vh]">
+            <div
+              style={{
+                backgroundColor: "#e9ecf1",
+                backgroundImage:
+                  "repeating-linear-gradient(-45deg, rgba(255,255,255,0.35) 0px, rgba(255,255,255,0.35) 14px, transparent 14px, transparent 28px)",
+                borderBottom: "1px solid #cfd6e0",
+              }}
+              className="px-6 py-4 flex items-center justify-between"
+            >
+              <div>
+                <div className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
+                  Sepet / Sipariş İçeriği
+                </div>
+                <div className="text-[16px] font-black text-slate-900 mt-0.5">
+                  #{selectedCartPreview.cart_no || selectedCartPreview.order_no} — {selectedCartPreview.customer_name}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedCartPreview(null)}
+                className="w-8 h-8 rounded-lg bg-white/80 hover:bg-white border border-slate-300 flex items-center justify-center text-slate-700 font-bold cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto flex flex-col gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-slate-50 p-4 rounded-lg border border-slate-200 text-xs">
+                <div>
+                  <span className="text-slate-400 font-semibold block">Müşteri</span>
+                  <span className="font-bold text-slate-800">{selectedCartPreview.customer_name}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 font-semibold block">Telefon / E-Posta</span>
+                  <span className="font-bold text-slate-800">
+                    {selectedCartPreview.phone || selectedCartPreview.customer_phone || selectedCartPreview.email || "-"}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-slate-400 font-semibold block">Tarih</span>
+                  <span className="font-bold text-slate-800">{selectedCartPreview.created_at}</span>
+                </div>
+              </div>
+
+              <div className="border border-slate-200 rounded-lg overflow-hidden">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-slate-200 font-bold text-slate-700 divide-x divide-slate-200">
+                      <th className="py-2.5 px-3">Ürün</th>
+                      <th className="py-2.5 px-3">Varyant / SKU</th>
+                      <th className="py-2.5 px-3 text-center">Adet</th>
+                      <th className="py-2.5 px-3 text-right">Birim Fiyat</th>
+                      <th className="py-2.5 px-3 text-right">Toplam</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200">
+                    {(selectedCartPreview.items || []).map((it: any, i: number) => (
+                      <tr key={i} className="divide-x divide-slate-200">
+                        <td className="py-2.5 px-3 font-semibold text-slate-800">{it.title}</td>
+                        <td className="py-2.5 px-3 text-slate-600">{it.variant_title || "-"} {it.sku ? `(${it.sku})` : ""}</td>
+                        <td className="py-2.5 px-3 text-center font-bold">{it.quantity}</td>
+                        <td className="py-2.5 px-3 text-right">
+                          {Number(it.unit_price || 0).toLocaleString("tr-TR", { minimumFractionDigits: 2 })} TL
+                        </td>
+                        <td className="py-2.5 px-3 text-right font-bold text-slate-900">
+                          {Number((it.unit_price || 0) * (it.quantity || 1)).toLocaleString("tr-TR", { minimumFractionDigits: 2 })} TL
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="flex items-center justify-between pt-2">
+                <span className="text-xs font-bold text-slate-500">Genel Toplam</span>
+                <span className="text-base font-black text-slate-900">
+                  {Number(selectedCartPreview.amount || 0).toLocaleString("tr-TR", { minimumFractionDigits: 2 })} TL
+                </span>
+              </div>
+            </div>
+
+            <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex justify-end gap-2">
+              {selectedCartPreview.cart_id && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const target = selectedCartPreview
+                    setSelectedCartPreview(null)
+                    handleCreateOrderFromMissing(target)
+                  }}
+                  className="bg-[#10b981] hover:bg-emerald-600 text-white font-bold text-xs px-4 py-2 rounded shadow-sm cursor-pointer"
+                >
+                  Siparişi Oluştur
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setSelectedCartPreview(null)}
+                className="bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold text-xs px-4 py-2 rounded cursor-pointer"
+              >
+                Kapat
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* DETAIL VIEW MODAL DIALOG (http://localhost:3095/ Birebir Tasarım) */}
       {selectedOrderId && activeOrderDetails && (

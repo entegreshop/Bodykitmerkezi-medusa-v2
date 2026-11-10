@@ -99,6 +99,14 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     // PayTR Direct API requires merchant_oid to be STRICTLY alphanumeric
     const base_oid = cart.id.replace(/[^a-zA-Z0-9]/g, "")
     const merchant_oid = base_oid + Date.now().toString()
+    try {
+      const cartModule = req.scope.resolve("cart") as any
+      if (cartModule?.updateCarts) {
+        await cartModule.updateCarts(cart.id, {
+          metadata: { ...(cart.metadata || {}), paytr_oid: merchant_oid, payment_method: "PayTR", payment_attempt: true }
+        })
+      }
+    } catch (metaErr) {}
 
     const user_name = `${cart.shipping_address?.first_name || ""} ${cart.shipping_address?.last_name || ""}`.trim() || "Misafir"
     const user_address = `${cart.shipping_address?.address_1 || ""}, ${cart.shipping_address?.city || ""} ${cart.shipping_address?.province || ""}`.trim() || "Turkiye"

@@ -762,10 +762,22 @@ export const EntegreShopHeaderBar = ({
   const activeCategoryLabel = getActiveCategoryLabel()
   const activeCategoryObj = navCategories.find((c) => c.label === activeCategoryLabel)
 
-  // Determine horizontal sub-category tabs for Tier 3 (Görsel 1 & Görsel 5)
+  const isOrderOperationsSubTab =
+    activeCategoryLabel === "SİPARİŞLER" &&
+    (currentSearch.includes("tab=aktif-sepetler") ||
+      currentSearch.includes("tab=terk-edilmis-sepetler") ||
+      currentSearch.includes("tab=havale-bildirimleri") ||
+      currentSearch.includes("tab=siparis-etiketleri") ||
+      currentSearch.includes("tab=risk-kriterleri") ||
+      currentSearch.includes("action=pos"))
+
+  // Determine horizontal sub-category tabs for Tier 3 (Görsel 1, 3, 4, 5)
   const getHorizontalSubTabs = (): SubMenuItem[] => {
     if (!activeCategoryObj || !activeCategoryObj.columns || activeCategoryObj.columns.length === 0) {
       return []
+    }
+    if (isOrderOperationsSubTab && activeCategoryObj.columns[1]) {
+      return [...activeCategoryObj.columns[1].items]
     }
     const baseItems = [...activeCategoryObj.columns[0].items]
     const clean = currentPathname.replace(/^\/app/, "") || "/dashboard"
@@ -1694,7 +1706,7 @@ export const EntegreShopHeaderBar = ({
                 minWidth: "150px",
               }}
             >
-              {activeCategoryObj?.sectionTitle || activeCategoryLabel}
+              {isOrderOperationsSubTab ? "Sipariş İşlemleri" : activeCategoryObj?.sectionTitle || activeCategoryLabel}
             </div>
 
             {/* Center: Horizontal Sub-Category Tabs */}
