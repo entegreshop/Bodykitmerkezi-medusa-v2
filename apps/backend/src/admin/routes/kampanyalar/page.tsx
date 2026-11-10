@@ -214,6 +214,33 @@ const MultiProductAjaxSearch = ({ onAdd, selectedProducts, onRemove, onUpdate }:
 
 const CampaignFlowsPage = () => {
     const [activeTab, setActiveTab] = useState("yuzde")
+    const [lastSyncedSearch, setLastSyncedSearch] = useState("")
+
+    useEffect(() => {
+        const syncFromUrl = () => {
+            if (typeof window === "undefined") return
+            const currentSearch = window.location.search
+            setLastSyncedSearch((prev) => {
+                if (prev === currentSearch) return prev
+                const params = new URLSearchParams(currentSearch)
+                const tabParam = params.get("tab")
+                if (
+                    tabParam &&
+                    ["yuzde", "bogo", "hediye", "sepette", "otomasyon", "urun_kupon"].includes(tabParam)
+                ) {
+                    setActiveTab(tabParam)
+                }
+                return currentSearch
+            })
+        }
+        syncFromUrl()
+        window.addEventListener("popstate", syncFromUrl)
+        const interval = setInterval(syncFromUrl, 300)
+        return () => {
+            window.removeEventListener("popstate", syncFromUrl)
+            clearInterval(interval)
+        }
+    }, [])
     const [loading, setLoading] = useState(false)
     const [promotions, setPromotions] = useState<any[]>([])
 

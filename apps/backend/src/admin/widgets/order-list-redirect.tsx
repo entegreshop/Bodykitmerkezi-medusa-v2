@@ -205,6 +205,46 @@ const SiparisYonetimiPage = () => {
   // Tab selections
   // tabs: "onay_bekleyen" | "hazirlanan" | "kargolanan" | "teslim_edilen" | "iade_edilen" | "iptal_edilen" | "tum_siparisler" | "odeme_hatasi"
   const [activeTab, setActiveTab] = useState<string>("tum_siparisler")
+  const [lastSyncedSearch, setLastSyncedSearch] = useState<string>("")
+
+  useEffect(() => {
+    const syncFromUrl = () => {
+      if (typeof window === "undefined") return
+      const currentSearch = window.location.search
+      setLastSyncedSearch((prev) => {
+        if (prev === currentSearch) return prev
+        const params = new URLSearchParams(currentSearch)
+        const statusParam = params.get("status")
+        const actionParam = params.get("action")
+        if (
+          statusParam &&
+          [
+            "onay_bekleyen",
+            "hazirlanan",
+            "kargolanan",
+            "teslim_edilen",
+            "iade_edilen",
+            "iptal_edilen",
+            "tum_siparisler",
+            "odeme_hatasi",
+          ].includes(statusParam)
+        ) {
+          setActiveTab(statusParam)
+        }
+        if (actionParam === "pos") {
+          setIsPosOpen(true)
+        }
+        return currentSearch
+      })
+    }
+    syncFromUrl()
+    window.addEventListener("popstate", syncFromUrl)
+    const interval = setInterval(syncFromUrl, 300)
+    return () => {
+      window.removeEventListener("popstate", syncFromUrl)
+      clearInterval(interval)
+    }
+  }, [])
 
   // Form Filter States
   const [filterStatus, setFilterStatus] = useState("Yeni Sipariş, Hazırlanan Sipariş, Kargolanan Sipariş, Teslim Edilen Sipariş")

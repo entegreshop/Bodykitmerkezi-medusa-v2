@@ -1,4 +1,4 @@
-﻿import React from "react"
+import React, { useEffect, useState } from "react"
 import { defineRouteConfig } from "@medusajs/admin-sdk"
 import { DocumentText } from "@medusajs/icons"
 import { Container, Heading, Tabs } from "@medusajs/ui"
@@ -6,6 +6,34 @@ import XmlExportTab from "./components/xml-export-tab"
 import XmlImportTab from "./components/xml-import-tab"
 
 const XmlOperationsPage = () => {
+  const [activeTab, setActiveTab] = useState<string>("import")
+  const [lastSyncedSearch, setLastSyncedSearch] = useState<string>("")
+
+  useEffect(() => {
+    const syncFromUrl = () => {
+      if (typeof window === "undefined") return
+      const currentSearch = window.location.search
+      setLastSyncedSearch((prev) => {
+        if (prev === currentSearch) return prev
+        const params = new URLSearchParams(currentSearch)
+        const tabParam = params.get("tab")
+        if (tabParam === "export") {
+          setActiveTab("export")
+        } else if (tabParam === "import") {
+          setActiveTab("import")
+        }
+        return currentSearch
+      })
+    }
+    syncFromUrl()
+    window.addEventListener("popstate", syncFromUrl)
+    const interval = setInterval(syncFromUrl, 300)
+    return () => {
+      window.removeEventListener("popstate", syncFromUrl)
+      clearInterval(interval)
+    }
+  }, [])
+
   return (
     <div className="flex flex-col gap-y-6 max-w-7xl mx-auto w-full pb-10">
       <div className="flex items-center justify-between">
@@ -14,7 +42,7 @@ const XmlOperationsPage = () => {
         </Heading>
       </div>
 
-      <Tabs defaultValue="import">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <Tabs.List className="mb-6 inline-flex p-1 bg-zinc-100 rounded-lg">
           <Tabs.Trigger value="import" className="px-6 py-2.5 rounded-md text-sm font-medium transition-all data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm text-zinc-500 hover:text-zinc-700">
             XML İçeri Aktar

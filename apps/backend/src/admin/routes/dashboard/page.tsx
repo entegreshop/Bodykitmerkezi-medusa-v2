@@ -250,16 +250,16 @@ const PERIOD_PRESETS: Record<PeriodKey, PeriodPreset> = {
 
 
 export interface SubMenuItem {
-  icon: string
   label: string
-  sub: string
   path: string
-  badge?: string
+  badge?: string | number
   badgeColor?: string
+  action?: "license_modal"
 }
 
 export interface SubMenuColumn {
-  title: string
+  title?: string
+  bulletStyle?: "solid" | "hollow"
   items: SubMenuItem[]
 }
 
@@ -272,7 +272,7 @@ export interface TopNavCategory {
   columns?: SubMenuColumn[]
 }
 
-export const TOP_NAV_CATEGORIES: TopNavCategory[] = [
+export const getTopNavCategories = (prepOrdersBadge: number): TopNavCategory[] => [
   {
     label: "ANA SAYFA",
     path: "/dashboard",
@@ -285,50 +285,77 @@ export const TOP_NAV_CATEGORIES: TopNavCategory[] = [
     badgeDot: true,
     columns: [
       {
-        title: "SİPARİŞ DURUMLARI",
+        bulletStyle: "solid",
         items: [
-          { icon: "📦", label: "Tüm Siparişler", sub: "Sipariş listesi, filtreleme ve toplu işlem", path: "/orders" },
-          { icon: "⏳", label: "Onay Bekleyenler", sub: "Yeni gelen siparişleri onayla", path: "/orders?status=pending", badge: "Yeni", badgeColor: "#16a34a" },
-          { icon: "🧺", label: "Hazırlanan Siparişler", sub: "Paketlenmekte olan siparişler", path: "/orders?status=processing" },
-          { icon: "🚚", label: "Kargolanan Siparişler", sub: "Kargoya teslim edilenler", path: "/orders?status=shipped" },
-          { icon: "✅", label: "Teslim Edilenler", sub: "Müşteriye ulaşan siparişler", path: "/orders?status=delivered" },
-          { icon: "↩️", label: "İade & İptal Edilenler", sub: "İade ve iptal talepleri", path: "/orders?status=canceled" },
+          { label: "Onay Bekleyenler", path: "/orders?status=onay_bekleyen" },
+          {
+            label: "Hazırlananlar",
+            path: "/orders?status=hazirlanan",
+            badge: prepOrdersBadge > 0 ? prepOrdersBadge : 4,
+            badgeColor: "#ef4444",
+          },
+          { label: "Kargolananlar", path: "/orders?status=kargolanan" },
+          { label: "Teslim Edilenler", path: "/orders?status=teslim_edilen" },
+          { label: "İade Edilenler", path: "/orders?status=iade_edilen" },
+          { label: "İptal Edilenler", path: "/orders?status=iptal_edilen" },
+          { label: "Tüm Siparişler", path: "/orders?status=tum_siparisler" },
+          { label: "Ödeme Hatası Alınanlar", path: "/orders?status=odeme_hatasi" },
         ],
       },
       {
-        title: "FATURA, KARGO & ÖDEME",
+        title: "Sipariş İşlemleri",
+        bulletStyle: "hollow",
         items: [
-          { icon: "🧾", label: "E-Fatura (Trendyol)", sub: "Trendyol E-Faturam & GİB fatura kesimi", path: "/e-fatura", badge: "Canlı", badgeColor: "#2563eb" },
-          { icon: "🚛", label: "Kargo Ayarları", sub: "KargoNova & kargo entegrasyonları", path: "/shipping-settings" },
-          { icon: "💳", label: "Ödeme Yöntemleri", sub: "PayTR, Havale/EFT ve Kapıda Ödeme", path: "/payment-settings" },
-          { icon: "💬", label: "SMS Ayarları", sub: "Sipariş durumu SMS bildirimleri", path: "/sms-settings" },
+          { label: "Hızlı Satış", path: "/orders?action=pos" },
+          { label: "İade Talepleri", path: "/orders?status=iade_edilen" },
+          { label: "Aktif Sepetler", path: "/orders?tab=aktif-sepetler" },
+          { label: "Terk Edilmiş Sepetler", path: "/orders?tab=terk-edilmis-sepetler" },
+          { label: "Telefonla Sipariş Talepleri", path: "/orders?tab=telefonla-siparis" },
+          { label: "Havale Bildirimleri", path: "/orders?tab=havale-bildirimleri" },
+          { label: "Sipariş Etiketleri", path: "/orders?tab=siparis-etiketleri" },
+          { label: "Risk Kriterleri", path: "/orders?tab=risk-kriterleri" },
         ],
       },
     ],
   },
   {
     label: "ÜRÜNLER",
-    path: "/products",
+    path: "/product-management",
     icon: "products",
     columns: [
       {
-        title: "KATALOG & ENVANTER",
+        bulletStyle: "solid",
         items: [
-          { icon: "🏷️", label: "Ürünler", sub: "Tüm ürün kataloğu ve varyantlar", path: "/products" },
-          { icon: "⚡", label: "Ürün Yönetimi", sub: "Toplu fiyat, stok ve hızlı düzenleme", path: "/product-management", badge: "Gelişmiş", badgeColor: "#2563eb" },
-          { icon: "➕", label: "Yeni Ürün Ekle", sub: "Kataloğa hızlı yeni ürün girişi", path: "/products/create" },
-          { icon: "📦", label: "Envanter", sub: "Stok miktarları ve depo takibi", path: "/inventory" },
-          { icon: "🔒", label: "Stok Rezervasyonları", sub: "Sepet ve sipariş stok blokajları", path: "/reservations" },
+          { label: "Ürünler", path: "/product-management" },
+          { label: "Kategoriler", path: "/categories" },
+          { label: "Markalar", path: "/collections" },
+          { label: "Nitelikler", path: "/product-management?tab=nitelikler" },
+          { label: "Etiketler", path: "/settings/product-tags" },
+          { label: "Özel Alanlar", path: "/product-management?tab=ozel-alanlar" },
+          { label: "Uyumluluklar", path: "/product-management?tab=uyumluluklar" },
+          { label: "Stok Birimleri", path: "/inventory" },
         ],
       },
       {
-        title: "ORGANİZASYON & AKTARIM",
+        title: "Ürün İşlemleri",
+        bulletStyle: "hollow",
         items: [
-          { icon: "📂", label: "Kategoriler", sub: "Kategori ağacı ve vitrin sıralaması", path: "/categories" },
-          { icon: "✨", label: "Koleksiyonlar", sub: "Özel vitrin koleksiyonları", path: "/collections" },
-          { icon: "📋", label: "Fiyat Listeleri", sub: "B2B ve gruba özel fiyat listeleri", path: "/price-lists" },
-          { icon: "🔄", label: "XML İşlemleri", sub: "XML ürün içeri / dışarı aktarım", path: "/xml-operations" },
-          { icon: "🔖", label: "Ürün Türleri & Etiketler", sub: "Ürün tipleri ve etiket yönetimi", path: "/settings/product-types" },
+          { label: "Arama Eşleştirme", path: "/product-management?tab=arama-eslestirme" },
+          { label: "Arama Sonuçları", path: "/product-management?tab=arama-sonuclari" },
+          { label: "Ürün Yorumları", path: "/product-management?tab=urun-yorumlari" },
+          { label: "Ürün Önerileri", path: "/kampanyalar?tab=urun_kupon" },
+          { label: "Ürün Sıralama", path: "/categories" },
+          { label: "Hızlı SEO Güncelleme", path: "/product-management?tab=hizli-seo" },
+          { label: "Toplu Ürün Güncelleme", path: "/product-management" },
+        ],
+      },
+      {
+        title: "İçeri / Dışarı Aktar",
+        bulletStyle: "hollow",
+        items: [
+          { label: "Excel İçeri / Dışarı Aktar", path: "/xml-operations?tab=excel" },
+          { label: "XML İçeri Aktar", path: "/xml-operations?tab=import" },
+          { label: "XML Dışarı Aktar", path: "/xml-operations?tab=export" },
         ],
       },
     ],
@@ -339,12 +366,13 @@ export const TOP_NAV_CATEGORIES: TopNavCategory[] = [
     icon: "marketplace",
     columns: [
       {
-        title: "PAZARYERİ & XML ENTEGRASYONLARI",
+        bulletStyle: "solid",
         items: [
-          { icon: "🔄", label: "XML İşlemleri", sub: "Tedarikçi XML içe/dışa aktarım merkezi", path: "/xml-operations", badge: "Aktif", badgeColor: "#16a34a" },
-          { icon: "🧾", label: "E-Fatura (Trendyol)", sub: "Trendyol E-Faturam canlı entegrasyonu", path: "/e-fatura", badge: "Canlı", badgeColor: "#ea580c" },
-          { icon: "⚡", label: "Ürün Yönetimi", sub: "Pazaryeri toplu fiyat & stok eşitleme", path: "/product-management" },
-          { icon: "🏪", label: "Satış Kanalları", sub: "Mağaza ve pazaryeri satış kanalları", path: "/settings/sales-channels" },
+          { label: "Mağazalar", path: "/xml-operations?tab=magazalar" },
+          { label: "Fiyat Rekabeti Analizi", path: "/xml-operations?tab=fiyat-rekabeti" },
+          { label: "İçerik Eşleştirmeleri", path: "/xml-operations?tab=icerik-eslestirme" },
+          { label: "Ürün Gönderimleri", path: "/xml-operations?tab=export" },
+          { label: "Ürün Eşleştirmeleri", path: "/xml-operations?tab=import" },
         ],
       },
     ],
@@ -355,13 +383,18 @@ export const TOP_NAV_CATEGORIES: TopNavCategory[] = [
     icon: "campaigns",
     columns: [
       {
-        title: "KAMPANYA & İNDİRİM YÖNETİMİ",
+        bulletStyle: "solid",
         items: [
-          { icon: "🎯", label: "Kampanya Kurguları", sub: "Sepete özel fırsat, BOGO, X Al Y Öde ve sayaç", path: "/kampanyalar", badge: "Popüler", badgeColor: "#db2777" },
-          { icon: "🎟️", label: "Promosyonlar", sub: "Standart indirim kodları ve kurallar", path: "/promotions" },
-          { icon: "➕", label: "Yeni Promosyon Oluştur", sub: "Yeni indirim kuponu tanımla", path: "/promotions/create" },
-          { icon: "📊", label: "Kampanya Bütçeleri", sub: "Kampanya grupları ve bütçe takibi", path: "/campaigns" },
-          { icon: "📋", label: "Fiyat Listeleri", sub: "Kampanyalı özel fiyat listeleri", path: "/price-lists" },
+          { label: "Hediye Çekleri", path: "/kampanyalar?tab=hediye" },
+          { label: "Promosyonlar", path: "/kampanyalar?tab=yuzde" },
+          { label: "Bayi İndirimleri", path: "/price-lists" },
+          { label: "Hızlı İndirimler", path: "/kampanyalar?tab=sepette" },
+          { label: "Affiliate", path: "/kampanyalar?tab=affiliate" },
+          { label: "Sipariş Limitleri", path: "/kampanyalar?tab=otomasyon" },
+          { label: "Satış Kotaları", path: "/kampanyalar?tab=satis-kotalari" },
+          { label: "E-Posta Bültenleri", path: "/kampanyalar?tab=eposta-bultenleri" },
+          { label: "SMS Bültenleri", path: "/sms-settings" },
+          { label: "Mobil Bildirimler", path: "/kampanyalar?tab=mobil-bildirimler" },
         ],
       },
     ],
@@ -372,12 +405,15 @@ export const TOP_NAV_CATEGORIES: TopNavCategory[] = [
     icon: "customers",
     columns: [
       {
-        title: "MÜŞTERİ & İLETİŞİM YÖNETİMİ",
+        bulletStyle: "solid",
         items: [
-          { icon: "👥", label: "Müşteriler", sub: "Kayıtlı üye ve müşteri listesi", path: "/customers" },
-          { icon: "🏅", label: "Müşteri Grupları", sub: "VIP, B2B ve özel müşteri segmentleri", path: "/customer-groups" },
-          { icon: "💬", label: "SMS Ayarları", sub: "Netgsm SMS şablonları ve gönderim", path: "/sms-settings" },
-          { icon: "📱", label: "Buton Ayarları", sub: "WhatsApp sipariş ve hızlı iletişim butonu", path: "/button-settings" },
+          { label: "Üyeler", path: "/customers" },
+          { label: "Bayiler", path: "/customer-groups" },
+          { label: "Müşteri Grupları", path: "/customer-groups" },
+          { label: "Bakiye Yüklemeleri", path: "/customers?tab=bakiye-yuklemeleri" },
+          { label: "Hızlı Ödemeler", path: "/payment-settings" },
+          { label: "İletişim Talepleri", path: "/customers?tab=iletisim-talepleri" },
+          { label: "Müşteri Talepleri", path: "/customers?tab=musteri-talepleri" },
         ],
       },
     ],
@@ -389,12 +425,30 @@ export const TOP_NAV_CATEGORIES: TopNavCategory[] = [
     alignRight: true,
     columns: [
       {
-        title: "VİTRİN & İÇERİK YÖNETİMİ",
+        bulletStyle: "solid",
         items: [
-          { icon: "🎨", label: "Vitrin & Kategori Yönetimi", sub: "Ana sayfa slider, banner ve kategori vitrini", path: "/hero-manager", badge: "Vitrin", badgeColor: "#7c3aed" },
-          { icon: "📄", label: "Kurumsal Sayfalar", sub: "Hakkımızda, sözleşmeler ve bilgi sayfaları", path: "/sayfalar" },
-          { icon: "📱", label: "Buton Ayarları", sub: "WhatsApp ve yüzen aksiyon butonları", path: "/button-settings" },
-          { icon: "🏠", label: "Mağaza Ayarları", sub: "Logo, site başlığı ve genel görünüm", path: "/store-settings" },
+          { label: "Temalar", path: "/hero-manager" },
+          { label: "Blok Yönetimi", path: "/hero-manager?tab=blok-yonetimi" },
+          { label: "Görsel Optimizasyonu", path: "/hero-manager?tab=gorsel-optimizasyonu" },
+          { label: "SEO Optimizasyonu", path: "/store-settings" },
+          { label: "301 Yönlendirmeleri", path: "/hero-manager?tab=301-yonlendirmeleri" },
+          { label: "404 Kırık Linkler", path: "/hero-manager?tab=404-kirik-linkler" },
+          { label: "Sitemap", path: "/hero-manager?tab=sitemap" },
+          { label: "Görsel Yükle", path: "/hero-manager?tab=gorsel-yukle" },
+        ],
+      },
+      {
+        title: "İçerikler",
+        bulletStyle: "hollow",
+        items: [
+          { label: "Sayfalar", path: "/sayfalar" },
+          { label: "Yardım İçerikleri", path: "/sayfalar?tab=yardim" },
+          { label: "Sıkça Sorulan Sorular", path: "/sayfalar?tab=sss" },
+          { label: "Blog", path: "/sayfalar?tab=blog" },
+          { label: "Manşetler", path: "/hero-manager" },
+          { label: "Bannerlar", path: "/hero-manager" },
+          { label: "Popup", path: "/hero-manager?tab=popup" },
+          { label: "Story", path: "/hero-manager?tab=story" },
         ],
       },
     ],
@@ -406,12 +460,13 @@ export const TOP_NAV_CATEGORIES: TopNavCategory[] = [
     alignRight: true,
     columns: [
       {
-        title: "ANALİTİK & FİNANS RAPORLARI",
+        bulletStyle: "solid",
         items: [
-          { icon: "📊", label: "EntegreShop Panel", sub: "Canlı ciro, sepet özeti ve dönüşüm hunisi", path: "/dashboard", badge: "Canlı", badgeColor: "#16a34a" },
-          { icon: "📈", label: "Piksel Ayarları", sub: "GA4 & Meta Pixel dönüşüm izleme", path: "/pixel-settings" },
-          { icon: "🧾", label: "E-Fatura (Trendyol)", sub: "Kesilen faturalar ve kontör raporu", path: "/e-fatura" },
-          { icon: "📦", label: "Sipariş & Satış Raporları", sub: "Detaylı sipariş ve ciro filtreleme", path: "/orders" },
+          { label: "Genel Satış & Ciro Özeti", path: "/dashboard" },
+          { label: "Sipariş Raporları", path: "/orders" },
+          { label: "Ürün & Stok Raporları", path: "/product-management" },
+          { label: "Kesilen E-Fatura Raporları", path: "/e-fatura" },
+          { label: "GA4 & Ziyaretçi Analitiği", path: "/pixel-settings" },
         ],
       },
     ],
@@ -423,22 +478,13 @@ export const TOP_NAV_CATEGORIES: TopNavCategory[] = [
     alignRight: true,
     columns: [
       {
-        title: "EKLENTİLER & OPERASYON",
+        bulletStyle: "solid",
         items: [
-          { icon: "🧾", label: "E-Fatura (Trendyol)", sub: "Trendyol E-Faturam & GİB fatura kesimi", path: "/e-fatura", badge: "Canlı", badgeColor: "#2563eb" },
-          { icon: "🔄", label: "XML İşlemleri", sub: "XML import / export ve cron görevleri", path: "/xml-operations" },
-          { icon: "⚡", label: "Ürün Yönetimi", sub: "Toplu ürün ve fiyat operasyonları", path: "/product-management" },
-          { icon: "🎨", label: "Vitrin & Kategori Yönetimi", sub: "Banner ve vitrin düzenleyici", path: "/hero-manager" },
-          { icon: "📄", label: "Kurumsal Sayfalar", sub: "Sayfa ve sözleşme yönetimi", path: "/sayfalar" },
-        ],
-      },
-      {
-        title: "PAZARLAMA & BİLDİRİM",
-        items: [
-          { icon: "🎯", label: "Kampanya Kurguları", sub: "Dinamik indirim ve sepet otomasyonu", path: "/kampanyalar" },
-          { icon: "📈", label: "Piksel Ayarları", sub: "GA4, Meta Pixel ve CAPI", path: "/pixel-settings" },
-          { icon: "💬", label: "SMS Ayarları", sub: "Netgsm SMS otomasyonu", path: "/sms-settings" },
-          { icon: "📱", label: "Buton Ayarları", sub: "WhatsApp ve iletişim butonları", path: "/button-settings" },
+          { label: "Ödeme Yöntemleri", path: "/payment-settings" },
+          { label: "Kargo ve Teslimat", path: "/shipping-settings" },
+          { label: "E-Posta, SMS ve WhatsApp", path: "/sms-settings" },
+          { label: "Muhasebe / ERP", path: "/e-fatura" },
+          { label: "Eklentiler", path: "/button-settings" },
         ],
       },
     ],
@@ -450,40 +496,23 @@ export const TOP_NAV_CATEGORIES: TopNavCategory[] = [
     alignRight: true,
     columns: [
       {
-        title: "MAĞAZA & EKLENTİ AYARLARI",
+        bulletStyle: "solid",
         items: [
-          { icon: "🏠", label: "Mağaza Ayarları", sub: "Site bilgileri, iletişim ve sosyal medya", path: "/store-settings" },
-          { icon: "💳", label: "Ödeme Yöntemleri", sub: "PayTR Sanal POS, Havale ve Kapıda Ödeme", path: "/payment-settings" },
-          { icon: "🚛", label: "Kargo Ayarları", sub: "KargoNova, sabit kargo ve ücretsiz kargo", path: "/shipping-settings" },
-          { icon: "💬", label: "SMS Ayarları", sub: "Netgsm API ve bildirim ayarları", path: "/sms-settings" },
-          { icon: "📈", label: "Piksel Ayarları", sub: "GA4 Measurement ID & Meta Pixel ID", path: "/pixel-settings" },
-          { icon: "📱", label: "Buton Ayarları", sub: "WhatsApp numarası ve buton konumu", path: "/button-settings" },
-          { icon: "🧾", label: "E-Fatura (Trendyol)", sub: "Trendyol E-Faturam API ve şirket bilgileri", path: "/e-fatura" },
-        ],
-      },
-      {
-        title: "SİSTEM & MEDUSA AYARLARI",
-        items: [
-          { icon: "⚙️", label: "Genel Sistem Ayarları", sub: "Medusa sistem ayarları merkezi", path: "/settings" },
-          { icon: "🌍", label: "Bölgeler & Para Birimleri", sub: "Ülke ve para birimi tanımları", path: "/settings/regions" },
-          { icon: "🏛️", label: "Vergi Bölgeleri (KDV)", sub: "KDV oranları ve vergi kuralları", path: "/settings/tax-regions" },
-          { icon: "🏪", label: "Satış Kanalları", sub: "Web ve mobil satış kanalları", path: "/settings/sales-channels" },
-          { icon: "🏭", label: "Depo & Stok Konumları", sub: "Fiziksel depo ve lokasyonlar", path: "/settings/locations" },
-          { icon: "👤", label: "Kullanıcılar & Ekip", sub: "Yönetici hesapları ve roller", path: "/settings/users" },
-          { icon: "🔑", label: "API Anahtarları", sub: "Publishable ve Secret API anahtarları", path: "/settings/publishable-api-keys" },
-          { icon: "🙋‍♂️", label: "Profil Ayarları", sub: "Kişisel hesap ve şifre ayarları", path: "/settings/profile" },
+          { label: "Mağaza Ayarları", path: "/store-settings" },
+          { label: "Sözleşmeler ve Metinler", path: "/sayfalar" },
+          { label: "Pazarlama ve Doğrulama", path: "/pixel-settings" },
+          { label: "Yazdırma Etiketleri", path: "/e-fatura" },
+          { label: "Para Birimleri", path: "/settings/regions" },
+          { label: "Vergiler", path: "/settings/tax-regions" },
+          { label: "Diller", path: "/settings/store" },
+          { label: "Web Servis", path: "/settings/publishable-api-keys" },
+          { label: "Personeller", path: "/settings/users" },
+          { label: "Lisans", path: "/dashboard?modal=license", action: "license_modal" },
         ],
       },
     ],
   },
 ]
-
-const ALL_SEARCHABLE_MENU_ITEMS: Array<SubMenuItem & { category: string }> = TOP_NAV_CATEGORIES.flatMap(
-  (cat) =>
-    (cat.columns || []).flatMap((col) =>
-      col.items.map((it) => ({ ...it, category: cat.label }))
-    )
-)
 
 const GLOBAL_NO_SIDEBAR_CSS = `
   /* Medusa V2 Sol Menüyü (MainSidebar & SettingsSidebar) ve Üst Breadcrumb Barı Tamamen Gizle */
@@ -608,11 +637,13 @@ export const EntegreShopHeaderBar = ({
   onNavigate,
   activeUsersCount = 6,
   newOrdersCount = 2,
+  prepOrdersCount = 4,
   onOpenLicenseModal,
 }: {
   onNavigate: (path: string) => void
   activeUsersCount?: number
   newOrdersCount?: number
+  prepOrdersCount?: number
   onOpenLicenseModal?: () => void
 }) => {
   const [searchQuery, setSearchQuery] = useState("")
@@ -623,6 +654,13 @@ export const EntegreShopHeaderBar = ({
   )
   const closeTimeoutRef = useRef<any>(null)
   const headerRef = useRef<HTMLElement>(null)
+
+  const navCategories = getTopNavCategories(prepOrdersCount)
+  const allSearchableItems = navCategories.flatMap((cat) =>
+    (cat.columns || []).flatMap((col) =>
+      col.items.map((it) => ({ ...it, category: cat.label }))
+    )
+  )
 
   useEffect(() => {
     const updatePath = () => {
@@ -660,7 +698,7 @@ export const EntegreShopHeaderBar = ({
   const handleCategoryLeave = () => {
     closeTimeoutRef.current = setTimeout(() => {
       setHoveredCategory(null)
-    }, 150)
+    }, 140)
   }
 
   const getActiveCategoryLabel = () => {
@@ -692,14 +730,18 @@ export const EntegreShopHeaderBar = ({
     if (clean.startsWith("/hero-manager") || clean.startsWith("/sayfalar")) {
       return "TASARIM"
     }
-    if (clean.startsWith("/e-fatura")) return "ARAÇLAR"
     if (
-      clean.startsWith("/store-settings") ||
+      clean.startsWith("/e-fatura") ||
       clean.startsWith("/payment-settings") ||
       clean.startsWith("/shipping-settings") ||
       clean.startsWith("/sms-settings") ||
+      clean.startsWith("/button-settings")
+    ) {
+      return "ARAÇLAR"
+    }
+    if (
+      clean.startsWith("/store-settings") ||
       clean.startsWith("/pixel-settings") ||
-      clean.startsWith("/button-settings") ||
       clean.startsWith("/settings")
     ) {
       return "AYARLAR"
@@ -711,12 +753,13 @@ export const EntegreShopHeaderBar = ({
 
   const searchResults =
     searchQuery.trim().length > 0
-      ? ALL_SEARCHABLE_MENU_ITEMS.filter(
-          (it) =>
-            it.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            it.sub.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            it.category.toLowerCase().includes(searchQuery.toLowerCase())
-        ).slice(0, 8)
+      ? allSearchableItems
+          .filter(
+            (it) =>
+              it.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              it.category.toLowerCase().includes(searchQuery.toLowerCase())
+          )
+          .slice(0, 8)
       : []
 
   return (
@@ -828,42 +871,33 @@ export const EntegreShopHeaderBar = ({
                     position: "absolute",
                     top: "calc(100% + 6px)",
                     left: 0,
-                    width: "340px",
+                    width: "320px",
                     backgroundColor: "#ffffff",
-                    borderRadius: "10px",
+                    borderRadius: "8px",
                     border: "1px solid #cbd5e1",
-                    boxShadow: "0 16px 32px rgba(15, 23, 42, 0.18)",
+                    boxShadow: "0 16px 32px rgba(15, 23, 42, 0.16)",
                     overflow: "hidden",
                     zIndex: 9999,
                   }}
                 >
-                  <div
-                    style={{
-                      padding: "8px 12px",
-                      backgroundColor: "#f8fafc",
-                      borderBottom: "1px solid #e2e8f0",
-                      fontSize: "10px",
-                      fontWeight: 800,
-                      color: "#64748b",
-                      letterSpacing: "0.04em",
-                    }}
-                  >
-                    HIZLI MENÜ ARAMA SONUÇLARI
-                  </div>
                   {searchResults.map((res, rIdx) => (
                     <button
                       key={rIdx}
                       type="button"
                       onClick={() => {
                         setSearchQuery("")
-                        onNavigate(res.path)
+                        if (res.action === "license_modal" && onOpenLicenseModal) {
+                          onOpenLicenseModal()
+                        } else {
+                          onNavigate(res.path)
+                        }
                       }}
                       style={{
                         width: "100%",
                         display: "flex",
                         alignItems: "center",
-                        gap: "10px",
-                        padding: "9px 12px",
+                        justifyContent: "space-between",
+                        padding: "9px 14px",
                         backgroundColor: "#ffffff",
                         border: "none",
                         borderBottom: "1px solid #f1f5f9",
@@ -871,15 +905,12 @@ export const EntegreShopHeaderBar = ({
                         textAlign: "left",
                       }}
                     >
-                      <span style={{ fontSize: "15px" }}>{res.icon}</span>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: "12px", fontWeight: 700, color: "#0f172a" }}>
-                          {res.label}
-                        </div>
-                        <div style={{ fontSize: "10.5px", color: "#64748b" }}>
-                          {res.category} • {res.sub}
-                        </div>
-                      </div>
+                      <span style={{ fontSize: "12.5px", fontWeight: 600, color: "#0f172a" }}>
+                        {res.label}
+                      </span>
+                      <span style={{ fontSize: "10.5px", fontWeight: 600, color: "#64748b" }}>
+                        {res.category}
+                      </span>
                     </button>
                   ))}
                 </div>
@@ -928,7 +959,7 @@ export const EntegreShopHeaderBar = ({
         </div>
       </div>
 
-      {/* Tier 2: Main Navigation Bar with Dropdown Sub-Menus under all Categories */}
+      {/* Tier 2: Main Navigation Bar with 1:1 Reference Dropdown Menus */}
       <div
         style={{
           maxWidth: "1640px",
@@ -968,17 +999,17 @@ export const EntegreShopHeaderBar = ({
           </button>
         </div>
 
-        {/* Center: 10 Large & Bold Icon + Label Navigation Tabs + Dropdown Sub-Menus */}
+        {/* Center: 10 Large & Bold Icon + Label Navigation Tabs + Connected White Dropdowns */}
         <nav
           style={{
             display: "flex",
             alignItems: "center",
             gap: "6px",
-            padding: "8px 0",
+            padding: "8px 0 0 0",
             position: "relative",
           }}
         >
-          {TOP_NAV_CATEGORIES.map((item) => {
+          {navCategories.map((item) => {
             const isActive = activeCategoryLabel === item.label
             const isHovered = hoveredCategory === item.label
             const hasSubMenu = Array.isArray(item.columns) && item.columns.length > 0
@@ -1010,32 +1041,41 @@ export const EntegreShopHeaderBar = ({
                     alignItems: "center",
                     justifyContent: "center",
                     gap: "6px",
-                    padding: "10px 14px",
-                    borderRadius: "10px",
+                    padding: "12px 16px 14px 16px",
+                    borderRadius: isHovered && hasSubMenu ? "8px 8px 0 0" : "10px",
                     fontSize: "11.5px",
                     fontWeight: 800,
                     letterSpacing: "0.02em",
                     border:
-                      isActive || isHovered
+                      isHovered && hasSubMenu
+                        ? "1px solid #e2e8f0"
+                        : isActive
+                        ? "1.5px solid #cbd5e1"
+                        : "1.5px solid transparent",
+                    borderBottom:
+                      isHovered && hasSubMenu
+                        ? "1px solid #ffffff"
+                        : isActive
                         ? "1.5px solid #cbd5e1"
                         : "1.5px solid transparent",
                     cursor: "pointer",
                     backgroundColor:
                       isActive || isHovered ? "#ffffff" : "transparent",
-                    color: isActive || isHovered ? "#1565c0" : "#0f172a",
+                    color: isActive || isHovered ? "#1976d2" : "#0f172a",
                     boxShadow:
-                      isActive || isHovered
+                      isActive && !isHovered
                         ? "0 2px 6px rgba(15, 23, 42, 0.08)"
                         : "none",
-                    transition: "all 0.15s ease",
+                    transition: "background-color 0.12s ease, color 0.12s ease",
                     whiteSpace: "nowrap",
+                    zIndex: isHovered ? 10001 : 1,
                   }}
                 >
                   {item.badgeDot && (
                     <span
                       style={{
                         position: "absolute",
-                        top: "6px",
+                        top: "7px",
                         right: "14px",
                         width: "8px",
                         height: "8px",
@@ -1052,173 +1092,159 @@ export const EntegreShopHeaderBar = ({
                       justifyContent: "center",
                       width: "24px",
                       height: "24px",
-                      color: isActive || isHovered ? "#1565c0" : "#0f172a",
+                      color: isActive || isHovered ? "#1976d2" : "#0f172a",
                     }}
                   >
                     {renderNavCategoryIcon(item.icon)}
                   </span>
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: "3px" }}>
-                    {item.label}
-                    {hasSubMenu && (
-                      <span
-                        style={{
-                          fontSize: "9px",
-                          opacity: 0.7,
-                          transform: isHovered ? "rotate(180deg)" : "none",
-                          transition: "transform 0.15s ease",
-                        }}
-                      >
-                        ▾
-                      </span>
-                    )}
-                  </span>
+                  <span>{item.label}</span>
                 </button>
 
-                {/* Dropdown Mega-Menu underneath the Category Tab */}
+                {/* Connected White Multi-Column Dropdown Panel (Exact Reference Visual Design) */}
                 {hasSubMenu && isHovered && item.columns && (
                   <div
                     onMouseEnter={() => handleCategoryEnter(item.label)}
                     onMouseLeave={handleCategoryLeave}
                     style={{
                       position: "absolute",
-                      top: "100%",
+                      top: "calc(100% - 1px)",
                       left: item.alignRight ? "auto" : 0,
                       right: item.alignRight ? 0 : "auto",
-                      paddingTop: "8px",
-                      zIndex: 9999,
+                      backgroundColor: "#ffffff",
+                      borderRadius: item.alignRight ? "8px 0 8px 8px" : "0 8px 8px 8px",
+                      border: "1px solid #e2e8f0",
+                      boxShadow: "0 14px 34px rgba(15, 23, 42, 0.14)",
+                      padding: "22px 28px",
+                      zIndex: 10000,
+                      display: "flex",
+                      alignItems: "stretch",
+                      gap: "28px",
                     }}
                   >
-                    <div
-                      style={{
-                        minWidth: item.columns.length > 1 ? "580px" : "310px",
-                        backgroundColor: "#ffffff",
-                        borderRadius: "12px",
-                        border: "1px solid #cbd5e1",
-                        borderTop: "3px solid #1565c0",
-                        boxShadow: "0 20px 44px rgba(15, 23, 42, 0.18)",
-                        padding: "16px",
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns:
-                            item.columns.length > 1
-                              ? "repeat(2, minmax(250px, 1fr))"
-                              : "minmax(270px, 1fr)",
-                          gap: "18px",
-                        }}
-                      >
-                        {item.columns.map((col, colIdx) => (
-                          <div key={colIdx}>
+                    {item.columns.map((col, colIdx) => {
+                      const isHollow = col.bulletStyle === "hollow"
+                      return (
+                        <div
+                          key={colIdx}
+                          style={{
+                            minWidth:
+                              item.columns && item.columns.length >= 3
+                                ? "205px"
+                                : item.columns && item.columns.length === 2
+                                ? "220px"
+                                : "230px",
+                            borderLeft: colIdx > 0 ? "1px solid #f1f5f9" : "none",
+                            paddingLeft: colIdx > 0 ? "28px" : "0",
+                            display: "flex",
+                            flexDirection: "column",
+                          }}
+                        >
+                          {col.title && (
                             <div
                               style={{
-                                fontSize: "10.5px",
-                                fontWeight: 800,
-                                color: "#1565c0",
-                                letterSpacing: "0.05em",
-                                paddingBottom: "8px",
-                                marginBottom: "8px",
-                                borderBottom: "1px solid #e2e8f0",
+                                fontSize: "13.5px",
+                                fontWeight: 600,
+                                color: "#1976d2",
+                                marginBottom: "14px",
+                                paddingLeft: "4px",
                               }}
                             >
                               {col.title}
                             </div>
-                            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                              {col.items.map((sub, subIdx) => (
-                                <button
-                                  key={subIdx}
-                                  type="button"
-                                  onClick={() => {
-                                    setHoveredCategory(null)
+                          )}
+
+                          <div
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: "4px",
+                            }}
+                          >
+                            {col.items.map((sub, subIdx) => (
+                              <button
+                                key={subIdx}
+                                type="button"
+                                onClick={() => {
+                                  setHoveredCategory(null)
+                                  if (sub.action === "license_modal" && onOpenLicenseModal) {
+                                    onOpenLicenseModal()
+                                  } else {
                                     onNavigate(sub.path)
-                                  }}
-                                  onMouseEnter={(e) => {
-                                    e.currentTarget.style.backgroundColor = "#eff6ff"
-                                    e.currentTarget.style.borderColor = "#bfdbfe"
-                                  }}
-                                  onMouseLeave={(e) => {
-                                    e.currentTarget.style.backgroundColor = "#ffffff"
-                                    e.currentTarget.style.borderColor = "transparent"
-                                  }}
+                                  }
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.backgroundColor = "#f8fafc"
+                                  e.currentTarget.style.color = "#1976d2"
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.backgroundColor = "transparent"
+                                  e.currentTarget.style.color = "#334155"
+                                }}
+                                style={{
+                                  width: "100%",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "space-between",
+                                  gap: "12px",
+                                  padding: "7px 8px",
+                                  borderRadius: "6px",
+                                  backgroundColor: "transparent",
+                                  border: "none",
+                                  color: "#334155",
+                                  fontSize: "13px",
+                                  fontWeight: 500,
+                                  cursor: "pointer",
+                                  textAlign: "left",
+                                  whiteSpace: "nowrap",
+                                  transition: "background-color 0.1s ease, color 0.1s ease",
+                                }}
+                              >
+                                <span
                                   style={{
-                                    width: "100%",
-                                    display: "flex",
+                                    display: "inline-flex",
                                     alignItems: "center",
-                                    gap: "10px",
-                                    padding: "8px 10px",
-                                    borderRadius: "8px",
-                                    backgroundColor: "#ffffff",
-                                    border: "1px solid transparent",
-                                    cursor: "pointer",
-                                    textAlign: "left",
-                                    transition: "all 0.12s ease",
+                                    gap: "11px",
                                   }}
                                 >
                                   <span
                                     style={{
-                                      width: "30px",
-                                      height: "30px",
-                                      borderRadius: "7px",
-                                      backgroundColor: "#f1f5f9",
-                                      border: "1px solid #e2e8f0",
-                                      display: "flex",
-                                      alignItems: "center",
-                                      justifyContent: "center",
-                                      fontSize: "14px",
+                                      width: "6px",
+                                      height: "6px",
+                                      borderRadius: "9999px",
+                                      backgroundColor: isHollow ? "transparent" : "#64748b",
+                                      border: isHollow ? "1.5px solid #94a3b8" : "none",
                                       flexShrink: 0,
                                     }}
+                                  />
+                                  <span>{sub.label}</span>
+                                </span>
+
+                                {sub.badge !== undefined && (
+                                  <span
+                                    style={{
+                                      minWidth: "20px",
+                                      height: "20px",
+                                      padding: "0 6px",
+                                      borderRadius: "9999px",
+                                      fontSize: "11px",
+                                      fontWeight: 700,
+                                      color: "#ffffff",
+                                      backgroundColor: sub.badgeColor || "#ef4444",
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                      lineHeight: 1,
+                                    }}
                                   >
-                                    {sub.icon}
+                                    {sub.badge}
                                   </span>
-                                  <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div
-                                      style={{
-                                        fontSize: "12.5px",
-                                        fontWeight: 700,
-                                        color: "#0f172a",
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "space-between",
-                                        gap: "6px",
-                                      }}
-                                    >
-                                      <span>{sub.label}</span>
-                                      {sub.badge && (
-                                        <span
-                                          style={{
-                                            padding: "1px 6px",
-                                            borderRadius: "9999px",
-                                            fontSize: "9.5px",
-                                            fontWeight: 800,
-                                            color: "#ffffff",
-                                            backgroundColor: sub.badgeColor || "#2563eb",
-                                          }}
-                                        >
-                                          {sub.badge}
-                                        </span>
-                                      )}
-                                    </div>
-                                    <div
-                                      style={{
-                                        fontSize: "10.5px",
-                                        color: "#64748b",
-                                        marginTop: "1px",
-                                        whiteSpace: "nowrap",
-                                        overflow: "hidden",
-                                        textOverflow: "ellipsis",
-                                      }}
-                                    >
-                                      {sub.sub}
-                                    </div>
-                                  </div>
-                                </button>
-                              ))}
-                            </div>
+                                )}
+                              </button>
+                            ))}
                           </div>
-                        ))}
-                      </div>
-                    </div>
+                        </div>
+                      )
+                    })}
                   </div>
                 )}
               </div>
@@ -1308,7 +1334,7 @@ export const EntegreShopHeaderBar = ({
                   border: "1px solid #cbd5e1",
                   boxShadow: "0 12px 28px rgba(15, 23, 42, 0.16)",
                   overflow: "hidden",
-                  zIndex: 9999,
+                  zIndex: 10002,
                 }}
               >
                 <div
@@ -1333,22 +1359,22 @@ export const EntegreShopHeaderBar = ({
                     {
                       label: "Aktif Sepetler",
                       count: activeUsersCount,
-                      path: "/orders",
+                      path: "/orders?tab=aktif-sepetler",
                     },
                     {
                       label: "Gelen Siparişler",
                       count: newOrdersCount,
-                      path: "/orders",
+                      path: "/orders?status=onay_bekleyen",
                     },
                     {
-                      label: "E-Fatura (Trendyol)",
+                      label: "Destek Talepleri",
                       count: 2,
-                      path: "/e-fatura",
+                      path: "/customers?tab=iletisim-talepleri",
                     },
                     {
-                      label: "Yorumlar & Ürünler",
+                      label: "Yorumlar",
                       count: 3,
-                      path: "/products",
+                      path: "/product-management?tab=urun-yorumlari",
                     },
                   ].map((notif) => (
                     <button
@@ -1453,7 +1479,7 @@ export const EntegreShopHeaderBar = ({
                   border: "1px solid #cbd5e1",
                   boxShadow: "0 12px 28px rgba(15, 23, 42, 0.16)",
                   overflow: "hidden",
-                  zIndex: 9999,
+                  zIndex: 10002,
                 }}
               >
                 <div
@@ -1509,7 +1535,7 @@ export const EntegreShopHeaderBar = ({
                       <circle cx="12" cy="12" r="3" />
                     </svg>
                     <span style={{ fontSize: "12.5px", fontWeight: 600, color: "#1e293b" }}>
-                      Mağaza & Sistem Ayarları
+                      Ayarlar
                     </span>
                   </button>
 
@@ -1599,7 +1625,6 @@ const GlobalShellTopBarWrapper = () => {
     }
   }, [])
 
-  // Hide on /dashboard (since dashboard page renders its own header) and /login
   if (
     pathname.endsWith("/dashboard") ||
     pathname.endsWith("/login") ||
@@ -1698,6 +1723,9 @@ const EntegreShopDashboardPage = () => {
   useEffect(() => {
     if (typeof window !== "undefined") {
       ;(window as any).__entegreshopNavigate = navigate
+      if (window.location.search.includes("modal=license")) {
+        setShowLicenseModal(true)
+      }
     }
   }, [navigate])
   const [period, setPeriod] = useState<PeriodKey>("bu_ay")
@@ -1965,6 +1993,7 @@ const EntegreShopDashboardPage = () => {
           onNavigate={(targetPath) => navigate(targetPath)}
           activeUsersCount={activeUsers}
           newOrdersCount={displayNewOrders}
+          prepOrdersCount={displayPrepOrders}
           onOpenLicenseModal={() => setShowLicenseModal(true)}
         />
 
