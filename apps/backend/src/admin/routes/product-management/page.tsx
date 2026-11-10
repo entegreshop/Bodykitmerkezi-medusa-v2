@@ -63,6 +63,308 @@ const IkasProductsPage = () => {
   }, [])
   const [editingProductId, setEditingProductId] = useState<string | null>(null)
 
+  // --- Catalog Operations Data (Markalar, Etiketler, Stok Birimleri, Arama Sonuçları - Görsel 2, 3, 4, 5) ---
+  const [catalogData, setCatalogData] = useState<{
+    brands: any[]
+    tags: any[]
+    units: any[]
+    searchResults: any[]
+  }>({
+    brands: [
+      { id: "brand_3", no: 3, name: "Bym Fashion", active: true, sort_order: 0, slug: "bym-fashion" },
+      { id: "brand_2", no: 2, name: "Sıla Butik", active: true, sort_order: 0, slug: "sila-butik" },
+      { id: "brand_1", no: 1, name: "XOOX", active: true, sort_order: 0, slug: "xoox" },
+    ],
+    tags: [],
+    units: [
+      { id: "unit_16", no: 16, name: "Kilogram", listing_name: "Kilogram", abbreviation: "Kg.", decimal_places: "1 Basamak", cart_increment: 0.1, default_cart_qty: 1 },
+      { id: "unit_15", no: 15, name: "Palet", listing_name: "Palet", abbreviation: "palet", decimal_places: "Tam Sayı", cart_increment: 1, default_cart_qty: 1 },
+      { id: "unit_14", no: 14, name: "Bidon", listing_name: "Bidon", abbreviation: "bidon", decimal_places: "Tam Sayı", cart_increment: 1, default_cart_qty: 1 },
+      { id: "unit_13", no: 13, name: "Kasa", listing_name: "Kasa", abbreviation: "kasa", decimal_places: "Tam Sayı", cart_increment: 1, default_cart_qty: 1 },
+      { id: "unit_12", no: 12, name: "Metreküp", listing_name: "Metreküp", abbreviation: "m3", decimal_places: "Tam Sayı", cart_increment: 1, default_cart_qty: 1 },
+      { id: "unit_11", no: 11, name: "Santimetre", listing_name: "Santimetre", abbreviation: "cm", decimal_places: "Tam Sayı", cart_increment: 1, default_cart_qty: 1 },
+      { id: "unit_10", no: 10, name: "Kutu", listing_name: "Kutu", abbreviation: "kutu", decimal_places: "Tam Sayı", cart_increment: 1, default_cart_qty: 1 },
+      { id: "unit_9", no: 9, name: "Litre", listing_name: "Litre", abbreviation: "Lt.", decimal_places: "Tam Sayı", cart_increment: 1, default_cart_qty: 1 },
+      { id: "unit_8", no: 8, name: "Metrekare", listing_name: "Metrekare", abbreviation: "m2", decimal_places: "Tam Sayı", cart_increment: 1, default_cart_qty: 1 },
+      { id: "unit_7", no: 7, name: "Rulo", listing_name: "Rulo", abbreviation: "rulo", decimal_places: "Tam Sayı", cart_increment: 1, default_cart_qty: 1 },
+      { id: "unit_6", no: 6, name: "Çift", listing_name: "Çift", abbreviation: "çift", decimal_places: "Tam Sayı", cart_increment: 1, default_cart_qty: 1 },
+      { id: "unit_5", no: 5, name: "Set", listing_name: "Set", abbreviation: "set", decimal_places: "Tam Sayı", cart_increment: 1, default_cart_qty: 1 },
+      { id: "unit_4", no: 4, name: "Paket", listing_name: "Paket", abbreviation: "Pk.", decimal_places: "Tam Sayı", cart_increment: 1, default_cart_qty: 1 },
+      { id: "unit_3", no: 3, name: "Gram", listing_name: "Gram", abbreviation: "Gr.", decimal_places: "Tam Sayı", cart_increment: 1, default_cart_qty: 1 },
+      { id: "unit_2", no: 2, name: "Metre", listing_name: "Metre", abbreviation: "Mt.", decimal_places: "Tam Sayı", cart_increment: 1, default_cart_qty: 1 },
+      { id: "unit_1", no: 1, name: "Adet", listing_name: "Adet", abbreviation: "Adet", decimal_places: "Tam Sayı", cart_increment: 1, default_cart_qty: 1 },
+    ],
+    searchResults: [
+      { id: "sr_1314", no: 1314, keyword: "1247", search_count: 1, result_count: 17, first_searched_at: "10.11.2026 13:51", last_searched_at: "10.11.2026 13:51", mapped_keyword: "-" },
+      { id: "sr_530", no: 530, keyword: "70130", search_count: 5691, result_count: 10, first_searched_at: "08.09.2026 00:29", last_searched_at: "10.11.2026 13:47", mapped_keyword: "-" },
+      { id: "sr_1311", no: 1311, keyword: "kaşe uzun kaban 1221", search_count: 29, result_count: 4, first_searched_at: "10.11.2026 00:46", last_searched_at: "10.11.2026 13:47", mapped_keyword: "-" },
+      { id: "sr_137", no: 137, keyword: "9001", search_count: 86, result_count: 8, first_searched_at: "31.07.2026 22:21", last_searched_at: "10.11.2026 13:43", mapped_keyword: "-" },
+      { id: "sr_1120", no: 1120, keyword: "6050", search_count: 16, result_count: 7, first_searched_at: "24.10.2026 01:32", last_searched_at: "10.11.2026 13:38", mapped_keyword: "-" },
+      { id: "sr_330", no: 330, keyword: "7091", search_count: 389, result_count: 7, first_searched_at: "19.08.2026 21:41", last_searched_at: "10.11.2026 13:38", mapped_keyword: "-" },
+      { id: "sr_835", no: 835, keyword: "1205", search_count: 28, result_count: 18, first_searched_at: "01.10.2026 18:28", last_searched_at: "10.11.2026 13:33", mapped_keyword: "-" },
+      { id: "sr_986", no: 986, keyword: "1220", search_count: 125, result_count: 22, first_searched_at: "15.10.2026 23:40", last_searched_at: "10.11.2026 13:30", mapped_keyword: "-" },
+      { id: "sr_958", no: 958, keyword: "1209", search_count: 554, result_count: 16, first_searched_at: "14.10.2026 04:16", last_searched_at: "10.11.2026 13:29", mapped_keyword: "-" },
+      { id: "sr_616", no: 616, keyword: "70060", search_count: 29, result_count: 0, first_searched_at: "11.09.2026 22:19", last_searched_at: "10.11.2026 13:13", mapped_keyword: "-" },
+      { id: "sr_1223", no: 1223, keyword: "ceket pantolon", search_count: 2, result_count: 5, first_searched_at: "31.10.2026 11:56", last_searched_at: "10.11.2026 13:08", mapped_keyword: "-" },
+      { id: "sr_575", no: 575, keyword: "9205", search_count: 1003, result_count: 6, first_searched_at: "09.09.2026 21:36", last_searched_at: "10.11.2026 13:06", mapped_keyword: "-" },
+      { id: "sr_1203", no: 1203, keyword: "1235", search_count: 95, result_count: 18, first_searched_at: "28.10.2026 23:43", last_searched_at: "10.11.2026 12:55", mapped_keyword: "-" },
+      { id: "sr_981", no: 981, keyword: "1225", search_count: 24, result_count: 14, first_searched_at: "15.10.2026 19:00", last_searched_at: "10.11.2026 12:53", mapped_keyword: "-" },
+      { id: "sr_80", no: 80, keyword: "uzun hırkalı üçlü takım 8713", search_count: 6106, result_count: 7, first_searched_at: "28.07.2026 17:58", last_searched_at: "10.11.2026 12:51", mapped_keyword: "-" },
+    ],
+  })
+  const [catalogQuickSearch, setCatalogQuickSearch] = useState("")
+  const [catalogPageSize, setCatalogPageSize] = useState(15)
+  const [selectedCatalogIds, setSelectedCatalogIds] = useState<string[]>([])
+  const [showSearchFilters, setShowSearchFilters] = useState(false)
+  const [minSearchCountFilter, setMinSearchCountFilter] = useState("")
+  const [zeroResultsOnlyFilter, setZeroResultsOnlyFilter] = useState(false)
+
+  // Modals for Markalar, Etiketler, Stok Birimleri, Arama Sonuçları
+  const [showBrandModal, setShowBrandModal] = useState(false)
+  const [brandModalTab, setBrandModalTab] = useState<"genel" | "seo" | "urunler" | "diger">("genel")
+  const [editingBrand, setEditingBrand] = useState<{
+    id?: string
+    no?: number
+    name: string
+    active: boolean
+    sort_order: number
+    slug: string
+    image: string
+    seo_title: string
+    seo_desc: string
+    seo_keywords: string
+    product_ids: string[]
+  }>({
+    name: "",
+    active: true,
+    sort_order: 0,
+    slug: "",
+    image: "",
+    seo_title: "",
+    seo_desc: "",
+    seo_keywords: "",
+    product_ids: [],
+  })
+
+  const [showTagModal, setShowTagModal] = useState(false)
+  const [tagModalTab, setTagModalTab] = useState<"genel" | "seo" | "urunler" | "diger">("genel")
+  const [editingTag, setEditingTag] = useState<{
+    id?: string
+    no?: number
+    name: string
+    image: string
+    top_left: boolean
+    top_right: boolean
+    bottom_left: boolean
+    bottom_right: boolean
+    seo_title: string
+    seo_desc: string
+    seo_keywords: string
+    slug: string
+    product_ids: string[]
+    active: boolean
+    sort_order: number
+  }>({
+    name: "",
+    image: "",
+    top_left: false,
+    top_right: false,
+    bottom_left: false,
+    bottom_right: false,
+    seo_title: "",
+    seo_desc: "",
+    seo_keywords: "",
+    slug: "",
+    product_ids: [],
+    active: true,
+    sort_order: 0,
+  })
+
+  const [showUnitModal, setShowUnitModal] = useState(false)
+  const [editingUnit, setEditingUnit] = useState<{
+    id?: string
+    no?: number
+    name: string
+    listing_name: string
+    abbreviation: string
+    decimal_places: string
+    cart_increment: number
+    default_cart_qty: number
+  }>({
+    name: "",
+    listing_name: "",
+    abbreviation: "",
+    decimal_places: "Tam Sayı",
+    cart_increment: 1,
+    default_cart_qty: 1,
+  })
+
+  const [showSearchResultModal, setShowSearchResultModal] = useState(false)
+  const [editingSearchResult, setEditingSearchResult] = useState<{
+    id?: string
+    no?: number
+    keyword: string
+    search_count: number
+    result_count: number
+    mapped_keyword: string
+  }>({
+    keyword: "",
+    search_count: 1,
+    result_count: 0,
+    mapped_keyword: "-",
+  })
+
+  const fetchCatalogOperations = async () => {
+    try {
+      const res = await fetch("/admin/catalog-operations")
+      if (res.ok) {
+        const data = await res.json()
+        if (data?.success) {
+          setCatalogData({
+            brands: data.brands || [],
+            tags: data.tags || [],
+            units: data.units || [],
+            searchResults: data.searchResults || [],
+          })
+        }
+      }
+    } catch (e) {}
+  }
+
+  useEffect(() => {
+    fetchCatalogOperations()
+  }, [])
+
+  useEffect(() => {
+    setCatalogQuickSearch("")
+    setSelectedCatalogIds([])
+    if (
+      activeSubTab === "markalar" ||
+      activeSubTab === "etiketler" ||
+      activeSubTab === "stok-birimleri" ||
+      activeSubTab === "arama-sonuclari"
+    ) {
+      fetchCatalogOperations()
+    }
+  }, [activeSubTab])
+
+  const handleSaveBrand = async () => {
+    if (!editingBrand.name.trim()) {
+      alert("Lütfen marka adı giriniz.")
+      return
+    }
+    try {
+      const res = await fetch("/admin/catalog-operations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "save_brand", brand: editingBrand }),
+      })
+      const data = await res.json()
+      if (data?.success) {
+        setCatalogData((prev) => ({ ...prev, brands: data.brands }))
+        setShowBrandModal(false)
+      }
+    } catch (e) {}
+  }
+
+  const handleDeleteBrand = async (id: string) => {
+    if (!confirm("Bu markayı silmek istediğinize emin misiniz?")) return
+    try {
+      const res = await fetch("/admin/catalog-operations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "delete_brand", id }),
+      })
+      const data = await res.json()
+      if (data?.success) {
+        setCatalogData((prev) => ({ ...prev, brands: data.brands }))
+      }
+    } catch (e) {}
+  }
+
+  const handleSaveTag = async () => {
+    if (!editingTag.name.trim()) {
+      alert("Lütfen etiket adı giriniz.")
+      return
+    }
+    try {
+      const res = await fetch("/admin/catalog-operations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "save_tag", tag: editingTag }),
+      })
+      const data = await res.json()
+      if (data?.success) {
+        setCatalogData((prev) => ({ ...prev, tags: data.tags }))
+        setShowTagModal(false)
+      }
+    } catch (e) {}
+  }
+
+  const handleDeleteTag = async (id: string) => {
+    if (!confirm("Bu etiketi silmek istediğinize emin misiniz?")) return
+    try {
+      const res = await fetch("/admin/catalog-operations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "delete_tag", id }),
+      })
+      const data = await res.json()
+      if (data?.success) {
+        setCatalogData((prev) => ({ ...prev, tags: data.tags }))
+      }
+    } catch (e) {}
+  }
+
+  const handleSaveUnit = async () => {
+    if (!editingUnit.name.trim()) {
+      alert("Lütfen birim adı giriniz.")
+      return
+    }
+    try {
+      const res = await fetch("/admin/catalog-operations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "save_unit", unit: editingUnit }),
+      })
+      const data = await res.json()
+      if (data?.success) {
+        setCatalogData((prev) => ({ ...prev, units: data.units }))
+        setShowUnitModal(false)
+      }
+    } catch (e) {}
+  }
+
+  const handleSaveSearchResult = async () => {
+    try {
+      const res = await fetch("/admin/catalog-operations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "save_search_result", item: editingSearchResult }),
+      })
+      const data = await res.json()
+      if (data?.success) {
+        setCatalogData((prev) => ({ ...prev, searchResults: data.searchResults }))
+        setShowSearchResultModal(false)
+      }
+    } catch (e) {}
+  }
+
+  const handleDeleteSearchResult = async (id: string) => {
+    if (!confirm("Bu arama kaydını silmek istediğinize emin misiniz?")) return
+    try {
+      const res = await fetch("/admin/catalog-operations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "delete_search_result", id }),
+      })
+      const data = await res.json()
+      if (data?.success) {
+        setCatalogData((prev) => ({ ...prev, searchResults: data.searchResults }))
+      }
+    } catch (e) {}
+  }
+
   // --- API Data States ---
   const [products, setProducts] = useState<any[]>([])
   const [priceLists, setPriceLists] = useState<any[]>([])
@@ -892,82 +1194,791 @@ const IkasProductsPage = () => {
       {/* -------------------- 1. LIST VIEW -------------------- */}
       {view === "list" && (
         <div>
-          {activeSubTab !== "urunler" ? (
-            <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-xs mb-6">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-5">
-                <div>
-                  <h2 className="text-lg font-bold text-slate-900">
-                    {activeSubTab === "nitelikler" && "Ürün Nitelikleri (Renk, Beden, Materyal)"}
-                    {activeSubTab === "ozel-alanlar" && "Ürün Özel Alanları (Teknik Özellik Tablosu)"}
-                    {activeSubTab === "uyumluluklar" && "Araç Marka & Model Uyumlulukları"}
-                    {activeSubTab === "arama-eslestirme" && "Arama Eşleştirme & Eş Anlamlı Kelimeler"}
-                    {activeSubTab === "arama-sonuclari" && "Müşteri Arama Sonuçları İstatistikleri"}
-                    {activeSubTab === "urun-yorumlari" && "Ürün Yorumları ve Değerlendirmeler"}
-                    {activeSubTab === "hizli-seo" && "Hızlı SEO Güncelleme Aracı"}
-                  </h2>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Üstteki sekmelerden veya Ürünler sekmesinden ürün yönetimi ekranına dönebilirsiniz.
-                  </p>
+          {activeSubTab === "markalar" ? (
+            /* GÖRSEL 2: MARKALAR (/product-management?tab=markalar) */
+            <div className="flex flex-col gap-5 max-w-[1600px] mx-auto">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                <div className="relative w-full max-w-[330px]">
+                  <span className="absolute inset-y-0 left-3 flex items-center text-zinc-400 text-xs">🔍</span>
+                  <input
+                    type="text"
+                    placeholder="Hızlı ara.."
+                    value={catalogQuickSearch}
+                    onChange={(e) => setCatalogQuickSearch(e.target.value)}
+                    className="w-full bg-white border border-zinc-200 rounded-md pl-8 pr-4 py-2 text-xs font-medium focus:outline-none focus:border-zinc-300 text-zinc-800 shadow-2xs"
+                  />
                 </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingBrand({
+                        name: "",
+                        active: true,
+                        sort_order: 0,
+                        slug: "",
+                        image: "",
+                        seo_title: "",
+                        seo_desc: "",
+                        seo_keywords: "",
+                        product_ids: [],
+                      })
+                      setBrandModalTab("genel")
+                      setShowBrandModal(true)
+                    }}
+                    className="bg-[#2ebd85] hover:bg-emerald-600 text-white px-4 py-2 rounded-md text-xs font-bold inline-flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                  >
+                    <span className="text-sm leading-none font-black">+</span>
+                    <span>Yeni Marka</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const csvRows = [
+                        ["No", "Marka Adı", "Durum", "Sıra"].join(";"),
+                        ...(catalogData.brands || []).map((b: any) =>
+                          [b.no, b.name, b.active !== false ? "Aktif" : "Pasif", b.sort_order ?? 0].join(";")
+                        ),
+                      ].join("\n")
+                      const blob = new Blob(["\uFEFF" + csvRows], { type: "text/csv;charset=utf-8;" })
+                      const url = URL.createObjectURL(blob)
+                      const a = document.createElement("a")
+                      a.href = url
+                      a.download = "markalar.csv"
+                      a.click()
+                    }}
+                    className="bg-[#1e88e5] hover:bg-blue-600 text-white px-4 py-2 rounded-md text-xs font-bold inline-flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                  >
+                    <span>📄</span>
+                    <span>Excel İşlemleri</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="bg-white border border-zinc-200 rounded-xl p-6 shadow-xs flex flex-col gap-4">
+                <div className="border border-zinc-200 rounded-md overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse text-left bg-white text-[12px]">
+                      <thead>
+                        <tr className="bg-zinc-50/80 border-b border-zinc-200 text-[11.5px] font-bold text-zinc-800 divide-x divide-zinc-200">
+                          <th className="py-3.5 px-4 w-12 text-center">
+                            <input
+                              type="checkbox"
+                              checked={
+                                (catalogData.brands || []).length > 0 &&
+                                selectedCatalogIds.length === (catalogData.brands || []).length
+                              }
+                              onChange={(e) =>
+                                setSelectedCatalogIds(
+                                  e.target.checked ? (catalogData.brands || []).map((b: any) => b.id) : []
+                                )
+                              }
+                              className="w-4 h-4 rounded border-zinc-300 cursor-pointer"
+                            />
+                          </th>
+                          <th className="py-3.5 px-4 w-[10%]">No</th>
+                          <th className="py-3.5 px-4 w-[32%]">Marka Adı</th>
+                          <th className="py-3.5 px-4 w-[20%]">Durum</th>
+                          <th className="py-3.5 px-4 w-[18%]">Sıra</th>
+                          <th className="py-3.5 px-4 w-[16%]">İşlemler</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-zinc-200 text-zinc-700">
+                        {(() => {
+                          const list = (catalogData.brands || []).filter((b: any) => {
+                            if (!catalogQuickSearch.trim()) return true
+                            const q = catalogQuickSearch.toLowerCase()
+                            return (
+                              String(b.name || "").toLowerCase().includes(q) ||
+                              String(b.no || "").toLowerCase().includes(q)
+                            )
+                          })
+                          if (list.length === 0) {
+                            return (
+                              <tr>
+                                <td colSpan={6} className="py-12 text-center text-zinc-400 font-semibold">
+                                  Marka bulunamadı.
+                                </td>
+                              </tr>
+                            )
+                          }
+                          return list.slice(0, catalogPageSize).map((item: any, idx: number) => (
+                            <tr
+                              key={item.id || idx}
+                              className={`divide-x divide-zinc-200 transition-colors ${
+                                idx % 2 === 1 ? "bg-zinc-50/40" : "bg-white"
+                              } hover:bg-zinc-50`}
+                            >
+                              <td className="py-3 px-4 text-center">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedCatalogIds.includes(item.id)}
+                                  onChange={(e) =>
+                                    setSelectedCatalogIds(
+                                      e.target.checked
+                                        ? [...selectedCatalogIds, item.id]
+                                        : selectedCatalogIds.filter((x) => x !== item.id)
+                                    )
+                                  }
+                                  className="w-4 h-4 rounded border-zinc-300 cursor-pointer"
+                                />
+                              </td>
+                              <td className="py-3 px-4">
+                                <span
+                                  onClick={() => {
+                                    setEditingBrand({
+                                      id: item.id,
+                                      no: item.no,
+                                      name: item.name,
+                                      active: item.active !== false,
+                                      sort_order: item.sort_order ?? 0,
+                                      slug: item.slug || "",
+                                      image: item.image || "",
+                                      seo_title: item.seo_title || "",
+                                      seo_desc: item.seo_desc || "",
+                                      seo_keywords: item.seo_keywords || "",
+                                      product_ids: item.product_ids || [],
+                                    })
+                                    setBrandModalTab("genel")
+                                    setShowBrandModal(true)
+                                  }}
+                                  className="font-bold text-[#1976d2] hover:underline cursor-pointer"
+                                >
+                                  {item.no}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4 font-medium text-zinc-700">{item.name}</td>
+                              <td className="py-3 px-4">
+                                {item.active !== false ? (
+                                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full border border-emerald-500 text-emerald-500">
+                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full border border-zinc-300 text-zinc-400">
+                                    ✕
+                                  </span>
+                                )}
+                              </td>
+                              <td className="py-3 px-4 font-medium text-zinc-700">{item.sort_order ?? 0}</td>
+                              <td className="py-3 px-4">
+                                <div className="flex items-center gap-1.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setEditingBrand({
+                                        id: item.id,
+                                        no: item.no,
+                                        name: item.name,
+                                        active: item.active !== false,
+                                        sort_order: item.sort_order ?? 0,
+                                        slug: item.slug || "",
+                                        image: item.image || "",
+                                        seo_title: item.seo_title || "",
+                                        seo_desc: item.seo_desc || "",
+                                        seo_keywords: item.seo_keywords || "",
+                                        product_ids: item.product_ids || [],
+                                      })
+                                      setBrandModalTab("genel")
+                                      setShowBrandModal(true)
+                                    }}
+                                    className="w-7 h-7 rounded bg-[#9b66c4] hover:bg-purple-600 text-white flex items-center justify-center shadow-2xs cursor-pointer transition-colors"
+                                    title="Markayı Düzenle"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    </svg>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      window.open(`https://bodykitmerkezi.com/marka/${item.slug || slugify(item.name)}`, "_blank")
+                                    }
+                                    className="w-7 h-7 rounded bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 flex items-center justify-center shadow-2xs cursor-pointer transition-colors"
+                                    title="Mağazada Görüntüle"
+                                  >
+                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                                    </svg>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteBrand(item.id)}
+                                    className="w-7 h-7 rounded bg-[#ef4444] hover:bg-red-600 text-white flex items-center justify-center shadow-2xs cursor-pointer transition-colors"
+                                    title="Sil"
+                                  >
+                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))
+                        })()}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 pt-1">
+                  <select
+                    value={catalogPageSize}
+                    onChange={(e) => setCatalogPageSize(Number(e.target.value))}
+                    className="border border-zinc-200 rounded-md px-3 py-1.5 text-xs font-semibold text-zinc-700 bg-white focus:outline-none"
+                  >
+                    <option value={15}>15</option>
+                    <option value={30}>30</option>
+                    <option value={50}>50</option>
+                  </select>
+                  <span className="text-xs font-medium text-zinc-600">
+                    {(catalogData.brands || []).length} kayıttan {(catalogData.brands || []).length > 0 ? 1 : 0} ile{" "}
+                    {Math.min(catalogPageSize, (catalogData.brands || []).length)} arası gösteriliyor
+                  </span>
+                </div>
+              </div>
+            </div>
+          ) : activeSubTab === "etiketler" ? (
+            /* GÖRSEL 3: ETİKETLER (/product-management?tab=etiketler) */
+            <div className="flex flex-col gap-5 max-w-[1600px] mx-auto">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                <div className="relative w-full max-w-[330px]">
+                  <span className="absolute inset-y-0 left-3 flex items-center text-zinc-400 text-xs">🔍</span>
+                  <input
+                    type="text"
+                    placeholder="Hızlı ara.."
+                    value={catalogQuickSearch}
+                    onChange={(e) => setCatalogQuickSearch(e.target.value)}
+                    className="w-full bg-white border border-zinc-200 rounded-md pl-8 pr-4 py-2 text-xs font-medium focus:outline-none focus:border-zinc-300 text-zinc-800 shadow-2xs"
+                  />
+                </div>
+
                 <button
                   type="button"
                   onClick={() => {
-                    window.history.pushState({}, "", "/app/product-management")
-                    window.dispatchEvent(new PopStateEvent("popstate"))
+                    setEditingTag({
+                      name: "",
+                      image: "",
+                      top_left: false,
+                      top_right: false,
+                      bottom_left: false,
+                      bottom_right: false,
+                      seo_title: "",
+                      seo_desc: "",
+                      seo_keywords: "",
+                      slug: "",
+                      product_ids: [],
+                      active: true,
+                      sort_order: 0,
+                    })
+                    setTagModalTab("genel")
+                    setShowTagModal(true)
                   }}
-                  className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold cursor-pointer"
+                  className="bg-[#2ebd85] hover:bg-emerald-600 text-white px-4 py-2 rounded-md text-xs font-bold inline-flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
                 >
-                  Ürün Listesine Dön
+                  <span className="text-sm leading-none font-black">+</span>
+                  <span>Yeni Etiket</span>
                 </button>
               </div>
 
-              {activeSubTab === "nitelikler" && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="p-4 rounded-xl border border-slate-200 bg-slate-50">
-                    <div className="text-xs font-extrabold text-slate-800 mb-2">Renk Seçenekleri</div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {availableColors.map((c) => (
-                        <span key={c} className="px-2.5 py-1 rounded-md bg-white border border-slate-200 text-xs font-semibold text-slate-700">
-                          {c}
-                        </span>
-                      ))}
-                    </div>
+              <div className="bg-white border border-zinc-200 rounded-xl p-6 shadow-xs flex flex-col gap-4">
+                <div className="border border-zinc-200 rounded-md overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse text-left bg-white text-[12px]">
+                      <thead>
+                        <tr className="bg-zinc-50/80 border-b border-zinc-200 text-[11.5px] font-bold text-zinc-800 divide-x divide-zinc-200">
+                          <th className="py-3.5 px-4 w-16">#</th>
+                          <th className="py-3.5 px-4 w-24">No</th>
+                          <th className="py-3.5 px-4">Etiket Adı</th>
+                          <th className="py-3.5 px-4">Sol Üst</th>
+                          <th className="py-3.5 px-4">Sağ Üst</th>
+                          <th className="py-3.5 px-4">Sol Alt</th>
+                          <th className="py-3.5 px-4">Sağ Alt</th>
+                          <th className="py-3.5 px-4 w-36">İşlemler</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-zinc-200 text-zinc-700">
+                        {(() => {
+                          const list = (catalogData.tags || []).filter((t: any) => {
+                            if (!catalogQuickSearch.trim()) return true
+                            const q = catalogQuickSearch.toLowerCase()
+                            return String(t.name || "").toLowerCase().includes(q)
+                          })
+                          if (list.length === 0) {
+                            return null
+                          }
+                          return list.slice(0, catalogPageSize).map((item: any, idx: number) => (
+                            <tr
+                              key={item.id || idx}
+                              className={`divide-x divide-zinc-200 transition-colors ${
+                                idx % 2 === 1 ? "bg-zinc-50/40" : "bg-white"
+                              } hover:bg-zinc-50`}
+                            >
+                              <td className="py-3 px-4">
+                                {item.image ? (
+                                  <img src={item.image} alt={item.name} className="w-8 h-8 object-contain rounded border border-zinc-200" />
+                                ) : (
+                                  <span className="text-zinc-400">-</span>
+                                )}
+                              </td>
+                              <td className="py-3 px-4">
+                                <span
+                                  onClick={() => {
+                                    setEditingTag({
+                                      id: item.id,
+                                      no: item.no,
+                                      name: item.name,
+                                      image: item.image || "",
+                                      top_left: Boolean(item.top_left),
+                                      top_right: Boolean(item.top_right),
+                                      bottom_left: Boolean(item.bottom_left),
+                                      bottom_right: Boolean(item.bottom_right),
+                                      seo_title: item.seo_title || "",
+                                      seo_desc: item.seo_desc || "",
+                                      seo_keywords: item.seo_keywords || "",
+                                      slug: item.slug || "",
+                                      product_ids: item.product_ids || [],
+                                      active: item.active !== false,
+                                      sort_order: item.sort_order ?? 0,
+                                    })
+                                    setTagModalTab("genel")
+                                    setShowTagModal(true)
+                                  }}
+                                  className="font-bold text-[#1976d2] hover:underline cursor-pointer"
+                                >
+                                  {item.no}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4 font-medium text-zinc-700">{item.name}</td>
+                              <td className="py-3 px-4">{item.top_left ? "✓" : "-"}</td>
+                              <td className="py-3 px-4">{item.top_right ? "✓" : "-"}</td>
+                              <td className="py-3 px-4">{item.bottom_left ? "✓" : "-"}</td>
+                              <td className="py-3 px-4">{item.bottom_right ? "✓" : "-"}</td>
+                              <td className="py-3 px-4">
+                                <div className="flex items-center gap-1.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setEditingTag({
+                                        id: item.id,
+                                        no: item.no,
+                                        name: item.name,
+                                        image: item.image || "",
+                                        top_left: Boolean(item.top_left),
+                                        top_right: Boolean(item.top_right),
+                                        bottom_left: Boolean(item.bottom_left),
+                                        bottom_right: Boolean(item.bottom_right),
+                                        seo_title: item.seo_title || "",
+                                        seo_desc: item.seo_desc || "",
+                                        seo_keywords: item.seo_keywords || "",
+                                        slug: item.slug || "",
+                                        product_ids: item.product_ids || [],
+                                        active: item.active !== false,
+                                        sort_order: item.sort_order ?? 0,
+                                      })
+                                      setTagModalTab("genel")
+                                      setShowTagModal(true)
+                                    }}
+                                    className="w-7 h-7 rounded bg-[#9b66c4] hover:bg-purple-600 text-white flex items-center justify-center shadow-2xs cursor-pointer transition-colors"
+                                    title="Etiketi Düzenle"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    </svg>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteTag(item.id)}
+                                    className="w-7 h-7 rounded bg-[#ef4444] hover:bg-red-600 text-white flex items-center justify-center shadow-2xs cursor-pointer transition-colors"
+                                    title="Sil"
+                                  >
+                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))
+                        })()}
+                      </tbody>
+                    </table>
                   </div>
-                  <div className="p-4 rounded-xl border border-slate-200 bg-slate-50">
-                    <div className="text-xs font-extrabold text-slate-800 mb-2">Beden / Ölçü Seçenekleri</div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {availableSizes.map((s) => (
-                        <span key={s} className="px-2.5 py-1 rounded-md bg-white border border-slate-200 text-xs font-semibold text-slate-700">
-                          {s}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
                 </div>
-              )}
 
-              {activeSubTab === "uyumluluklar" && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {[
-                    { brand: "Volkswagen", models: "Golf 6, Golf 7, Golf 7.5, Polo, Scirocco, Passat B8" },
-                    { brand: "BMW", models: "F30, F10, G20, E90, E60 M-Tech & M-Performance" },
-                    { brand: "Honda & Fiat & Peugeot", models: "Civic FC5,Civic FD6, Linea, Peugeot 301, Seat Ibiza" },
-                  ].map((item, i) => (
-                    <div key={i} className="p-4 rounded-xl border border-slate-200 bg-slate-50">
-                      <div className="text-sm font-bold text-slate-900">{item.brand}</div>
-                      <div className="text-xs text-slate-600 mt-1">{item.models}</div>
-                    </div>
-                  ))}
+                <div className="flex items-center gap-3 pt-1">
+                  <select
+                    value={catalogPageSize}
+                    onChange={(e) => setCatalogPageSize(Number(e.target.value))}
+                    className="border border-zinc-200 rounded-md px-3 py-1.5 text-xs font-semibold text-zinc-700 bg-white focus:outline-none"
+                  >
+                    <option value={15}>15</option>
+                    <option value={30}>30</option>
+                    <option value={50}>50</option>
+                  </select>
+                  <span className="text-xs font-medium text-zinc-600">
+                    {(catalogData.tags || []).length} kayıttan {(catalogData.tags || []).length > 0 ? 1 : 0} ile{" "}
+                    {Math.min(catalogPageSize, (catalogData.tags || []).length)} arası gösteriliyor
+                  </span>
                 </div>
-              )}
-
-              {activeSubTab !== "nitelikler" && activeSubTab !== "uyumluluklar" && (
-                <div className="p-4 rounded-xl border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-600">
-                  Toplam <strong>{products.length}</strong> aktif ürün için bu modül hazır durumdadır.
-                </div>
-              )}
+              </div>
             </div>
-          ) : null}
+          ) : activeSubTab === "stok-birimleri" ? (
+            /* GÖRSEL 4: STOK BİRİMLERİ (/product-management?tab=stok-birimleri) */
+            <div className="flex flex-col gap-5 max-w-[1600px] mx-auto">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                <div className="relative w-full max-w-[330px]">
+                  <span className="absolute inset-y-0 left-3 flex items-center text-zinc-400 text-xs">🔍</span>
+                  <input
+                    type="text"
+                    placeholder="Hızlı ara.."
+                    value={catalogQuickSearch}
+                    onChange={(e) => setCatalogQuickSearch(e.target.value)}
+                    className="w-full bg-white border border-zinc-200 rounded-md pl-8 pr-4 py-2 text-xs font-medium focus:outline-none focus:border-zinc-300 text-zinc-800 shadow-2xs"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingUnit({
+                      name: "",
+                      listing_name: "",
+                      abbreviation: "",
+                      decimal_places: "Tam Sayı",
+                      cart_increment: 1,
+                      default_cart_qty: 1,
+                    })
+                    setShowUnitModal(true)
+                  }}
+                  className="bg-[#2ebd85] hover:bg-emerald-600 text-white px-4 py-2 rounded-md text-xs font-bold inline-flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                >
+                  <span className="text-sm leading-none font-black">+</span>
+                  <span>Yeni Birim</span>
+                </button>
+              </div>
+
+              <div className="bg-white border border-zinc-200 rounded-xl p-6 shadow-xs flex flex-col gap-4">
+                <div className="border border-zinc-200 rounded-md overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse text-left bg-white text-[12px]">
+                      <thead>
+                        <tr className="bg-zinc-50/80 border-b border-zinc-200 text-[11.5px] font-bold text-zinc-800 divide-x divide-zinc-200">
+                          <th className="py-3.5 px-4 w-12 text-center">
+                            <input type="checkbox" className="w-4 h-4 rounded border-zinc-300 cursor-pointer" />
+                          </th>
+                          <th className="py-3.5 px-4">No</th>
+                          <th className="py-3.5 px-4">Birim Adı</th>
+                          <th className="py-3.5 px-4">Listeleme Adı</th>
+                          <th className="py-3.5 px-4">Kısaltma</th>
+                          <th className="py-3.5 px-4">Ondalık Alan Sayısı</th>
+                          <th className="py-3.5 px-4">Sepet Artış Miktarı</th>
+                          <th className="py-3.5 px-4">Öntanımlı Sepet Miktarı</th>
+                          <th className="py-3.5 px-4 w-24">İşlemler</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-zinc-200 text-zinc-700">
+                        {(() => {
+                          const list = (catalogData.units || []).filter((u: any) => {
+                            if (!catalogQuickSearch.trim()) return true
+                            const q = catalogQuickSearch.toLowerCase()
+                            return (
+                              String(u.name || "").toLowerCase().includes(q) ||
+                              String(u.abbreviation || "").toLowerCase().includes(q)
+                            )
+                          })
+                          return list.slice(0, catalogPageSize).map((item: any, idx: number) => (
+                            <tr
+                              key={item.id || idx}
+                              className={`divide-x divide-zinc-200 transition-colors ${
+                                idx % 2 === 1 ? "bg-zinc-50/40" : "bg-white"
+                              } hover:bg-zinc-50`}
+                            >
+                              <td className="py-3 px-4 text-center">
+                                <input type="checkbox" className="w-4 h-4 rounded border-zinc-300 cursor-pointer" />
+                              </td>
+                              <td className="py-3 px-4">
+                                <span
+                                  onClick={() => {
+                                    setEditingUnit({
+                                      id: item.id,
+                                      no: item.no,
+                                      name: item.name,
+                                      listing_name: item.listing_name || item.name,
+                                      abbreviation: item.abbreviation || item.name,
+                                      decimal_places: item.decimal_places || "Tam Sayı",
+                                      cart_increment: item.cart_increment ?? 1,
+                                      default_cart_qty: item.default_cart_qty ?? 1,
+                                    })
+                                    setShowUnitModal(true)
+                                  }}
+                                  className="font-bold text-[#1976d2] hover:underline cursor-pointer"
+                                >
+                                  {item.no}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4 font-medium text-zinc-700">{item.name}</td>
+                              <td className="py-3 px-4 font-medium text-zinc-700">{item.listing_name || item.name}</td>
+                              <td className="py-3 px-4 font-medium text-zinc-700">{item.abbreviation}</td>
+                              <td className="py-3 px-4 font-medium text-zinc-700">{item.decimal_places}</td>
+                              <td className="py-3 px-4 font-medium text-zinc-700">{item.cart_increment}</td>
+                              <td className="py-3 px-4 font-medium text-zinc-700">{item.default_cart_qty}</td>
+                              <td className="py-3 px-4">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditingUnit({
+                                      id: item.id,
+                                      no: item.no,
+                                      name: item.name,
+                                      listing_name: item.listing_name || item.name,
+                                      abbreviation: item.abbreviation || item.name,
+                                      decimal_places: item.decimal_places || "Tam Sayı",
+                                      cart_increment: item.cart_increment ?? 1,
+                                      default_cart_qty: item.default_cart_qty ?? 1,
+                                    })
+                                    setShowUnitModal(true)
+                                  }}
+                                  className="w-7 h-7 rounded bg-[#9b66c4] hover:bg-purple-600 text-white flex items-center justify-center shadow-2xs cursor-pointer transition-colors"
+                                  title="Birimi Düzenle"
+                                >
+                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                  </svg>
+                                </button>
+                              </td>
+                            </tr>
+                          ))
+                        })()}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 pt-1">
+                  <select
+                    value={catalogPageSize}
+                    onChange={(e) => setCatalogPageSize(Number(e.target.value))}
+                    className="border border-zinc-200 rounded-md px-3 py-1.5 text-xs font-semibold text-zinc-700 bg-white focus:outline-none"
+                  >
+                    <option value={15}>15</option>
+                    <option value={30}>30</option>
+                    <option value={50}>50</option>
+                  </select>
+                  <span className="text-xs font-medium text-zinc-600">
+                    {(catalogData.units || []).length} kayıttan {(catalogData.units || []).length > 0 ? 1 : 0} ile{" "}
+                    {Math.min(catalogPageSize, (catalogData.units || []).length)} arası gösteriliyor
+                  </span>
+                </div>
+              </div>
+            </div>
+          ) : activeSubTab === "arama-sonuclari" ? (
+            /* GÖRSEL 5: ARAMA SONUÇLARI (/product-management?tab=arama-sonuclari) */
+            <div className="flex flex-col gap-5 max-w-[1600px] mx-auto">
+              <div className="flex items-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setShowSearchFilters(!showSearchFilters)}
+                  className="bg-white border border-zinc-200 px-3.5 py-2 rounded-md text-xs font-semibold text-zinc-700 hover:bg-zinc-50 inline-flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                >
+                  <svg className="w-3.5 h-3.5 text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                  </svg>
+                  <span>Filtreler</span>
+                  <svg className={`w-3.5 h-3.5 text-zinc-500 transition-transform ${showSearchFilters ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                <div className="relative w-full max-w-[300px]">
+                  <span className="absolute inset-y-0 left-3 flex items-center text-zinc-400 text-xs">🔍</span>
+                  <input
+                    type="text"
+                    placeholder="Hızlı ara.."
+                    value={catalogQuickSearch}
+                    onChange={(e) => setCatalogQuickSearch(e.target.value)}
+                    className="w-full bg-white border border-zinc-200 rounded-md pl-8 pr-4 py-2 text-xs font-medium focus:outline-none focus:border-zinc-300 text-zinc-800 shadow-2xs"
+                  />
+                </div>
+              </div>
+
+              {showSearchFilters && (
+                <div className="bg-white border border-zinc-200 rounded-lg p-4 flex flex-wrap items-center gap-4 shadow-2xs">
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs font-semibold text-zinc-700">Min. Aranma Sayısı:</label>
+                    <input
+                      type="number"
+                      value={minSearchCountFilter}
+                      onChange={(e) => setMinSearchCountFilter(e.target.value)}
+                      placeholder="Örn: 10"
+                      className="border border-zinc-200 rounded px-3 py-1.5 text-xs w-28 focus:outline-none"
+                    />
+                  </div>
+                  <label className="flex items-center gap-2 text-xs font-semibold text-zinc-700 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={zeroResultsOnlyFilter}
+                      onChange={(e) => setZeroResultsOnlyFilter(e.target.checked)}
+                      className="w-4 h-4 rounded border-zinc-300"
+                    />
+                    <span>Sadece Sonuç Bulunamayan Aramalar (0 Sonuç)</span>
+                  </label>
+                </div>
+              )}
+
+              <div className="bg-white border border-zinc-200 rounded-xl p-6 shadow-xs flex flex-col gap-4">
+                <div className="border border-zinc-200 rounded-md overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse text-left bg-white text-[12px]">
+                      <thead>
+                        <tr className="bg-zinc-50/80 border-b border-zinc-200 text-[11.5px] font-bold text-zinc-800 divide-x divide-zinc-200">
+                          <th className="py-3.5 px-4 w-12 text-center">
+                            <input type="checkbox" className="w-4 h-4 rounded border-zinc-300 cursor-pointer" />
+                          </th>
+                          <th className="py-3.5 px-4">No</th>
+                          <th className="py-3.5 px-4">Aranan Kelime</th>
+                          <th className="py-3.5 px-4">Aranma Sayısı</th>
+                          <th className="py-3.5 px-4">Sonuç Sayısı</th>
+                          <th className="py-3.5 px-4">İlk Arama Tarihi</th>
+                          <th className="py-3.5 px-4">Son Arama Tarihi</th>
+                          <th className="py-3.5 px-4">Arama Eşleştirme</th>
+                          <th className="py-3.5 px-4 w-32">İşlemler</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-zinc-200 text-zinc-700">
+                        {(() => {
+                          const list = (catalogData.searchResults || []).filter((s: any) => {
+                            if (catalogQuickSearch.trim()) {
+                              const q = catalogQuickSearch.toLowerCase()
+                              if (
+                                !String(s.keyword || "").toLowerCase().includes(q) &&
+                                !String(s.no || "").toLowerCase().includes(q)
+                              ) {
+                                return false
+                              }
+                            }
+                            if (minSearchCountFilter && Number(s.search_count) < Number(minSearchCountFilter)) {
+                              return false
+                            }
+                            if (zeroResultsOnlyFilter && Number(s.result_count) > 0) {
+                              return false
+                            }
+                            return true
+                          })
+                          return list.slice(0, catalogPageSize).map((item: any, idx: number) => (
+                            <tr
+                              key={item.id || idx}
+                              className={`divide-x divide-zinc-200 transition-colors ${
+                                idx % 2 === 1 ? "bg-zinc-50/40" : "bg-white"
+                              } hover:bg-zinc-50`}
+                            >
+                              <td className="py-3 px-4 text-center">
+                                <input type="checkbox" className="w-4 h-4 rounded border-zinc-300 cursor-pointer" />
+                              </td>
+                              <td className="py-3 px-4">
+                                <span
+                                  onClick={() => {
+                                    setEditingSearchResult({
+                                      id: item.id,
+                                      no: item.no,
+                                      keyword: item.keyword,
+                                      search_count: item.search_count,
+                                      result_count: item.result_count,
+                                      mapped_keyword: item.mapped_keyword || "-",
+                                    })
+                                    setShowSearchResultModal(true)
+                                  }}
+                                  className="font-bold text-[#1976d2] hover:underline cursor-pointer"
+                                >
+                                  {item.no}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4 font-medium text-zinc-700">{item.keyword}</td>
+                              <td className="py-3 px-4 font-medium text-zinc-700">{item.search_count}</td>
+                              <td className="py-3 px-4 font-medium text-zinc-700">{item.result_count}</td>
+                              <td className="py-3 px-4 font-medium text-zinc-600">{item.first_searched_at}</td>
+                              <td className="py-3 px-4 font-medium text-zinc-600">{item.last_searched_at}</td>
+                              <td className="py-3 px-4 font-medium text-zinc-700">{item.mapped_keyword || "-"}</td>
+                              <td className="py-3 px-4">
+                                <div className="flex items-center gap-1.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setEditingSearchResult({
+                                        id: item.id,
+                                        no: item.no,
+                                        keyword: item.keyword,
+                                        search_count: item.search_count,
+                                        result_count: item.result_count,
+                                        mapped_keyword: item.mapped_keyword || "-",
+                                      })
+                                      setShowSearchResultModal(true)
+                                    }}
+                                    className="w-7 h-7 rounded bg-[#9b66c4] hover:bg-purple-600 text-white flex items-center justify-center shadow-2xs cursor-pointer transition-colors"
+                                    title="Arama Detayı / Eşleştir"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    </svg>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      window.open(`https://bodykitmerkezi.com/?q=${encodeURIComponent(item.keyword)}`, "_blank")
+                                    }
+                                    className="w-7 h-7 rounded bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 flex items-center justify-center shadow-2xs cursor-pointer transition-colors"
+                                    title="Mağazada Arama Sonucunu Gör"
+                                  >
+                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                                    </svg>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteSearchResult(item.id)}
+                                    className="w-7 h-7 rounded bg-[#ef4444] hover:bg-red-600 text-white flex items-center justify-center shadow-2xs cursor-pointer transition-colors"
+                                    title="Sil"
+                                  >
+                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))
+                        })()}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <>
+              {activeSubTab !== "urunler" ? (
+                <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-xs mb-6">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-5">
+                    <div>
+                      <h2 className="text-lg font-bold text-slate-900">
+                        {activeSubTab === "urun-yorumlari" && "Ürün Yorumları ve Değerlendirmeler"}
+                        {activeSubTab === "hizli-seo" && "Hızlı SEO Güncelleme Aracı"}
+                        {activeSubTab === "toplu-guncelleme" && "Toplu Ürün Güncelleme Aracı"}
+                      </h2>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Aşağıdaki ürün tablosundan ürünleri seçerek işlem yapabilir veya Ürünler sekmesine dönebilirsiniz.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
 
           <div className="flex justify-between items-center mb-6">
             <div className="flex items-center gap-2">
@@ -1291,6 +2302,506 @@ const IkasProductsPage = () => {
               )}
             </div>
           )}
+            </>
+          )}
+        </div>
+      )}
+
+      {/* YENİ ETİKET / DÜZENLE MODALI (GÖRSEL 3 BİREBİR TASARIM) */}
+      {showTagModal && (
+        <div style={{ zIndex: 100020 }} className="fixed inset-0 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-zinc-900/50 backdrop-blur-[1px]" onClick={() => setShowTagModal(false)} />
+          <div className="bg-white rounded-lg shadow-2xl w-full max-w-[680px] flex flex-col relative z-10 overflow-hidden">
+            {/* Blue Header with Tabs inside (Görsel 3 Birebir) */}
+            <div className="bg-[#0d6efd] text-white px-6 pt-4 pb-0 flex flex-col">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex flex-col">
+                  <span className="text-[11.5px] font-medium text-blue-100 leading-tight">Etiketler</span>
+                  <span className="text-[16px] font-bold tracking-tight mt-0.5">
+                    {editingTag.no ? `${editingTag.no} Nolu Etiket` : "Yeni Etiket"}
+                  </span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    className="w-6 h-6 rounded hover:bg-white/15 flex items-center justify-center text-white/90 cursor-pointer"
+                  >
+                    ‹
+                  </button>
+                  <button
+                    type="button"
+                    className="w-6 h-6 rounded hover:bg-white/15 flex items-center justify-center text-white/90 cursor-pointer"
+                  >
+                    ›
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowTagModal(false)}
+                    className="w-6 h-6 rounded hover:bg-white/15 flex items-center justify-center text-white font-bold cursor-pointer"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+
+              {/* 4 Header Tabs */}
+              <div className="flex items-center gap-1">
+                {[
+                  { key: "genel", label: "Genel Bilgiler", icon: "ℹ️" },
+                  { key: "seo", label: "S.E.O Bilgileri", icon: "🔍" },
+                  { key: "urunler", label: "Ürünler", icon: "📋" },
+                  { key: "diger", label: "Diğer", icon: "⚙️" },
+                ].map((t) => {
+                  const isAct = tagModalTab === t.key
+                  return (
+                    <button
+                      key={t.key}
+                      type="button"
+                      onClick={() => setTagModalTab(t.key as any)}
+                      className={`px-4 py-2.5 rounded-t-md text-[12px] font-bold inline-flex items-center gap-1.5 transition-colors cursor-pointer ${
+                        isAct ? "bg-white text-zinc-800" : "bg-transparent text-white hover:bg-white/10"
+                      }`}
+                    >
+                      <span>{t.icon}</span>
+                      <span>{t.label}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 bg-white flex flex-col gap-5 max-h-[75vh] overflow-y-auto">
+              {tagModalTab === "genel" && (
+                <>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[12px] font-semibold text-zinc-700">
+                      Etiket Adı <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={editingTag.name}
+                      onChange={(e) => setEditingTag({ ...editingTag, name: e.target.value })}
+                      className="w-full border border-zinc-200 rounded-md px-3.5 py-2.5 text-[13px] text-zinc-800 focus:outline-none focus:border-[#0d6efd]"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[12px] font-semibold text-zinc-700">Görsel</label>
+                    <div className="grid grid-cols-2 border border-dashed border-zinc-300 rounded-md overflow-hidden divide-x divide-dashed divide-zinc-300">
+                      <label className="py-7 px-4 flex flex-col items-center justify-center gap-2 hover:bg-zinc-50 cursor-pointer transition-colors relative">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0]
+                            if (!file) return
+                            const reader = new FileReader()
+                            reader.onload = () => {
+                              if (typeof reader.result === "string") {
+                                setEditingTag((prev) => ({ ...prev, image: reader.result as string }))
+                              }
+                            }
+                            reader.readAsDataURL(file)
+                          }}
+                          className="hidden"
+                        />
+                        <svg className="w-5 h-5 text-zinc-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                        </svg>
+                        <span className="text-[12px] font-medium text-zinc-700">Görsel yükle</span>
+                      </label>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const label = (editingTag.name || "YENİ SEZON").toUpperCase()
+                          const svgBadge = `data:image/svg+xml;utf8,${encodeURIComponent(
+                            `<svg xmlns="http://www.w3.org/2000/svg" width="160" height="48"><rect width="160" height="48" rx="8" fill="#1e88e5"/><text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" fill="#ffffff" font-family="Arial" font-weight="bold" font-size="14">${label}</text></svg>`
+                          )}`
+                          setEditingTag((prev) => ({ ...prev, image: svgBadge }))
+                        }}
+                        className="py-7 px-4 flex flex-col items-center justify-center gap-2 hover:bg-zinc-50 cursor-pointer transition-colors"
+                      >
+                        <span className="text-base leading-none">🪄</span>
+                        <span className="text-[12px] font-medium text-zinc-700">Yapay Zeka ile oluştur</span>
+                      </button>
+                    </div>
+                    {editingTag.image && (
+                      <div className="flex items-center gap-3 mt-2 p-2 bg-zinc-50 rounded border border-zinc-200">
+                        <img src={editingTag.image} alt="Etiket" className="h-10 w-auto object-contain rounded" />
+                        <button
+                          type="button"
+                          onClick={() => setEditingTag({ ...editingTag, image: "" })}
+                          className="text-xs font-semibold text-red-600 hover:underline ml-auto cursor-pointer"
+                        >
+                          Görseli Kaldır
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 2x2 Position Toggles (Sol Üst, Sağ Üst, Sol Alt, Sağ Alt) */}
+                  <div className="grid grid-cols-2 gap-y-5 gap-x-8 pt-1">
+                    {[
+                      { key: "top_left", label: "Sol Üst" },
+                      { key: "top_right", label: "Sağ Üst" },
+                      { key: "bottom_left", label: "Sol Alt" },
+                      { key: "bottom_right", label: "Sağ Alt" },
+                    ].map((pos) => {
+                      const val = Boolean((editingTag as any)[pos.key])
+                      return (
+                        <div key={pos.key} className="flex flex-col gap-2">
+                          <span className="text-[12px] font-medium text-zinc-700">{pos.label}</span>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setEditingTag({ ...editingTag, [pos.key]: !val })
+                            }
+                            className={`w-11 h-6 rounded-full transition-colors p-0.5 cursor-pointer flex items-center ${
+                              val ? "bg-[#2ebd85]" : "bg-zinc-300"
+                            }`}
+                          >
+                            <span
+                              className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                                val ? "translate-x-5" : "translate-x-0"
+                              }`}
+                            />
+                          </button>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </>
+              )}
+
+              {tagModalTab === "seo" && (
+                <div className="flex flex-col gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[12px] font-semibold text-zinc-700">SEO Başlığı (Title)</label>
+                    <input
+                      type="text"
+                      value={editingTag.seo_title}
+                      onChange={(e) => setEditingTag({ ...editingTag, seo_title: e.target.value })}
+                      className="w-full border border-zinc-200 rounded-md px-3.5 py-2 text-xs"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[12px] font-semibold text-zinc-700">SEO Açıklaması (Description)</label>
+                    <textarea
+                      rows={3}
+                      value={editingTag.seo_desc}
+                      onChange={(e) => setEditingTag({ ...editingTag, seo_desc: e.target.value })}
+                      className="w-full border border-zinc-200 rounded-md p-3 text-xs"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[12px] font-semibold text-zinc-700">SEO Anahtar Kelimeler</label>
+                    <input
+                      type="text"
+                      value={editingTag.seo_keywords}
+                      onChange={(e) => setEditingTag({ ...editingTag, seo_keywords: e.target.value })}
+                      className="w-full border border-zinc-200 rounded-md px-3.5 py-2 text-xs"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {tagModalTab === "urunler" && (
+                <div className="flex flex-col gap-2 max-h-64 overflow-y-auto border border-zinc-200 rounded-md p-3">
+                  <span className="text-xs font-semibold text-zinc-500 mb-1">
+                    Bu etiketin uygulanacağı ürünleri seçin:
+                  </span>
+                  {products.slice(0, 50).map((p) => {
+                    const checked = editingTag.product_ids.includes(p.id)
+                    return (
+                      <label key={p.id} className="flex items-center gap-2.5 py-1.5 px-2 rounded hover:bg-zinc-50 cursor-pointer text-xs">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={(e) => {
+                            const next = e.target.checked
+                              ? [...editingTag.product_ids, p.id]
+                              : editingTag.product_ids.filter((id) => id !== p.id)
+                            setEditingTag({ ...editingTag, product_ids: next })
+                          }}
+                          className="w-4 h-4 rounded border-zinc-300"
+                        />
+                        <span className="font-medium text-zinc-800">{p.title}</span>
+                      </label>
+                    )
+                  })}
+                </div>
+              )}
+
+              {tagModalTab === "diger" && (
+                <div className="flex flex-col gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[12px] font-semibold text-zinc-700">Sıra</label>
+                    <input
+                      type="number"
+                      value={editingTag.sort_order}
+                      onChange={(e) => setEditingTag({ ...editingTag, sort_order: Number(e.target.value || 0) })}
+                      className="w-full border border-zinc-200 rounded-md px-3.5 py-2 text-xs"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="bg-white border-t border-zinc-100 px-6 py-4 flex items-center justify-end">
+              <button
+                type="button"
+                onClick={handleSaveTag}
+                className="bg-[#2ebd85] hover:bg-emerald-600 text-white font-bold text-[12.5px] h-9 px-5 rounded-md inline-flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+              >
+                <span>✓</span>
+                <span>Kaydet</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* YENİ MARKA / DÜZENLE MODALI (GÖRSEL 2) */}
+      {showBrandModal && (
+        <div style={{ zIndex: 100020 }} className="fixed inset-0 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-zinc-900/50 backdrop-blur-[1px]" onClick={() => setShowBrandModal(false)} />
+          <div className="bg-white rounded-lg shadow-2xl w-full max-w-[680px] flex flex-col relative z-10 overflow-hidden">
+            <div className="bg-[#0d6efd] text-white px-6 py-4 flex items-center justify-between">
+              <div className="flex flex-col">
+                <span className="text-[11.5px] font-medium text-blue-100 leading-tight">Markalar</span>
+                <span className="text-[16px] font-bold tracking-tight mt-0.5">
+                  {editingBrand.no ? `${editingBrand.no} Nolu Marka` : "Yeni Marka"}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowBrandModal(false)}
+                className="w-7 h-7 rounded hover:bg-white/15 flex items-center justify-center text-white font-bold cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-6 bg-white flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[12px] font-semibold text-zinc-700">
+                  Marka Adı <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={editingBrand.name}
+                  onChange={(e) => setEditingBrand({ ...editingBrand, name: e.target.value })}
+                  placeholder="Örn: Bym Fashion, Sıla Butik, XOOX..."
+                  className="w-full border border-zinc-200 rounded-md px-3.5 py-2.5 text-[13px] text-zinc-800 focus:outline-none focus:border-[#0d6efd]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[12px] font-semibold text-zinc-700">Sıra</label>
+                  <input
+                    type="number"
+                    value={editingBrand.sort_order}
+                    onChange={(e) => setEditingBrand({ ...editingBrand, sort_order: Number(e.target.value || 0) })}
+                    className="w-full border border-zinc-200 rounded-md px-3.5 py-2 text-[13px] text-zinc-800 focus:outline-none focus:border-[#0d6efd]"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[12px] font-semibold text-zinc-700">Durum</label>
+                  <button
+                    type="button"
+                    onClick={() => setEditingBrand({ ...editingBrand, active: !editingBrand.active })}
+                    className={`w-11 h-6 rounded-full transition-colors p-0.5 cursor-pointer flex items-center mt-1 ${
+                      editingBrand.active ? "bg-[#2ebd85]" : "bg-zinc-300"
+                    }`}
+                  >
+                    <span
+                      className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                        editingBrand.active ? "translate-x-5" : "translate-x-0"
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white border-t border-zinc-100 px-6 py-4 flex items-center justify-end">
+              <button
+                type="button"
+                onClick={handleSaveBrand}
+                className="bg-[#2ebd85] hover:bg-emerald-600 text-white font-bold text-[12.5px] h-9 px-5 rounded-md inline-flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+              >
+                <span>✓</span>
+                <span>Kaydet</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* YENİ STOK BİRİMİ / DÜZENLE MODALI (GÖRSEL 4) */}
+      {showUnitModal && (
+        <div style={{ zIndex: 100020 }} className="fixed inset-0 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-zinc-900/50 backdrop-blur-[1px]" onClick={() => setShowUnitModal(false)} />
+          <div className="bg-white rounded-lg shadow-2xl w-full max-w-[640px] flex flex-col relative z-10 overflow-hidden">
+            <div className="bg-[#0d6efd] text-white px-6 py-4 flex items-center justify-between">
+              <div className="flex flex-col">
+                <span className="text-[11.5px] font-medium text-blue-100 leading-tight">Stok Birimleri</span>
+                <span className="text-[16px] font-bold tracking-tight mt-0.5">
+                  {editingUnit.no ? `${editingUnit.no} Nolu Birim (${editingUnit.name})` : "Yeni Birim"}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowUnitModal(false)}
+                className="w-7 h-7 rounded hover:bg-white/15 flex items-center justify-center text-white font-bold cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-6 bg-white grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[12px] font-semibold text-zinc-700">Birim Adı *</label>
+                <input
+                  type="text"
+                  value={editingUnit.name}
+                  onChange={(e) =>
+                    setEditingUnit({
+                      ...editingUnit,
+                      name: e.target.value,
+                      listing_name: editingUnit.listing_name || e.target.value,
+                    })
+                  }
+                  className="w-full border border-zinc-200 rounded-md px-3.5 py-2 text-xs"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[12px] font-semibold text-zinc-700">Listeleme Adı *</label>
+                <input
+                  type="text"
+                  value={editingUnit.listing_name}
+                  onChange={(e) => setEditingUnit({ ...editingUnit, listing_name: e.target.value })}
+                  className="w-full border border-zinc-200 rounded-md px-3.5 py-2 text-xs"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[12px] font-semibold text-zinc-700">Kısaltma *</label>
+                <input
+                  type="text"
+                  value={editingUnit.abbreviation}
+                  onChange={(e) => setEditingUnit({ ...editingUnit, abbreviation: e.target.value })}
+                  className="w-full border border-zinc-200 rounded-md px-3.5 py-2 text-xs"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[12px] font-semibold text-zinc-700">Ondalık Alan Sayısı</label>
+                <select
+                  value={editingUnit.decimal_places}
+                  onChange={(e) => setEditingUnit({ ...editingUnit, decimal_places: e.target.value })}
+                  className="w-full border border-zinc-200 rounded-md px-3.5 py-2 text-xs bg-white"
+                >
+                  <option value="Tam Sayı">Tam Sayı</option>
+                  <option value="1 Basamak">1 Basamak</option>
+                  <option value="2 Basamak">2 Basamak</option>
+                </select>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[12px] font-semibold text-zinc-700">Sepet Artış Miktarı</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={editingUnit.cart_increment}
+                  onChange={(e) => setEditingUnit({ ...editingUnit, cart_increment: Number(e.target.value || 1) })}
+                  className="w-full border border-zinc-200 rounded-md px-3.5 py-2 text-xs"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[12px] font-semibold text-zinc-700">Öntanımlı Sepet Miktarı</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={editingUnit.default_cart_qty}
+                  onChange={(e) => setEditingUnit({ ...editingUnit, default_cart_qty: Number(e.target.value || 1) })}
+                  className="w-full border border-zinc-200 rounded-md px-3.5 py-2 text-xs"
+                />
+              </div>
+            </div>
+
+            <div className="bg-white border-t border-zinc-100 px-6 py-4 flex items-center justify-end">
+              <button
+                type="button"
+                onClick={handleSaveUnit}
+                className="bg-[#2ebd85] hover:bg-emerald-600 text-white font-bold text-[12.5px] h-9 px-5 rounded-md inline-flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+              >
+                <span>✓</span>
+                <span>Kaydet</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ARAMA SONUCU DÜZENLE / EŞLEŞTİR MODALI (GÖRSEL 5) */}
+      {showSearchResultModal && (
+        <div style={{ zIndex: 100020 }} className="fixed inset-0 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-zinc-900/50 backdrop-blur-[1px]" onClick={() => setShowSearchResultModal(false)} />
+          <div className="bg-white rounded-lg shadow-2xl w-full max-w-[560px] flex flex-col relative z-10 overflow-hidden">
+            <div className="bg-[#0d6efd] text-white px-6 py-4 flex items-center justify-between">
+              <div className="flex flex-col">
+                <span className="text-[11.5px] font-medium text-blue-100 leading-tight">Arama Sonuçları</span>
+                <span className="text-[16px] font-bold tracking-tight mt-0.5">
+                  #{editingSearchResult.no} - &quot;{editingSearchResult.keyword}&quot;
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowSearchResultModal(false)}
+                className="w-7 h-7 rounded hover:bg-white/15 flex items-center justify-center text-white font-bold cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-6 bg-white flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[12px] font-semibold text-zinc-700">Aranan Kelime</label>
+                <input
+                  type="text"
+                  value={editingSearchResult.keyword}
+                  onChange={(e) => setEditingSearchResult({ ...editingSearchResult, keyword: e.target.value })}
+                  className="w-full border border-zinc-200 rounded-md px-3.5 py-2 text-xs"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[12px] font-semibold text-zinc-700">
+                  Arama Eşleştirme / Yönlendirilecek Kelime veya Kategori
+                </label>
+                <input
+                  type="text"
+                  value={editingSearchResult.mapped_keyword}
+                  onChange={(e) => setEditingSearchResult({ ...editingSearchResult, mapped_keyword: e.target.value })}
+                  placeholder="Örn: kaban, takım, bodykit..."
+                  className="w-full border border-zinc-200 rounded-md px-3.5 py-2 text-xs"
+                />
+              </div>
+            </div>
+
+            <div className="bg-white border-t border-zinc-100 px-6 py-4 flex items-center justify-end">
+              <button
+                type="button"
+                onClick={handleSaveSearchResult}
+                className="bg-[#2ebd85] hover:bg-emerald-600 text-white font-bold text-[12.5px] h-9 px-5 rounded-md inline-flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+              >
+                <span>✓</span>
+                <span>Kaydet</span>
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

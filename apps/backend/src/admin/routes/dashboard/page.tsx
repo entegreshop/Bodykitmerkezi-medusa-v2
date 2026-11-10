@@ -331,9 +331,10 @@ export const getTopNavCategories = (prepOrdersBadge: number): TopNavCategory[] =
         items: [
           { label: "Ürünler", path: "/product-management" },
           { label: "Kategoriler", path: "/categories" },
-          { label: "Markalar", path: "/collections" },
-          { label: "Etiketler", path: "/settings/product-tags" },
-          { label: "Stok Birimleri", path: "/inventory" },
+          { label: "Koleksiyonlar", path: "/collections" },
+          { label: "Markalar", path: "/product-management?tab=markalar" },
+          { label: "Etiketler", path: "/product-management?tab=etiketler" },
+          { label: "Stok Birimleri", path: "/product-management?tab=stok-birimleri" },
         ],
       },
       {
@@ -344,7 +345,7 @@ export const getTopNavCategories = (prepOrdersBadge: number): TopNavCategory[] =
           { label: "Ürün Yorumları", path: "/product-management?tab=urun-yorumlari" },
           { label: "Ürün Sıralama", path: "/categories" },
           { label: "Hızlı SEO Güncelleme", path: "/product-management?tab=hizli-seo" },
-          { label: "Toplu Ürün Güncelleme", path: "/product-management" },
+          { label: "Toplu Ürün Güncelleme", path: "/product-management?tab=toplu-guncelleme" },
         ],
       },
       {
@@ -775,10 +776,20 @@ export const EntegreShopHeaderBar = ({
 
   const orderSubPageTitle = getOrderSubPageTitle()
 
+  const isProductOperationsSubTab =
+    activeCategoryLabel === "ÜRÜNLER" &&
+    (currentSearch.includes("tab=arama-sonuclari") ||
+      currentSearch.includes("tab=urun-yorumlari") ||
+      currentSearch.includes("tab=hizli-seo") ||
+      currentSearch.includes("tab=toplu-guncelleme"))
+
   // Determine horizontal sub-category tabs for Tier 3 (Görsel 1, 3, 4, 5)
   const getHorizontalSubTabs = (): SubMenuItem[] => {
     if (!activeCategoryObj || !activeCategoryObj.columns || activeCategoryObj.columns.length === 0) {
       return []
+    }
+    if (isProductOperationsSubTab && activeCategoryObj.columns[1]) {
+      return [...activeCategoryObj.columns[1].items]
     }
     const baseItems = [...activeCategoryObj.columns[0].items]
     const clean = currentPathname.replace(/^\/app/, "") || "/dashboard"
@@ -1712,6 +1723,8 @@ export const EntegreShopHeaderBar = ({
                   <span style={{ color: "#64748b", fontWeight: 500 }}>Sipariş Yönetimi /</span>
                   <span style={{ color: "#1e293b", fontWeight: 700 }}>{orderSubPageTitle}</span>
                 </span>
+              ) : isProductOperationsSubTab ? (
+                "Ürün İşlemleri"
               ) : (
                 activeCategoryObj?.sectionTitle || activeCategoryLabel
               )}
