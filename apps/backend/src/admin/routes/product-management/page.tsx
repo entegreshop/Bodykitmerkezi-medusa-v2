@@ -33,6 +33,34 @@ const INITIAL_SIZES = ["S", "M", "L", "XL", "XXL"]
 const IkasProductsPage = () => {
   // --- Navigation & Mode ---
   const [view, setView] = useState<"list" | "create" | "edit">("list")
+  const [activeSubTab, setActiveSubTab] = useState<string>("urunler")
+  const [lastSyncedSearch, setLastSyncedSearch] = useState<string>("")
+
+  useEffect(() => {
+    const syncTabFromUrl = () => {
+      if (typeof window === "undefined") return
+      const currentSearch = window.location.search
+      setLastSyncedSearch((prev) => {
+        if (prev === currentSearch) return prev
+        const params = new URLSearchParams(currentSearch)
+        const tabParam = params.get("tab")
+        if (tabParam) {
+          setActiveSubTab(tabParam)
+          setView("list")
+        } else {
+          setActiveSubTab("urunler")
+        }
+        return currentSearch
+      })
+    }
+    syncTabFromUrl()
+    window.addEventListener("popstate", syncTabFromUrl)
+    const interval = setInterval(syncTabFromUrl, 250)
+    return () => {
+      window.removeEventListener("popstate", syncTabFromUrl)
+      clearInterval(interval)
+    }
+  }, [])
   const [editingProductId, setEditingProductId] = useState<string | null>(null)
 
   // --- API Data States ---
@@ -864,41 +892,120 @@ const IkasProductsPage = () => {
       {/* -------------------- 1. LIST VIEW -------------------- */}
       {view === "list" && (
         <div>
+          {activeSubTab !== "urunler" ? (
+            <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-xs mb-6">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-5">
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900">
+                    {activeSubTab === "nitelikler" && "Ürün Nitelikleri (Renk, Beden, Materyal)"}
+                    {activeSubTab === "ozel-alanlar" && "Ürün Özel Alanları (Teknik Özellik Tablosu)"}
+                    {activeSubTab === "uyumluluklar" && "Araç Marka & Model Uyumlulukları"}
+                    {activeSubTab === "arama-eslestirme" && "Arama Eşleştirme & Eş Anlamlı Kelimeler"}
+                    {activeSubTab === "arama-sonuclari" && "Müşteri Arama Sonuçları İstatistikleri"}
+                    {activeSubTab === "urun-yorumlari" && "Ürün Yorumları ve Değerlendirmeler"}
+                    {activeSubTab === "hizli-seo" && "Hızlı SEO Güncelleme Aracı"}
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Üstteki sekmelerden veya Ürünler sekmesinden ürün yönetimi ekranına dönebilirsiniz.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    window.history.pushState({}, "", "/app/product-management")
+                    window.dispatchEvent(new PopStateEvent("popstate"))
+                  }}
+                  className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold cursor-pointer"
+                >
+                  Ürün Listesine Dön
+                </button>
+              </div>
+
+              {activeSubTab === "nitelikler" && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-4 rounded-xl border border-slate-200 bg-slate-50">
+                    <div className="text-xs font-extrabold text-slate-800 mb-2">Renk Seçenekleri</div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {availableColors.map((c) => (
+                        <span key={c} className="px-2.5 py-1 rounded-md bg-white border border-slate-200 text-xs font-semibold text-slate-700">
+                          {c}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="p-4 rounded-xl border border-slate-200 bg-slate-50">
+                    <div className="text-xs font-extrabold text-slate-800 mb-2">Beden / Ölçü Seçenekleri</div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {availableSizes.map((s) => (
+                        <span key={s} className="px-2.5 py-1 rounded-md bg-white border border-slate-200 text-xs font-semibold text-slate-700">
+                          {s}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeSubTab === "uyumluluklar" && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {[
+                    { brand: "Volkswagen", models: "Golf 6, Golf 7, Golf 7.5, Polo, Scirocco, Passat B8" },
+                    { brand: "BMW", models: "F30, F10, G20, E90, E60 M-Tech & M-Performance" },
+                    { brand: "Honda & Fiat & Peugeot", models: "Civic FC5,Civic FD6, Linea, Peugeot 301, Seat Ibiza" },
+                  ].map((item, i) => (
+                    <div key={i} className="p-4 rounded-xl border border-slate-200 bg-slate-50">
+                      <div className="text-sm font-bold text-slate-900">{item.brand}</div>
+                      <div className="text-xs text-slate-600 mt-1">{item.models}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {activeSubTab !== "nitelikler" && activeSubTab !== "uyumluluklar" && (
+                <div className="p-4 rounded-xl border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-600">
+                  Toplam <strong>{products.length}</strong> aktif ürün için bu modül hazır durumdadır.
+                </div>
+              )}
+            </div>
+          ) : null}
+
           <div className="flex justify-between items-center mb-6">
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-bold text-slate-900">Ürünler</h1>
-              <span className="text-slate-400 cursor-pointer" title="Ürünlerinizi yönetin">
-                <svg className="w-4 h-4 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </span>
             </div>
             
             <div className="flex gap-2">
               <button
                 type="button"
-                className="bg-white border border-slate-200 text-slate-700 text-xs font-semibold px-4 py-2.5 rounded-lg shadow-sm hover:bg-slate-50 transition-all flex items-center gap-1.5"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                </svg>
-                <span>Dışa Aktar</span>
-              </button>
-              <button
-                type="button"
-                className="bg-white border border-slate-200 text-slate-700 text-xs font-semibold px-4 py-2.5 rounded-lg shadow-sm hover:bg-slate-50 transition-all flex items-center gap-1.5"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
-                <span>İçe Aktar</span>
-              </button>
-              <button
-                type="button"
                 onClick={initCreateMode}
-                className="bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold px-4 py-2.5 rounded-lg shadow-sm flex items-center gap-1.5 transition-all"
+                style={{ backgroundColor: "#10b981", color: "#ffffff" }}
+                className="hover:opacity-95 text-white text-xs font-bold px-4 py-2.5 rounded-lg shadow-sm flex items-center gap-1.5 transition-all cursor-pointer"
               >
-                <span>Ürün Ekle</span>
+                <span>+ Yeni Ürün</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const nav = (window as any).__entegreshopNavigate
+                  if (typeof nav === "function") nav("/xml-operations?tab=import")
+                  else window.location.href = "/app/xml-operations?tab=import"
+                }}
+                style={{ backgroundColor: "#1976d2", color: "#ffffff" }}
+                className="hover:opacity-95 text-white text-xs font-bold px-4 py-2.5 rounded-lg shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <span>📄 XML İşlemleri</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const nav = (window as any).__entegreshopNavigate
+                  if (typeof nav === "function") nav("/xml-operations?tab=export")
+                  else window.location.href = "/app/xml-operations?tab=export"
+                }}
+                style={{ backgroundColor: "#1976d2", color: "#ffffff" }}
+                className="hover:opacity-95 text-white text-xs font-bold px-4 py-2.5 rounded-lg shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <span>📊 Excel İşlemleri</span>
               </button>
             </div>
           </div>

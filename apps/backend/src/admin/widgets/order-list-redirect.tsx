@@ -1291,37 +1291,6 @@ const SiparisYonetimiPage = () => {
 
       {/* TOP HEADER REMOVED */}
 
-      {/* TAB NAVIGATION PANEL */}
-      <div className="bg-zinc-100 border-b border-zinc-200 px-8 py-1 flex items-center justify-center gap-x-6 overflow-x-auto no-scrollbar shadow-sm">
-        {[
-          { key: "onay_bekleyen", label: "Onay Bekleyenler" },
-          { key: "hazirlanan", label: "Hazırlananlar", badge: preparingCount },
-          { key: "kargolanan", label: "Kargolananlar" },
-          { key: "teslim_edilen", label: "Teslim Edilenler" },
-          { key: "iade_edilen", label: "İade Edilenler" },
-          { key: "iptal_edilen", label: "İptal Edilenler" },
-          { key: "tum_siparisler", label: "Tüm Siparişler" },
-          { key: "odeme_hatasi", label: "Ödeme Hatası Alınanlar" }
-        ].map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={`py-3.5 px-1.5 border-b-2 text-xs font-bold transition-all relative whitespace-nowrap flex items-center gap-1.5 ${
-              activeTab === tab.key 
-                ? "border-blue-600 text-blue-600 font-semibold" 
-                : "border-transparent text-zinc-500 hover:text-zinc-800"
-            }`}
-          >
-            <span>{tab.label}</span>
-            {tab.badge !== undefined && tab.badge > 0 && (
-              <span className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px] font-bold leading-none shadow-sm animate-pulse">
-                {tab.badge}
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
-
       <div className="p-8 max-w-[1600px] mx-auto flex flex-col gap-y-6">
 
         {/* SEARCH, FILTERS BUTTON & BULK OPERATIONS ROW */}

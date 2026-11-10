@@ -265,6 +265,7 @@ export interface SubMenuColumn {
 
 export interface TopNavCategory {
   label: string
+  sectionTitle?: string
   path: string
   icon: string
   badgeDot?: boolean
@@ -275,12 +276,14 @@ export interface TopNavCategory {
 export const getTopNavCategories = (prepOrdersBadge: number): TopNavCategory[] => [
   {
     label: "ANA SAYFA",
+    sectionTitle: "Kontrol Paneli",
     path: "/dashboard",
     icon: "home",
   },
   {
     label: "SİPARİŞLER",
-    path: "/orders",
+    sectionTitle: "Sipariş Yönetimi",
+    path: "/orders?status=tum_siparisler",
     icon: "orders",
     badgeDot: true,
     columns: [
@@ -320,6 +323,7 @@ export const getTopNavCategories = (prepOrdersBadge: number): TopNavCategory[] =
   },
   {
     label: "ÜRÜNLER",
+    sectionTitle: "Ürün Yönetimi",
     path: "/product-management",
     icon: "products",
     columns: [
@@ -353,7 +357,7 @@ export const getTopNavCategories = (prepOrdersBadge: number): TopNavCategory[] =
         title: "İçeri / Dışarı Aktar",
         bulletStyle: "hollow",
         items: [
-          { label: "Excel İçeri / Dışarı Aktar", path: "/xml-operations?tab=excel" },
+          { label: "Excel İçeri / Dışarı Aktar", path: "/xml-operations?tab=export" },
           { label: "XML İçeri Aktar", path: "/xml-operations?tab=import" },
           { label: "XML Dışarı Aktar", path: "/xml-operations?tab=export" },
         ],
@@ -362,24 +366,26 @@ export const getTopNavCategories = (prepOrdersBadge: number): TopNavCategory[] =
   },
   {
     label: "PAZARYERİ",
-    path: "/xml-operations",
+    sectionTitle: "Pazaryeri Yönetimi",
+    path: "/pazaryeri?tab=magazalar",
     icon: "marketplace",
     columns: [
       {
         bulletStyle: "solid",
         items: [
-          { label: "Mağazalar", path: "/xml-operations?tab=magazalar" },
-          { label: "Fiyat Rekabeti Analizi", path: "/xml-operations?tab=fiyat-rekabeti" },
-          { label: "İçerik Eşleştirmeleri", path: "/xml-operations?tab=icerik-eslestirme" },
-          { label: "Ürün Gönderimleri", path: "/xml-operations?tab=export" },
-          { label: "Ürün Eşleştirmeleri", path: "/xml-operations?tab=import" },
+          { label: "Mağazalar", path: "/pazaryeri?tab=magazalar" },
+          { label: "Fiyat Rekabeti Analizi", path: "/pazaryeri?tab=fiyat-rekabeti" },
+          { label: "İçerik Eşleştirmeleri", path: "/pazaryeri?tab=icerik-eslestirmeleri" },
+          { label: "Ürün Gönderimleri", path: "/pazaryeri?tab=urun-gonderimleri" },
+          { label: "Ürün Eşleştirmeleri", path: "/pazaryeri?tab=urun-eslestirmeleri" },
         ],
       },
     ],
   },
   {
     label: "KAMPANYALAR",
-    path: "/kampanyalar",
+    sectionTitle: "Kampanya Yönetimi",
+    path: "/kampanyalar?tab=yuzde",
     icon: "campaigns",
     columns: [
       {
@@ -389,18 +395,19 @@ export const getTopNavCategories = (prepOrdersBadge: number): TopNavCategory[] =
           { label: "Promosyonlar", path: "/kampanyalar?tab=yuzde" },
           { label: "Bayi İndirimleri", path: "/price-lists" },
           { label: "Hızlı İndirimler", path: "/kampanyalar?tab=sepette" },
-          { label: "Affiliate", path: "/kampanyalar?tab=affiliate" },
+          { label: "Affiliate", path: "/kampanyalar?tab=bogo" },
           { label: "Sipariş Limitleri", path: "/kampanyalar?tab=otomasyon" },
-          { label: "Satış Kotaları", path: "/kampanyalar?tab=satis-kotalari" },
-          { label: "E-Posta Bültenleri", path: "/kampanyalar?tab=eposta-bultenleri" },
+          { label: "Satış Kotaları", path: "/kampanyalar?tab=urun_kupon" },
+          { label: "E-Posta Bültenleri", path: "/sms-settings" },
           { label: "SMS Bültenleri", path: "/sms-settings" },
-          { label: "Mobil Bildirimler", path: "/kampanyalar?tab=mobil-bildirimler" },
+          { label: "Mobil Bildirimler", path: "/sms-settings" },
         ],
       },
     ],
   },
   {
     label: "MÜŞTERİLER",
+    sectionTitle: "Müşteri Yönetimi",
     path: "/customers",
     icon: "customers",
     columns: [
@@ -420,6 +427,7 @@ export const getTopNavCategories = (prepOrdersBadge: number): TopNavCategory[] =
   },
   {
     label: "TASARIM",
+    sectionTitle: "Tasarım Yönetimi",
     path: "/hero-manager",
     icon: "design",
     alignRight: true,
@@ -455,7 +463,8 @@ export const getTopNavCategories = (prepOrdersBadge: number): TopNavCategory[] =
   },
   {
     label: "RAPORLAR",
-    path: "/dashboard",
+    sectionTitle: "Rapor Yönetimi",
+    path: "/e-fatura",
     icon: "reports",
     alignRight: true,
     columns: [
@@ -463,7 +472,7 @@ export const getTopNavCategories = (prepOrdersBadge: number): TopNavCategory[] =
         bulletStyle: "solid",
         items: [
           { label: "Genel Satış & Ciro Özeti", path: "/dashboard" },
-          { label: "Sipariş Raporları", path: "/orders" },
+          { label: "Sipariş Raporları", path: "/orders?status=tum_siparisler" },
           { label: "Ürün & Stok Raporları", path: "/product-management" },
           { label: "Kesilen E-Fatura Raporları", path: "/e-fatura" },
           { label: "GA4 & Ziyaretçi Analitiği", path: "/pixel-settings" },
@@ -473,7 +482,8 @@ export const getTopNavCategories = (prepOrdersBadge: number): TopNavCategory[] =
   },
   {
     label: "ARAÇLAR",
-    path: "/e-fatura",
+    sectionTitle: "Araçlar & Entegrasyonlar",
+    path: "/payment-settings",
     icon: "tools",
     alignRight: true,
     columns: [
@@ -491,6 +501,7 @@ export const getTopNavCategories = (prepOrdersBadge: number): TopNavCategory[] =
   },
   {
     label: "AYARLAR",
+    sectionTitle: "Genel Ayarlar",
     path: "/store-settings",
     icon: "settings",
     alignRight: true,
@@ -652,6 +663,9 @@ export const EntegreShopHeaderBar = ({
   const [currentPathname, setCurrentPathname] = useState<string>(
     typeof window !== "undefined" ? window.location.pathname : "/app/dashboard"
   )
+  const [currentSearch, setCurrentSearch] = useState<string>(
+    typeof window !== "undefined" ? window.location.search : ""
+  )
   const closeTimeoutRef = useRef<any>(null)
   const headerRef = useRef<HTMLElement>(null)
 
@@ -663,15 +677,16 @@ export const EntegreShopHeaderBar = ({
   )
 
   useEffect(() => {
-    const updatePath = () => {
+    const updateLocation = () => {
       if (typeof window !== "undefined") {
         setCurrentPathname(window.location.pathname)
+        setCurrentSearch(window.location.search)
       }
     }
-    window.addEventListener("popstate", updatePath)
-    const interval = setInterval(updatePath, 400)
+    window.addEventListener("popstate", updateLocation)
+    const interval = setInterval(updateLocation, 250)
     return () => {
-      window.removeEventListener("popstate", updatePath)
+      window.removeEventListener("popstate", updateLocation)
       clearInterval(interval)
     }
   }, [])
@@ -698,7 +713,7 @@ export const EntegreShopHeaderBar = ({
   const handleCategoryLeave = () => {
     closeTimeoutRef.current = setTimeout(() => {
       setHoveredCategory(null)
-    }, 140)
+    }, 150)
   }
 
   const getActiveCategoryLabel = () => {
@@ -712,15 +727,17 @@ export const EntegreShopHeaderBar = ({
       clean.startsWith("/reservations") ||
       clean.startsWith("/categories") ||
       clean.startsWith("/collections") ||
-      clean.startsWith("/price-lists")
+      clean.startsWith("/settings/product-tags") ||
+      clean.startsWith("/xml-operations")
     ) {
       return "ÜRÜNLER"
     }
-    if (clean.startsWith("/xml-operations")) return "PAZARYERİ"
+    if (clean.startsWith("/pazaryeri")) return "PAZARYERİ"
     if (
       clean.startsWith("/kampanyalar") ||
       clean.startsWith("/promotions") ||
-      clean.startsWith("/campaigns")
+      clean.startsWith("/campaigns") ||
+      clean.startsWith("/price-lists")
     ) {
       return "KAMPANYALAR"
     }
@@ -750,6 +767,52 @@ export const EntegreShopHeaderBar = ({
   }
 
   const activeCategoryLabel = getActiveCategoryLabel()
+  const activeCategoryObj = navCategories.find((c) => c.label === activeCategoryLabel)
+
+  // Determine horizontal sub-category tabs for Tier 3 (Görsel 1 & Görsel 5)
+  const getHorizontalSubTabs = (): SubMenuItem[] => {
+    if (!activeCategoryObj || !activeCategoryObj.columns || activeCategoryObj.columns.length === 0) {
+      return []
+    }
+    const baseItems = [...activeCategoryObj.columns[0].items]
+    const clean = currentPathname.replace(/^\/app/, "") || "/dashboard"
+    // If on /xml-operations under ÜRÜNLER, also show XML İçeri Aktar & XML Dışarı Aktar in the tab bar
+    if (activeCategoryLabel === "ÜRÜNLER" && clean.startsWith("/xml-operations")) {
+      baseItems.push(
+        { label: "XML İçeri Aktar", path: "/xml-operations?tab=import" },
+        { label: "XML Dışarı Aktar", path: "/xml-operations?tab=export" }
+      )
+    }
+    // If on /sayfalar under TASARIM, also include Sayfalar in the tab bar
+    if (activeCategoryLabel === "TASARIM" && clean.startsWith("/sayfalar")) {
+      baseItems.push({ label: "Sayfalar", path: "/sayfalar" })
+    }
+    return baseItems
+  }
+
+  const horizontalSubTabs = getHorizontalSubTabs()
+
+  const isSubTabActive = (sub: SubMenuItem): boolean => {
+    const clean = currentPathname.replace(/^\/app/, "") || "/dashboard"
+    const fullCurrent = clean + (currentSearch || "")
+
+    if (sub.path === fullCurrent) return true
+
+    // Handle default query states when URL has no query string
+    if (!currentSearch) {
+      if (clean === "/orders" && sub.path === "/orders?status=tum_siparisler") return true
+      if (clean === "/pazaryeri" && sub.path === "/pazaryeri?tab=magazalar") return true
+      if (clean === "/kampanyalar" && sub.path === "/kampanyalar?tab=yuzde") return true
+      if (clean === "/xml-operations" && sub.path === "/xml-operations?tab=import") return true
+    }
+
+    // If sub.path has no query string, match exact clean pathname only when currentSearch is empty
+    if (!sub.path.includes("?") && clean === sub.path && !currentSearch) {
+      return true
+    }
+
+    return false
+  }
 
   const searchResults =
     searchQuery.trim().length > 0
@@ -999,13 +1062,13 @@ export const EntegreShopHeaderBar = ({
           </button>
         </div>
 
-        {/* Center: 10 Large & Bold Icon + Label Navigation Tabs + Connected White Dropdowns */}
+        {/* Center: 10 Large & Bold Icon + Label Navigation Tabs + Multi-Column Dropdowns */}
         <nav
           style={{
             display: "flex",
             alignItems: "center",
             gap: "6px",
-            padding: "8px 0 0 0",
+            padding: "6px 0",
             position: "relative",
           }}
         >
@@ -1024,15 +1087,8 @@ export const EntegreShopHeaderBar = ({
                 <button
                   type="button"
                   onClick={() => {
-                    if (!hasSubMenu) {
-                      setHoveredCategory(null)
-                      onNavigate(item.path)
-                    } else if (isHovered) {
-                      setHoveredCategory(null)
-                      onNavigate(item.path)
-                    } else {
-                      setHoveredCategory(item.label)
-                    }
+                    setHoveredCategory(null)
+                    onNavigate(item.path)
                   }}
                   style={{
                     position: "relative",
@@ -1041,21 +1097,13 @@ export const EntegreShopHeaderBar = ({
                     alignItems: "center",
                     justifyContent: "center",
                     gap: "6px",
-                    padding: "12px 16px 14px 16px",
-                    borderRadius: isHovered && hasSubMenu ? "8px 8px 0 0" : "10px",
+                    padding: "11px 16px",
+                    borderRadius: "10px",
                     fontSize: "11.5px",
                     fontWeight: 800,
                     letterSpacing: "0.02em",
                     border:
-                      isHovered && hasSubMenu
-                        ? "1px solid #e2e8f0"
-                        : isActive
-                        ? "1.5px solid #cbd5e1"
-                        : "1.5px solid transparent",
-                    borderBottom:
-                      isHovered && hasSubMenu
-                        ? "1px solid #ffffff"
-                        : isActive
+                      isActive || isHovered
                         ? "1.5px solid #cbd5e1"
                         : "1.5px solid transparent",
                     cursor: "pointer",
@@ -1063,7 +1111,7 @@ export const EntegreShopHeaderBar = ({
                       isActive || isHovered ? "#ffffff" : "transparent",
                     color: isActive || isHovered ? "#1976d2" : "#0f172a",
                     boxShadow:
-                      isActive && !isHovered
+                      isActive || isHovered
                         ? "0 2px 6px rgba(15, 23, 42, 0.08)"
                         : "none",
                     transition: "background-color 0.12s ease, color 0.12s ease",
@@ -1100,27 +1148,43 @@ export const EntegreShopHeaderBar = ({
                   <span>{item.label}</span>
                 </button>
 
-                {/* Connected White Multi-Column Dropdown Panel (Exact Reference Visual Design) */}
+                {/* White Multi-Column Dropdown Panel with Top Triangle Caret (Görsel 3 & Görsel 5) */}
                 {hasSubMenu && isHovered && item.columns && (
                   <div
                     onMouseEnter={() => handleCategoryEnter(item.label)}
                     onMouseLeave={handleCategoryLeave}
                     style={{
                       position: "absolute",
-                      top: "calc(100% - 1px)",
+                      top: "calc(100% + 9px)",
                       left: item.alignRight ? "auto" : 0,
                       right: item.alignRight ? 0 : "auto",
                       backgroundColor: "#ffffff",
-                      borderRadius: item.alignRight ? "8px 0 8px 8px" : "0 8px 8px 8px",
+                      borderRadius: "8px",
                       border: "1px solid #e2e8f0",
-                      boxShadow: "0 14px 34px rgba(15, 23, 42, 0.14)",
-                      padding: "22px 28px",
+                      boxShadow: "0 14px 34px rgba(15, 23, 42, 0.15)",
+                      padding: "22px 26px",
                       zIndex: 10000,
                       display: "flex",
                       alignItems: "stretch",
                       gap: "28px",
                     }}
                   >
+                    {/* Upward Caret Pointer (Görsel 5) */}
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "-7px",
+                        left: item.alignRight ? "auto" : "38px",
+                        right: item.alignRight ? "38px" : "auto",
+                        width: "12px",
+                        height: "12px",
+                        backgroundColor: "#ffffff",
+                        borderTop: "1px solid #e2e8f0",
+                        borderLeft: "1px solid #e2e8f0",
+                        transform: "rotate(45deg)",
+                      }}
+                    />
+
                     {item.columns.map((col, colIdx) => {
                       const isHollow = col.bulletStyle === "hollow"
                       return (
@@ -1131,10 +1195,10 @@ export const EntegreShopHeaderBar = ({
                               item.columns && item.columns.length >= 3
                                 ? "205px"
                                 : item.columns && item.columns.length === 2
-                                ? "220px"
-                                : "230px",
+                                ? "215px"
+                                : "220px",
                             borderLeft: colIdx > 0 ? "1px solid #f1f5f9" : "none",
-                            paddingLeft: colIdx > 0 ? "28px" : "0",
+                            paddingLeft: colIdx > 0 ? "26px" : "0",
                             display: "flex",
                             flexDirection: "column",
                           }}
@@ -1602,6 +1666,115 @@ export const EntegreShopHeaderBar = ({
           </div>
         </div>
       </div>
+
+      {/* Tier 3: Horizontal Sub-Category Tab Bar (Görsel 1 Birebir Tasarım) */}
+      {activeCategoryLabel !== "ANA SAYFA" && horizontalSubTabs.length > 0 && (
+        <div
+          style={{
+            backgroundColor: "#ffffff",
+            borderTop: "1px solid #d5dbe3",
+            borderBottom: "1px solid #e2e8f0",
+          }}
+        >
+          <div
+            style={{
+              maxWidth: "1640px",
+              margin: "0 auto",
+              padding: "0 24px",
+              minHeight: "48px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "24px",
+            }}
+          >
+            {/* Left: Active Category Section Title (e.g. Ürün Yönetimi, Pazaryeri Yönetimi, Sipariş Yönetimi) */}
+            <div
+              style={{
+                fontSize: "13.5px",
+                fontWeight: 700,
+                color: "#334155",
+                whiteSpace: "nowrap",
+                minWidth: "150px",
+              }}
+            >
+              {activeCategoryObj?.sectionTitle || activeCategoryLabel}
+            </div>
+
+            {/* Center: Horizontal Sub-Category Tabs */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "22px",
+                flex: 1,
+                overflowX: "auto",
+              }}
+            >
+              {horizontalSubTabs.map((sub, idx) => {
+                const subActive = isSubTabActive(sub)
+                return (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => {
+                      if (sub.action === "license_modal" && onOpenLicenseModal) {
+                        onOpenLicenseModal()
+                      } else {
+                        onNavigate(sub.path)
+                      }
+                    }}
+                    style={{
+                      position: "relative",
+                      padding: "14px 4px 12px 4px",
+                      backgroundColor: "transparent",
+                      border: "none",
+                      borderBottom: subActive
+                        ? "2.5px solid #1976d2"
+                        : "2.5px solid transparent",
+                      color: subActive ? "#1976d2" : "#334155",
+                      fontSize: "13px",
+                      fontWeight: subActive ? 600 : 500,
+                      cursor: "pointer",
+                      whiteSpace: "nowrap",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      transition: "color 0.12s ease, border-color 0.12s ease",
+                    }}
+                  >
+                    <span>{sub.label}</span>
+                    {sub.badge !== undefined && (
+                      <span
+                        style={{
+                          minWidth: "18px",
+                          height: "18px",
+                          padding: "0 5px",
+                          borderRadius: "9999px",
+                          fontSize: "10.5px",
+                          fontWeight: 700,
+                          color: "#ffffff",
+                          backgroundColor: sub.badgeColor || "#10b981",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          lineHeight: 1,
+                        }}
+                      >
+                        {sub.badge}
+                      </span>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* Right spacer for centered balance */}
+            <div style={{ minWidth: "150px" }} className="hidden xl:block" />
+          </div>
+        </div>
+      )}
     </header>
   )
 }
@@ -1634,6 +1807,16 @@ const GlobalShellTopBarWrapper = () => {
   }
 
   const handleGlobalNavigate = (targetPath: string) => {
+    const [targetCleanPath] = targetPath.split("?")
+    const currentCleanPath = window.location.pathname.replace(/^\/app/, "")
+
+    // If navigating within the same route (e.g. switching horizontal sub-tabs via query params), pushState + dispatch popstate for instant 0ms tab switch
+    if (targetCleanPath === currentCleanPath) {
+      window.history.pushState({}, "", "/app" + targetPath)
+      window.dispatchEvent(new PopStateEvent("popstate"))
+      return
+    }
+
     const globalNav = (window as any).__entegreshopNavigate
     if (typeof globalNav === "function") {
       globalNav(targetPath)
