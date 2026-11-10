@@ -16,5 +16,19 @@ export default defineMiddlewares({
         sizeLimit: "25mb",
       },
     },
+    {
+      method: ["POST"],
+      matcher: "/admin/catalog-operations",
+      bodyParser: {
+        sizeLimit: "25mb",
+      },
+    },
+    {
+      method: ["POST"],
+      matcher: "/store/product-reviews",
+      bodyParser: {
+        sizeLimit: "25mb",
+      },
+    },
   ],
 })

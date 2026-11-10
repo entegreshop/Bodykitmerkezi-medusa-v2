@@ -58,11 +58,34 @@ export interface SearchResultItem {
   mapped_keyword: string
 }
 
+export interface ProductReviewItem {
+  id: string
+  no: number
+  product_id: string // "all" or specific product id
+  product_title: string
+  product_handle?: string
+  product_thumbnail?: string
+  customer_name: string
+  color?: string
+  size?: string
+  rating: number // 1..5
+  comment: string
+  media_url?: string
+  media_type?: "image" | "video"
+  media_urls?: string[]
+  active: boolean
+  verified_purchase?: boolean
+  helpful_count?: number
+  created_at: string
+  source?: "admin" | "storefront"
+}
+
 export interface CatalogState {
   brands: BrandItem[]
   tags: ProductTagItem[]
   units: StockUnitItem[]
   searchResults: SearchResultItem[]
+  reviews: ProductReviewItem[]
 }
 
 const DEFAULT_BRANDS: BrandItem[] = [
@@ -108,6 +131,60 @@ const DEFAULT_SEARCH_RESULTS: SearchResultItem[] = [
   { id: "sr_80", no: 80, keyword: "uzun hırkalı üçlü takım 8713", search_count: 6106, result_count: 7, first_searched_at: "28.07.2026 17:58", last_searched_at: "10.11.2026 12:51", mapped_keyword: "-" },
 ]
 
+export const DEFAULT_REVIEWS: ProductReviewItem[] = [
+  {
+    id: "rev_3",
+    no: 3,
+    product_id: "all",
+    product_title: "Genel Vitrin Yorumu",
+    customer_name: "Mehmet A.",
+    color: "STANDART",
+    rating: 5,
+    comment: "Malzeme kalitesi harika, birebir uyumlu geldi. Paketleme çok özenliydi ve hızlı kargolandı. Kesinlikle tavsiye ederim!",
+    media_url: "",
+    media_type: "image",
+    active: true,
+    verified_purchase: true,
+    helpful_count: 14,
+    created_at: "10.11.2026 12:40",
+    source: "admin",
+  },
+  {
+    id: "rev_2",
+    no: 2,
+    product_id: "all",
+    product_title: "Genel Vitrin Yorumu",
+    customer_name: "Seda K.",
+    color: "PARLAK SİYAH",
+    rating: 5,
+    comment: "Rengi, dokusu ve duruşu muazzam. Montajı çok kolay oldu, araca tam oturdu. Çok memnun kaldık :)",
+    media_url: "",
+    media_type: "image",
+    active: true,
+    verified_purchase: true,
+    helpful_count: 9,
+    created_at: "09.11.2026 18:15",
+    source: "admin",
+  },
+  {
+    id: "rev_1",
+    no: 1,
+    product_id: "all",
+    product_title: "Genel Vitrin Yorumu",
+    customer_name: "Emre T.",
+    color: "STANDART",
+    rating: 5,
+    comment: "Gerçekten fiyat performans olarak çok başarılı. Müşteri temsilcisi de çok ilgiliydi, teşekkürler.",
+    media_url: "",
+    media_type: "image",
+    active: true,
+    verified_purchase: true,
+    helpful_count: 6,
+    created_at: "08.11.2026 15:20",
+    source: "admin",
+  },
+]
+
 export function readCatalogState(): CatalogState {
   try {
     if (fs.existsSync(CATALOG_STATE_FILE)) {
@@ -118,6 +195,7 @@ export function readCatalogState(): CatalogState {
         tags: Array.isArray(parsed.tags) ? parsed.tags : [],
         units: Array.isArray(parsed.units) && parsed.units.length > 0 ? parsed.units : DEFAULT_UNITS,
         searchResults: Array.isArray(parsed.searchResults) && parsed.searchResults.length > 0 ? parsed.searchResults : DEFAULT_SEARCH_RESULTS,
+        reviews: Array.isArray(parsed.reviews) ? parsed.reviews : DEFAULT_REVIEWS,
       }
     }
   } catch (e) {}
@@ -126,6 +204,7 @@ export function readCatalogState(): CatalogState {
     tags: [],
     units: DEFAULT_UNITS,
     searchResults: DEFAULT_SEARCH_RESULTS,
+    reviews: DEFAULT_REVIEWS,
   }
 }
 
@@ -361,6 +440,93 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
       state.searchResults = (state.searchResults || []).filter((s) => s.id !== id)
       writeCatalogState(state)
       return res.json({ success: true, searchResults: state.searchResults, message: "Arama kaydı silindi." })
+    }
+
+    // 5. PRODUCT REVIEWS (ÜRÜN YORUMLARI - Trendyol & Sizden Gelenler Tasarımı)
+    if (action === "save_review") {
+      const { review } = body
+      if (!review || !String(review.comment || "").trim()) {
+        return res.status(400).json({ success: false, error: "Yorum metni zorunludur." })
+      }
+      const list = [...(state.reviews || DEFAULT_REVIEWS)]
+      const nowStr = new Date().toLocaleString("tr-TR", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+      const mediaUrl = String(review.media_url || "").trim()
+      const isVideo =
+        review.media_type === "video" ||
+        /\.(mp4|webm|mov|ogg|avi)($|\?)/i.test(mediaUrl) ||
+        mediaUrl.startsWith("data:video/")
+
+      if (review.id) {
+        const idx = list.findIndex((r) => r.id === review.id)
+        if (idx !== -1) {
+          list[idx] = {
+            ...list[idx],
+            product_id: String(review.product_id || list[idx].product_id || "all"),
+            product_title: String(review.product_title || list[idx].product_title || "Genel Vitrin Yorumu"),
+            product_handle: String(review.product_handle || list[idx].product_handle || ""),
+            product_thumbnail: String(review.product_thumbnail || list[idx].product_thumbnail || ""),
+            customer_name: String(review.customer_name || "Müşteri").trim(),
+            color: String(review.color || "STANDART").trim(),
+            size: String(review.size || "").trim(),
+            rating: Math.min(5, Math.max(1, Number(review.rating || 5))),
+            comment: String(review.comment).trim(),
+            media_url: mediaUrl,
+            media_type: isVideo ? "video" : "image",
+            media_urls: Array.isArray(review.media_urls) ? review.media_urls : mediaUrl ? [mediaUrl] : [],
+            active: review.active !== false,
+            verified_purchase: review.verified_purchase !== false,
+          }
+        }
+      } else {
+        const maxNo = list.reduce((max, r) => (r.no > max ? r.no : max), 0)
+        list.unshift({
+          id: `rev_${Date.now()}`,
+          no: maxNo + 1,
+          product_id: String(review.product_id || "all"),
+          product_title: String(review.product_title || "Genel Vitrin Yorumu"),
+          product_handle: String(review.product_handle || ""),
+          product_thumbnail: String(review.product_thumbnail || ""),
+          customer_name: String(review.customer_name || "Müşteri").trim(),
+          color: String(review.color || "STANDART").trim(),
+          size: String(review.size || "").trim(),
+          rating: Math.min(5, Math.max(1, Number(review.rating || 5))),
+          comment: String(review.comment).trim(),
+          media_url: mediaUrl,
+          media_type: isVideo ? "video" : "image",
+          media_urls: Array.isArray(review.media_urls) ? review.media_urls : mediaUrl ? [mediaUrl] : [],
+          active: review.active !== false,
+          verified_purchase: review.verified_purchase !== false,
+          helpful_count: Number(review.helpful_count || 0),
+          created_at: review.created_at || nowStr,
+          source: review.source || "admin",
+        })
+      }
+      state.reviews = list
+      writeCatalogState(state)
+      return res.json({ success: true, reviews: state.reviews, message: "Yorum başarıyla kaydedildi." })
+    }
+
+    if (action === "toggle_review_status") {
+      const list = [...(state.reviews || DEFAULT_REVIEWS)]
+      const idx = list.findIndex((r) => r.id === id)
+      if (idx !== -1) {
+        list[idx] = { ...list[idx], active: !list[idx].active }
+        state.reviews = list
+        writeCatalogState(state)
+      }
+      return res.json({ success: true, reviews: state.reviews })
+    }
+
+    if (action === "delete_review") {
+      state.reviews = (state.reviews || []).filter((r) => r.id !== id)
+      writeCatalogState(state)
+      return res.json({ success: true, reviews: state.reviews, message: "Yorum silindi." })
     }
 
     return res.status(400).json({ success: false, error: "Geçersiz işlem" })

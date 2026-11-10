@@ -69,6 +69,7 @@ const IkasProductsPage = () => {
     tags: any[]
     units: any[]
     searchResults: any[]
+    reviews: any[]
   }>({
     brands: [
       { id: "brand_3", no: 3, name: "Bym Fashion", active: true, sort_order: 0, slug: "bym-fashion" },
@@ -110,6 +111,56 @@ const IkasProductsPage = () => {
       { id: "sr_1203", no: 1203, keyword: "1235", search_count: 95, result_count: 18, first_searched_at: "28.10.2026 23:43", last_searched_at: "10.11.2026 12:55", mapped_keyword: "-" },
       { id: "sr_981", no: 981, keyword: "1225", search_count: 24, result_count: 14, first_searched_at: "15.10.2026 19:00", last_searched_at: "10.11.2026 12:53", mapped_keyword: "-" },
       { id: "sr_80", no: 80, keyword: "uzun hırkalı üçlü takım 8713", search_count: 6106, result_count: 7, first_searched_at: "28.07.2026 17:58", last_searched_at: "10.11.2026 12:51", mapped_keyword: "-" },
+    ],
+    reviews: [
+      {
+        id: "rev_3",
+        no: 3,
+        product_id: "all",
+        product_title: "Genel Vitrin Yorumu",
+        customer_name: "Mehmet A.",
+        color: "STANDART",
+        rating: 5,
+        comment: "Malzeme kalitesi harika, birebir uyumlu geldi. Paketleme çok özenliydi ve hızlı kargolandı. Kesinlikle tavsiye ederim!",
+        media_url: "",
+        media_type: "image",
+        active: true,
+        verified_purchase: true,
+        helpful_count: 14,
+        created_at: "10.11.2026 12:40",
+      },
+      {
+        id: "rev_2",
+        no: 2,
+        product_id: "all",
+        product_title: "Genel Vitrin Yorumu",
+        customer_name: "Seda K.",
+        color: "PARLAK SİYAH",
+        rating: 5,
+        comment: "Rengi, dokusu ve duruşu muazzam. Montajı çok kolay oldu, araca tam oturdu. Çok memnun kaldık :)",
+        media_url: "",
+        media_type: "image",
+        active: true,
+        verified_purchase: true,
+        helpful_count: 9,
+        created_at: "09.11.2026 18:15",
+      },
+      {
+        id: "rev_1",
+        no: 1,
+        product_id: "all",
+        product_title: "Genel Vitrin Yorumu",
+        customer_name: "Emre T.",
+        color: "STANDART",
+        rating: 5,
+        comment: "Gerçekten fiyat performans olarak çok başarılı. Müşteri temsilcisi de çok ilgiliydi, teşekkürler.",
+        media_url: "",
+        media_type: "image",
+        active: true,
+        verified_purchase: true,
+        helpful_count: 6,
+        created_at: "08.11.2026 15:20",
+      },
     ],
   })
   const [catalogQuickSearch, setCatalogQuickSearch] = useState("")
@@ -214,6 +265,34 @@ const IkasProductsPage = () => {
     mapped_keyword: "-",
   })
 
+  const [showReviewModal, setShowReviewModal] = useState(false)
+  const [uploadingReviewMedia, setUploadingReviewMedia] = useState(false)
+  const [editingReview, setEditingReview] = useState<{
+    id?: string
+    no?: number
+    product_id: string
+    product_title: string
+    product_handle?: string
+    product_thumbnail?: string
+    customer_name: string
+    color: string
+    rating: number
+    comment: string
+    media_url: string
+    media_type: "image" | "video"
+    active: boolean
+  }>({
+    product_id: "all",
+    product_title: "Genel Vitrin Yorumu",
+    customer_name: "",
+    color: "STANDART",
+    rating: 5,
+    comment: "",
+    media_url: "",
+    media_type: "image",
+    active: true,
+  })
+
   const fetchCatalogOperations = async () => {
     try {
       const res = await fetch("/admin/catalog-operations")
@@ -225,6 +304,7 @@ const IkasProductsPage = () => {
             tags: data.tags || [],
             units: data.units || [],
             searchResults: data.searchResults || [],
+            reviews: data.reviews || [],
           })
         }
       }
@@ -242,7 +322,8 @@ const IkasProductsPage = () => {
       activeSubTab === "markalar" ||
       activeSubTab === "etiketler" ||
       activeSubTab === "stok-birimleri" ||
-      activeSubTab === "arama-sonuclari"
+      activeSubTab === "arama-sonuclari" ||
+      activeSubTab === "urun-yorumlari"
     ) {
       fetchCatalogOperations()
     }
@@ -361,6 +442,109 @@ const IkasProductsPage = () => {
       const data = await res.json()
       if (data?.success) {
         setCatalogData((prev) => ({ ...prev, searchResults: data.searchResults }))
+      }
+    } catch (e) {}
+  }
+
+  const handleReviewMediaUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadingReviewMedia(true)
+    try {
+      const reader = new FileReader()
+      reader.onload = async () => {
+        try {
+          const base64 = reader.result as string
+          const res = await fetch("/admin/hero-config/upload", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              filename: file.name,
+              filetype: file.type,
+              base64,
+            }),
+          })
+          const data = await res.json()
+          if (data && data.success) {
+            const isVid = file.type.startsWith("video/") || /\.(mp4|webm|mov|ogg|avi)$/i.test(file.name)
+            setEditingReview((prev) => ({
+              ...prev,
+              media_url: data.url,
+              media_type: isVid ? "video" : "image",
+            }))
+          } else {
+            alert("Medya yüklenemedi: " + (data?.message || ""))
+          }
+        } catch (err) {
+          alert("Medya yüklenirken hata oluştu.")
+        } finally {
+          setUploadingReviewMedia(false)
+        }
+      }
+      reader.readAsDataURL(file)
+    } catch (err) {
+      setUploadingReviewMedia(false)
+    }
+  }
+
+  const handleSaveReview = async () => {
+    if (!editingReview.customer_name.trim()) {
+      alert("Lütfen müşteri adı giriniz.")
+      return
+    }
+    if (!editingReview.comment.trim()) {
+      alert("Lütfen müşteri yorumunu giriniz.")
+      return
+    }
+    try {
+      const selectedProd = products.find((p) => p.id === editingReview.product_id)
+      const payloadReview = {
+        ...editingReview,
+        product_title:
+          editingReview.product_id === "all"
+            ? "Genel Vitrin Yorumu (Tüm Ürünler)"
+            : selectedProd?.title || editingReview.product_title || "Ürün Yorumu",
+        product_handle: selectedProd?.handle || editingReview.product_handle || "",
+        product_thumbnail: selectedProd?.thumbnail || editingReview.product_thumbnail || "",
+      }
+      const res = await fetch("/admin/catalog-operations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "save_review", review: payloadReview }),
+      })
+      const data = await res.json()
+      if (data?.success) {
+        setCatalogData((prev) => ({ ...prev, reviews: data.reviews }))
+        setShowReviewModal(false)
+      }
+    } catch (e) {}
+  }
+
+  const handleToggleReviewStatus = async (id: string) => {
+    try {
+      const res = await fetch("/admin/catalog-operations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "toggle_review_status", id }),
+      })
+      const data = await res.json()
+      if (data?.success) {
+        setCatalogData((prev) => ({ ...prev, reviews: data.reviews }))
+      }
+    } catch (e) {}
+  }
+
+  const handleDeleteReview = async (id: string) => {
+    if (!confirm("Bu müşteri yorumunu silmek istediğinize emin misiniz?")) return
+    try {
+      const res = await fetch("/admin/catalog-operations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "delete_review", id }),
+      })
+      const data = await res.json()
+      if (data?.success) {
+        setCatalogData((prev) => ({ ...prev, reviews: data.reviews }))
       }
     } catch (e) {}
   }
@@ -1961,6 +2145,250 @@ const IkasProductsPage = () => {
                 </div>
               </div>
             </div>
+          ) : activeSubTab === "urun-yorumlari" ? (
+            /* ÜRÜN YORUMLARI VE DEĞERLENDİRMELER (/product-management?tab=urun-yorumlari) */
+            <div className="flex flex-col gap-5 max-w-[1600px] mx-auto">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                <div className="relative w-full max-w-[330px]">
+                  <span className="absolute inset-y-0 left-3 flex items-center text-zinc-400 text-xs">🔍</span>
+                  <input
+                    type="text"
+                    placeholder="Müşteri adı, ürün veya yorum ara.."
+                    value={catalogQuickSearch}
+                    onChange={(e) => setCatalogQuickSearch(e.target.value)}
+                    className="w-full bg-white border border-zinc-200 rounded-md pl-8 pr-4 py-2 text-xs font-medium focus:outline-none focus:border-zinc-300 text-zinc-800 shadow-2xs"
+                  />
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingReview({
+                        product_id: "all",
+                        product_title: "Genel Vitrin Yorumu",
+                        customer_name: "",
+                        color: selectedColors[0] || "STANDART",
+                        rating: 5,
+                        comment: "",
+                        media_url: "",
+                        media_type: "image",
+                        active: true,
+                      })
+                      setShowReviewModal(true)
+                    }}
+                    className="bg-[#2ebd85] hover:bg-emerald-600 text-white px-4 py-2 rounded-md text-xs font-bold inline-flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                  >
+                    <span className="text-sm leading-none font-black">+</span>
+                    <span>Yeni Müşteri Yorumu Ekle</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="bg-white border border-zinc-200 rounded-xl p-6 shadow-xs flex flex-col gap-4">
+                <div className="border border-zinc-200 rounded-md overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse text-left bg-white text-[12px]">
+                      <thead>
+                        <tr className="bg-zinc-50/80 border-b border-zinc-200 text-[11.5px] font-bold text-zinc-800 divide-x divide-zinc-200">
+                          <th className="py-3.5 px-4 w-16">No</th>
+                          <th className="py-3.5 px-4 w-20">Görsel / Video</th>
+                          <th className="py-3.5 px-4">Müşteri Adı</th>
+                          <th className="py-3.5 px-4">Ürün / Renk Seçimi</th>
+                          <th className="py-3.5 px-4 w-36">Yıldız Puanı</th>
+                          <th className="py-3.5 px-4">Yorum</th>
+                          <th className="py-3.5 px-4 w-24 text-center">Durum</th>
+                          <th className="py-3.5 px-4 w-32">Tarih</th>
+                          <th className="py-3.5 px-4 w-28">İşlemler</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-zinc-200 text-zinc-700">
+                        {(() => {
+                          const list = (catalogData.reviews || []).filter((r: any) => {
+                            if (!catalogQuickSearch.trim()) return true
+                            const q = catalogQuickSearch.toLowerCase()
+                            return (
+                              String(r.customer_name || "").toLowerCase().includes(q) ||
+                              String(r.comment || "").toLowerCase().includes(q) ||
+                              String(r.product_title || "").toLowerCase().includes(q) ||
+                              String(r.color || "").toLowerCase().includes(q)
+                            )
+                          })
+                          if (list.length === 0) {
+                            return (
+                              <tr>
+                                <td colSpan={9} className="py-12 text-center text-zinc-400 font-semibold">
+                                  Henüz yorum bulunmuyor. &quot;+ Yeni Müşteri Yorumu Ekle&quot; butonuna tıklayarak ilk yorumu ekleyebilirsiniz.
+                                </td>
+                              </tr>
+                            )
+                          }
+                          return list.slice(0, catalogPageSize).map((item: any, idx: number) => {
+                            const isVid = item.media_type === "video" || isVideoUrl(item.media_url || "")
+                            return (
+                              <tr
+                                key={item.id || idx}
+                                className={"divide-x divide-zinc-200 transition-colors hover:bg-zinc-50 " + (idx % 2 === 1 ? "bg-zinc-50/40" : "bg-white")}
+                              >
+                                <td className="py-3 px-4">
+                                  <span
+                                    onClick={() => {
+                                      setEditingReview({
+                                        id: item.id,
+                                        no: item.no,
+                                        product_id: item.product_id || "all",
+                                        product_title: item.product_title || "Genel Vitrin Yorumu",
+                                        product_handle: item.product_handle || "",
+                                        product_thumbnail: item.product_thumbnail || "",
+                                        customer_name: item.customer_name || "",
+                                        color: item.color || "STANDART",
+                                        rating: Number(item.rating || 5),
+                                        comment: item.comment || "",
+                                        media_url: item.media_url || "",
+                                        media_type: isVid ? "video" : "image",
+                                        active: item.active !== false,
+                                      })
+                                      setShowReviewModal(true)
+                                    }}
+                                    className="font-bold text-[#1976d2] hover:underline cursor-pointer"
+                                  >
+                                    {item.no || idx + 1}
+                                  </span>
+                                </td>
+                                <td className="py-3 px-4">
+                                  {item.media_url ? (
+                                    isVid ? (
+                                      <div className="w-12 h-12 rounded-md border border-zinc-200 overflow-hidden bg-black relative">
+                                        <video src={item.media_url} className="w-full h-full object-cover" muted playsInline />
+                                        <span className="absolute bottom-0.5 right-0.5 bg-black/70 text-white text-[8px] font-bold px-1 rounded">
+                                          VİDEO
+                                        </span>
+                                      </div>
+                                    ) : (
+                                      <img
+                                        src={item.media_url}
+                                        alt={item.customer_name}
+                                        className="w-12 h-12 rounded-md object-cover border border-zinc-200"
+                                      />
+                                    )
+                                  ) : (
+                                    <span className="text-zinc-400 text-xs">-</span>
+                                  )}
+                                </td>
+                                <td className="py-3 px-4 font-bold text-zinc-800">{item.customer_name}</td>
+                                <td className="py-3 px-4">
+                                  <div className="flex flex-col">
+                                    <span className="font-semibold text-zinc-800">
+                                      {item.product_id === "all" ? "Tüm Ürünler (Genel Vitrin)" : item.product_title}
+                                    </span>
+                                    {item.color && (
+                                      <span className="text-[11px] text-zinc-500 mt-0.5">Renk: {item.color}</span>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="py-3 px-4">
+                                  <div className="flex items-center gap-1">
+                                    <div className="flex text-amber-400 text-sm">
+                                      {"★".repeat(Number(item.rating || 5))}
+                                      <span className="text-zinc-200">{"★".repeat(5 - Number(item.rating || 5))}</span>
+                                    </div>
+                                    <span className="text-[11px] font-bold text-zinc-700 ml-1">
+                                      {Number(item.rating || 5).toFixed(1)} / 5
+                                    </span>
+                                  </div>
+                                </td>
+                                <td className="py-3 px-4 max-w-md">
+                                  <p className="text-zinc-700 line-clamp-2 leading-relaxed">{item.comment}</p>
+                                </td>
+                                <td className="py-3 px-4 text-center">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleToggleReviewStatus(item.id)}
+                                    className="cursor-pointer"
+                                    title="Durumu Değiştir"
+                                  >
+                                    {item.active !== false ? (
+                                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full border border-emerald-500 text-emerald-500">
+                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                      </span>
+                                    ) : (
+                                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full border border-zinc-300 text-zinc-400">
+                                        ✕
+                                      </span>
+                                    )}
+                                  </button>
+                                </td>
+                                <td className="py-3 px-4 text-zinc-500 text-[11px]">{item.created_at || "-"}</td>
+                                <td className="py-3 px-4">
+                                  <div className="flex items-center gap-1.5">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setEditingReview({
+                                          id: item.id,
+                                          no: item.no,
+                                          product_id: item.product_id || "all",
+                                          product_title: item.product_title || "Genel Vitrin Yorumu",
+                                          product_handle: item.product_handle || "",
+                                          product_thumbnail: item.product_thumbnail || "",
+                                          customer_name: item.customer_name || "",
+                                          color: item.color || "STANDART",
+                                          rating: Number(item.rating || 5),
+                                          comment: item.comment || "",
+                                          media_url: item.media_url || "",
+                                          media_type: isVid ? "video" : "image",
+                                          active: item.active !== false,
+                                        })
+                                        setShowReviewModal(true)
+                                      }}
+                                      className="w-7 h-7 rounded bg-[#9b66c4] hover:bg-purple-600 text-white flex items-center justify-center shadow-2xs cursor-pointer transition-colors"
+                                      title="Yorumu Düzenle"
+                                    >
+                                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                      </svg>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteReview(item.id)}
+                                      className="w-7 h-7 rounded bg-[#ef4444] hover:bg-red-600 text-white flex items-center justify-center shadow-2xs cursor-pointer transition-colors"
+                                      title="Yorumu Sil"
+                                    >
+                                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                      </svg>
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            )
+                          })
+                        })()}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 pt-1">
+                  <select
+                    value={catalogPageSize}
+                    onChange={(e) => setCatalogPageSize(Number(e.target.value))}
+                    className="border border-zinc-200 rounded-md px-3 py-1.5 text-xs font-semibold text-zinc-700 bg-white focus:outline-none"
+                  >
+                    <option value={15}>15</option>
+                    <option value={30}>30</option>
+                    <option value={50}>50</option>
+                  </select>
+                  <span className="text-xs font-medium text-zinc-600">
+                    {(catalogData.reviews || []).length} kayıttan {(catalogData.reviews || []).length > 0 ? 1 : 0} ile{" "}
+                    {Math.min(catalogPageSize, (catalogData.reviews || []).length)} arası gösteriliyor
+                  </span>
+                </div>
+              </div>
+            </div>
           ) : (
             <>
               {activeSubTab !== "urunler" ? (
@@ -2805,6 +3233,202 @@ const IkasProductsPage = () => {
         </div>
       )}
 
+      {/* YENİ YORUM EKLE / DÜZENLE MODALI (GÖRSEL 2 BİREBİR TASARIM) */}
+      {showReviewModal && (
+        <div style={{ zIndex: 100030 }} className="fixed inset-0 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-slate-900/50 backdrop-blur-[1px]"
+            onClick={() => setShowReviewModal(false)}
+          />
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[460px] flex flex-col relative z-10 overflow-hidden p-6">
+            {/* Header */}
+            <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
+              <h3 className="text-[15px] font-extrabold text-slate-900">
+                {editingReview.id ? "Yorumu Düzenle" : "Yeni Yorum Ekle"}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowReviewModal(false)}
+                className="text-xs font-semibold text-slate-400 hover:text-slate-700 cursor-pointer"
+              >
+                Kapat
+              </button>
+            </div>
+
+            {/* Form Body (Görsel 2 Birebir) */}
+            <div className="flex flex-col gap-4 max-h-[75vh] overflow-y-auto pr-1">
+              {/* Ürün Seçimi (Eğer Ürün Yorumları sekmesindeysek ürün seçilebilsin) */}
+              {view === "list" && (
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10.5px] font-bold text-slate-400 uppercase tracking-wider">
+                    ÜRÜN SEÇİMİ
+                  </label>
+                  <select
+                    value={editingReview.product_id}
+                    onChange={(e) => {
+                      const pid = e.target.value
+                      const pMatch = products.find((p) => p.id === pid)
+                      setEditingReview({
+                        ...editingReview,
+                        product_id: pid,
+                        product_title: pid === "all" ? "Genel Vitrin Yorumu" : pMatch?.title || "Ürün Yorumu",
+                      })
+                    }}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2.5 text-xs font-semibold text-slate-800 focus:outline-none focus:border-indigo-500"
+                  >
+                    <option value="all">Tüm Ürünlerde Göster (Genel Vitrin Yorumu)</option>
+                    {products.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* MÜŞTERİ ADI */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10.5px] font-bold text-slate-400 uppercase tracking-wider">
+                  MÜŞTERİ ADI
+                </label>
+                <input
+                  type="text"
+                  placeholder="Örn: Mehmet A."
+                  value={editingReview.customer_name}
+                  onChange={(e) => setEditingReview({ ...editingReview, customer_name: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2.5 text-xs font-medium text-slate-800 focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              {/* ÜRÜN RENGİ (RENK SEÇİMİ) */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10.5px] font-bold text-slate-400 uppercase tracking-wider">
+                  ÜRÜN RENGİ (RENK SEÇİMİ)
+                </label>
+                <select
+                  value={editingReview.color}
+                  onChange={(e) => setEditingReview({ ...editingReview, color: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2.5 text-xs font-semibold text-slate-800 focus:outline-none focus:border-indigo-500"
+                >
+                  <option value="STANDART">STANDART</option>
+                  {(selectedColors.length > 0 ? selectedColors : availableColors).map((col) => (
+                    <option key={col} value={col}>
+                      {col}
+                    </option>
+                  ))}
+                  <option value="PARLAK SİYAH">PARLAK SİYAH</option>
+                  <option value="MAT SİYAH">MAT SİYAH</option>
+                  <option value="KARBON">KARBON</option>
+                </select>
+              </div>
+
+              {/* YILDIZ PUANI (1-5) */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10.5px] font-bold text-slate-400 uppercase tracking-wider">
+                  YILDIZ PUANI (1-5)
+                </label>
+                <select
+                  value={editingReview.rating}
+                  onChange={(e) => setEditingReview({ ...editingReview, rating: Number(e.target.value) })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2.5 text-xs font-semibold text-slate-800 focus:outline-none focus:border-indigo-500"
+                >
+                  <option value={5}>5 Yıldız (Mükemmel)</option>
+                  <option value={4}>4 Yıldız (Çok İyi)</option>
+                  <option value={3}>3 Yıldız (Orta)</option>
+                  <option value={2}>2 Yıldız (Geliştirilmeli)</option>
+                  <option value={1}>1 Yıldız (Kötü)</option>
+                </select>
+              </div>
+
+              {/* YORUM */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10.5px] font-bold text-slate-400 uppercase tracking-wider">
+                  YORUM
+                </label>
+                <textarea
+                  rows={3}
+                  placeholder="Müşteri yorumu..."
+                  value={editingReview.comment}
+                  onChange={(e) => setEditingReview({ ...editingReview, comment: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3.5 text-xs font-medium text-slate-800 focus:outline-none focus:border-indigo-500 resize-none"
+                />
+              </div>
+
+              {/* YORUM GÖRSELİ / VİDEOSU */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10.5px] font-bold text-slate-400 uppercase tracking-wider">
+                  YORUM GÖRSELİ / VİDEOSU
+                </label>
+                <div className="flex items-center gap-3">
+                  <div className="w-16 h-16 rounded-xl border border-dashed border-slate-200 bg-slate-50 flex items-center justify-center overflow-hidden shrink-0">
+                    {editingReview.media_url ? (
+                      editingReview.media_type === "video" || isVideoUrl(editingReview.media_url) ? (
+                        <video src={editingReview.media_url} className="w-full h-full object-cover" muted playsInline />
+                      ) : (
+                        <img src={editingReview.media_url} alt="Önizleme" className="w-full h-full object-cover" />
+                      )
+                    ) : (
+                      <span className="text-xl">📸</span>
+                    )}
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-3.5 py-2 rounded-lg cursor-pointer transition-colors inline-flex items-center gap-1.5">
+                      <input
+                        type="file"
+                        accept="image/*,video/*"
+                        onChange={handleReviewMediaUpload}
+                        className="hidden"
+                      />
+                      <span>{uploadingReviewMedia ? "Yükleniyor..." : "Dosya Seç (Görsel/Video)"}</span>
+                    </label>
+                    {editingReview.media_url && (
+                      <button
+                        type="button"
+                        onClick={() => setEditingReview({ ...editingReview, media_url: "" })}
+                        className="text-[11px] font-semibold text-rose-600 hover:underline text-left cursor-pointer"
+                      >
+                        Medyayı Kaldır
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Yorum Aktif (Sitede Gösterilsin) */}
+              <label className="flex items-center gap-2 pt-1 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={editingReview.active}
+                  onChange={(e) => setEditingReview({ ...editingReview, active: e.target.checked })}
+                  className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                />
+                <span className="text-xs font-bold text-slate-700">Yorum Aktif (Sitede Gösterilsin)</span>
+              </label>
+            </div>
+
+            {/* Footer Buttons */}
+            <div className="flex items-center justify-end gap-2.5 pt-5 mt-4 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setShowReviewModal(false)}
+                className="bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-bold px-4 py-2.5 rounded-lg transition-colors cursor-pointer"
+              >
+                Vazgeç
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveReview}
+                style={{ backgroundColor: "#4f46e5", color: "#ffffff" }}
+                className="hover:opacity-95 text-white text-xs font-bold px-5 py-2.5 rounded-lg shadow-md transition-all cursor-pointer"
+              >
+                Kaydet
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* -------------------- 2. CREATE & EDIT VIEW -------------------- */}
       {(view === "create" || view === "edit") && (
         <form onSubmit={handleSubmit} className="max-w-[1400px] mx-auto">
@@ -3390,6 +4014,115 @@ const IkasProductsPage = () => {
                     className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs font-medium focus:outline-none focus:border-indigo-500 text-slate-800 transition-colors resize-none"
                   />
                 </div>
+              </div>
+
+              {/* Card 5.5: Müşteri Yorumları (Görsel 2 Birebir Tasarım) */}
+              <div className="bg-white border border-slate-100 shadow-sm rounded-xl p-6 space-y-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h2 className="text-sm font-extrabold text-slate-900">Müşteri Yorumları</h2>
+                    <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">
+                      Landing page üzerinde gösterilecek gerçek müşteri yorumları.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingReview({
+                        product_id: editingProductId || "all",
+                        product_title: productName || "Ürün Yorumu",
+                        customer_name: "",
+                        color: selectedColors[0] || availableColors[0] || "STANDART",
+                        rating: 5,
+                        comment: "",
+                        media_url: "",
+                        media_type: "image",
+                        active: true,
+                      })
+                      setShowReviewModal(true)
+                    }}
+                    style={{ backgroundColor: "#4f46e5", color: "#ffffff" }}
+                    className="hover:opacity-95 text-white text-xs font-bold px-3.5 py-2 rounded-lg shadow-xs inline-flex items-center gap-1 transition-all cursor-pointer shrink-0"
+                  >
+                    <span>+ Ekle</span>
+                  </button>
+                </div>
+
+                {(() => {
+                  const prodReviews = (catalogData.reviews || []).filter(
+                    (r: any) =>
+                      (editingProductId && r.product_id === editingProductId) ||
+                      (!editingProductId && r.product_title === productName) ||
+                      r.product_id === "all"
+                  )
+                  if (prodReviews.length === 0) {
+                    return (
+                      <div className="py-6 text-center text-xs text-slate-400 font-medium">
+                        Henüz yorum eklenmemiş. &quot;Ekle&quot; butonuna basarak ilk yorumu ekleyin.
+                      </div>
+                    )
+                  }
+                  return (
+                    <div className="space-y-2.5 max-h-80 overflow-y-auto pr-1">
+                      {prodReviews.map((rev: any) => (
+                        <div
+                          key={rev.id}
+                          className="border border-slate-150 rounded-lg p-3 bg-slate-50/60 flex items-start gap-3"
+                        >
+                          {rev.media_url && (
+                            <div className="w-11 h-11 rounded-md overflow-hidden border border-slate-200 shrink-0 bg-white">
+                              {rev.media_type === "video" || isVideoUrl(rev.media_url) ? (
+                                <video src={rev.media_url} className="w-full h-full object-cover" muted playsInline />
+                              ) : (
+                                <img src={rev.media_url} alt={rev.customer_name} className="w-full h-full object-cover" />
+                              )}
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-xs font-bold text-slate-900 truncate">{rev.customer_name}</span>
+                              <span className="text-[11px] font-bold text-amber-500 shrink-0">
+                                {"★".repeat(Number(rev.rating || 5))} {Number(rev.rating || 5).toFixed(1)}/5
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-slate-600 line-clamp-2 mt-1">{rev.comment}</p>
+                          </div>
+                          <div className="flex flex-col gap-1 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingReview({
+                                  id: rev.id,
+                                  no: rev.no,
+                                  product_id: rev.product_id || editingProductId || "all",
+                                  product_title: rev.product_title || productName || "Ürün Yorumu",
+                                  customer_name: rev.customer_name || "",
+                                  color: rev.color || "STANDART",
+                                  rating: Number(rev.rating || 5),
+                                  comment: rev.comment || "",
+                                  media_url: rev.media_url || "",
+                                  media_type: rev.media_type === "video" ? "video" : "image",
+                                  active: rev.active !== false,
+                                })
+                                setShowReviewModal(true)
+                              }}
+                              className="text-[10px] font-bold text-indigo-600 hover:underline cursor-pointer"
+                            >
+                              Düzenle
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteReview(rev.id)}
+                              className="text-[10px] font-bold text-rose-600 hover:underline cursor-pointer"
+                            >
+                              Sil
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )
+                })()}
               </div>
 
               {/* Card 6: SEO */}
