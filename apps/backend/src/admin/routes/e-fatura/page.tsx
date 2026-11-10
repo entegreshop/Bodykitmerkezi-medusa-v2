@@ -771,8 +771,6 @@ const EfaturaPage = () => {
 
   return (
     <div className="bg-zinc-50 min-h-screen text-zinc-800 font-sans pb-16">
-      <ErpTopNav />
-
       <div className="max-w-[1440px] mx-auto px-6 pt-6 flex flex-col gap-6">
         {/* TOP HEADER BANNER */}
         <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
