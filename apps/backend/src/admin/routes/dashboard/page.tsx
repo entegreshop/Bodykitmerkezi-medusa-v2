@@ -361,7 +361,7 @@ export const getTopNavCategories = (prepOrdersBadge: number): TopNavCategory[] =
   },
   {
     label: "PAZARYERİ",
-    sectionTitle: "Pazaryeri Yönetimi",
+    sectionTitle: "Pazaryeri",
     path: "/pazaryeri?tab=magazalar",
     icon: "marketplace",
     columns: [
@@ -1802,8 +1802,17 @@ export const EntegreShopHeaderBar = ({
               })}
             </div>
 
-            {/* Right spacer for centered balance */}
-            <div style={{ minWidth: "150px" }} className="hidden xl:block" />
+            {/* Right spacer or Pazaryeri integration badge */}
+            {activeCategoryLabel === "PAZARYERİ" ? (
+              <div className="hidden sm:flex items-center justify-end gap-2" style={{ minWidth: "150px" }}>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 border border-slate-200 text-[11px] font-bold text-slate-700">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                  12 Pazaryeri Entegrasyonu Hazır
+                </span>
+              </div>
+            ) : (
+              <div style={{ minWidth: "150px" }} className="hidden xl:block" />
+            )}
           </div>
         </div>
       )}
