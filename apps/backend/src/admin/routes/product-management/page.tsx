@@ -3447,8 +3447,8 @@ const IkasProductsPage = () => {
                 type="button"
                 onClick={() => {
                   const nav = (window as any).__entegreshopNavigate
-                  if (typeof nav === "function") nav("/xml-operations?tab=export")
-                  else window.location.href = "/app/xml-operations?tab=export"
+                  if (typeof nav === "function") nav("/xml-operations?tab=excel")
+                  else window.location.href = "/app/xml-operations?tab=excel"
                 }}
                 style={{ backgroundColor: "#1976d2", color: "#ffffff" }}
                 className="hover:opacity-95 text-white text-xs font-bold px-4 py-2.5 rounded-lg shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"

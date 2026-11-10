@@ -352,7 +352,7 @@ export const getTopNavCategories = (prepOrdersBadge: number): TopNavCategory[] =
         title: "İçeri / Dışarı Aktar",
         bulletStyle: "hollow",
         items: [
-          { label: "Excel İçeri / Dışarı Aktar", path: "/xml-operations?tab=export" },
+          { label: "Excel İçeri / Dışarı Aktar", path: "/xml-operations?tab=excel" },
           { label: "XML İçeri Aktar", path: "/xml-operations?tab=import" },
           { label: "XML Dışarı Aktar", path: "/xml-operations?tab=export" },
         ],
@@ -784,6 +784,10 @@ export const EntegreShopHeaderBar = ({
       currentSearch.includes("tab=hizli-seo") ||
       currentSearch.includes("tab=toplu-guncelleme"))
 
+  const isImportExportSubTab =
+    activeCategoryLabel === "ÜRÜNLER" &&
+    currentPathname.replace(/^\/app/, "").startsWith("/xml-operations")
+
   // Determine horizontal sub-category tabs for Tier 3 (Görsel 1, 3, 4, 5)
   const getHorizontalSubTabs = (): SubMenuItem[] => {
     if (!activeCategoryObj || !activeCategoryObj.columns || activeCategoryObj.columns.length === 0) {
@@ -792,15 +796,11 @@ export const EntegreShopHeaderBar = ({
     if (isProductOperationsSubTab && activeCategoryObj.columns[1]) {
       return [...activeCategoryObj.columns[1].items]
     }
+    if (isImportExportSubTab && activeCategoryObj.columns[2]) {
+      return [...activeCategoryObj.columns[2].items]
+    }
     const baseItems = [...activeCategoryObj.columns[0].items]
     const clean = currentPathname.replace(/^\/app/, "") || "/dashboard"
-    // If on /xml-operations under ÜRÜNLER, also show XML İçeri Aktar & XML Dışarı Aktar in the tab bar
-    if (activeCategoryLabel === "ÜRÜNLER" && clean.startsWith("/xml-operations")) {
-      baseItems.push(
-        { label: "XML İçeri Aktar", path: "/xml-operations?tab=import" },
-        { label: "XML Dışarı Aktar", path: "/xml-operations?tab=export" }
-      )
-    }
     // If on /sayfalar under TASARIM, also include Sayfalar in the tab bar
     if (activeCategoryLabel === "TASARIM" && clean.startsWith("/sayfalar")) {
       baseItems.push({ label: "Sayfalar", path: "/sayfalar" })
@@ -1726,6 +1726,8 @@ export const EntegreShopHeaderBar = ({
                 </span>
               ) : isProductOperationsSubTab ? (
                 "Ürün İşlemleri"
+              ) : isImportExportSubTab ? (
+                "İçeri / Dışarı Aktar"
               ) : (
                 activeCategoryObj?.sectionTitle || activeCategoryLabel
               )}
