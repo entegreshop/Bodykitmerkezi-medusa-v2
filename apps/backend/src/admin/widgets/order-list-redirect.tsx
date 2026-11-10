@@ -259,7 +259,7 @@ const SiparisYonetimiPage = () => {
   }, [])
 
   // Form Filter States
-  const [filterStatus, setFilterStatus] = useState("Yeni Sipariş, Hazırlanan Sipariş, Kargolanan Sipariş, Teslim Edilen Sipariş")
+  const [filterStatus, setFilterStatus] = useState("Yeni Sipariş")
   const [filterPlatform, setFilterPlatform] = useState("")
   const [filterStore, setFilterStore] = useState("")
   const [filterTag, setFilterTag] = useState("")
@@ -2620,47 +2620,58 @@ const SiparisYonetimiPage = () => {
           <>
 
 
-        {/* SEARCH, FILTERS BUTTON & BULK OPERATIONS ROW */}
-        <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4">
+        {/* SEARCH, FILTERS BUTTON & BULK OPERATIONS ROW (Görsel 4) */}
+        <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-3">
           <div className="flex items-center gap-2 flex-1">
             <button
+              type="button"
               onClick={() => setShowFilters(!showFilters)}
-              className="bg-white border border-zinc-200 px-4 py-2.5 rounded-xl text-xs font-bold text-zinc-700 hover:bg-zinc-50 flex items-center gap-1.5 shadow-sm transition-all"
+              className={`bg-white border ${
+                showFilters ? "border-[#3b82f6]" : "border-zinc-200"
+              } px-3.5 h-9 rounded-md text-[12.5px] font-medium text-zinc-800 hover:bg-zinc-50 flex items-center gap-3 shadow-2xs transition-all cursor-pointer`}
             >
-              <Adjustments className="w-4 h-4 text-zinc-500" />
+              <Adjustments className="w-4 h-4 text-zinc-700" />
               <span>Filtreler</span>
-              <svg className={`w-3.5 h-3.5 text-zinc-400 transition-transform ${showFilters ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+              <svg
+                className={`w-3.5 h-3.5 text-zinc-500 transition-transform ${showFilters ? "rotate-180" : ""}`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
               </svg>
             </button>
 
-            <div className="relative flex-1 max-w-md">
-              <span className="absolute inset-y-0 left-3 flex items-center text-zinc-400">🔍</span>
+            <div className="relative w-full max-w-[260px]">
+              <svg
+                className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
               <input
                 type="text"
-                placeholder="Hızlı ara..."
+                placeholder="Hızlı ara.."
                 value={quickSearch}
                 onChange={(e) => setQuickSearch(e.target.value)}
-                className="w-full bg-white border border-zinc-200 rounded-xl pl-9 pr-4 py-2.5 text-xs font-medium focus:outline-none focus:border-zinc-300 focus:ring-4 focus:ring-zinc-100 text-zinc-800 transition-all shadow-sm"
+                className="w-full h-9 bg-white border border-zinc-200 rounded-md pl-9 pr-3 text-[12.5px] text-zinc-700 focus:outline-none focus:border-[#3b82f6] transition-all shadow-2xs"
               />
             </div>
           </div>
 
-          <div className="flex items-center gap-3 shrink-0">
-            <button 
-                onClick={() => setIsPosOpen(true)}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 shadow-md transition-all whitespace-nowrap"
-            >
-                Hızlı Satış (POS)
-            </button>
-
+          <div className="flex items-center gap-2 shrink-0">
             <div className="relative">
-              <button 
+              <button
+                type="button"
                 onClick={() => setIsBulkActionMenuOpen(!isBulkActionMenuOpen)}
-                className="bg-white border border-zinc-200 px-4 py-2.5 rounded-xl text-xs font-bold text-zinc-700 hover:bg-zinc-50 flex items-center gap-1.5 shadow-sm transition-all"
+                className="bg-white border border-zinc-200 px-3.5 h-9 rounded-md text-[12.5px] font-medium text-zinc-800 hover:bg-zinc-50 flex items-center gap-2 shadow-2xs transition-all cursor-pointer"
               >
-                🔧 Toplu İşlemler
-                <svg className={`w-3.5 h-3.5 text-zinc-400 transition-transform ${isBulkActionMenuOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                <Adjustments className="w-4 h-4 text-zinc-700" />
+                <span>Toplu İşlemler</span>
               </button>
 
               {isBulkActionMenuOpen && (
@@ -2668,389 +2679,423 @@ const SiparisYonetimiPage = () => {
                   <div className="px-4 py-2 border-b border-zinc-100 mb-1">
                     <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">{selectedOrderIds.length} Sipariş Seçili</span>
                   </div>
-                  
-                  <button 
+
+                  <button
+                    type="button"
                     onClick={() => {
                       if (selectedOrderIds.length === 0) {
-                        alert("Lütfen sipariş seçin.");
-                        return;
+                        alert("Lütfen sipariş seçin.")
+                        return
                       }
-                      setStatusModalTargetIds(selectedOrderIds);
-                      setNewStatusValue("onay_bekleyen");
-                      setShowStatusModal(true);
-                      setIsBulkActionMenuOpen(false);
+                      setStatusModalTargetIds(selectedOrderIds)
+                      setNewStatusValue("onay_bekleyen")
+                      setShowStatusModal(true)
+                      setIsBulkActionMenuOpen(false)
                     }}
                     className="w-full text-left px-4 py-2 text-xs font-bold text-zinc-700 hover:bg-zinc-50 transition-colors cursor-pointer"
                   >
                     Durumu Değiştir
                   </button>
 
-                  <button className="w-full text-left px-4 py-2 text-xs font-bold text-zinc-700 hover:bg-zinc-50 transition-colors">Toplu Fatura Yazdır</button>
-                  <button className="w-full text-left px-4 py-2 text-xs font-bold text-zinc-700 hover:bg-zinc-50 transition-colors">Toplu Kargo Fişi Yazdır</button>
-                  <button className="w-full text-left px-4 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors">Seçilenleri Sil</button>
+                  <button type="button" className="w-full text-left px-4 py-2 text-xs font-bold text-zinc-700 hover:bg-zinc-50 transition-colors">
+                    Toplu Fatura Yazdır
+                  </button>
+                  <button type="button" className="w-full text-left px-4 py-2 text-xs font-bold text-zinc-700 hover:bg-zinc-50 transition-colors">
+                    Toplu Kargo Fişi Yazdır
+                  </button>
+                  <button type="button" className="w-full text-left px-4 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors">
+                    Seçilenleri Sil
+                  </button>
                 </div>
               )}
             </div>
           </div>
         </div>
 
-        {/* EXPANDABLE FILTER GRID (Görsel 2) */}
+        {/* EXPANDABLE FILTER GRID (Görsel 4 Birebir Tasarım) */}
         {showFilters && (
-          <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm flex flex-col gap-6 animate-fade-in border-l-4 border-l-violet-600">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              
+          <div className="bg-white border border-[#3b82f6] rounded-md p-5 shadow-2xs flex flex-col gap-4 animate-fade-in">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-5 gap-y-3.5">
               {/* Row 1 */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Sipariş Durumu</label>
-                <input
-                  type="text"
+              <div className="flex flex-col gap-1">
+                <label className="text-[11.5px] text-zinc-700">Sipariş Durumu</label>
+                <select
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-zinc-200 focus:outline-none focus:border-zinc-400 text-xs font-bold text-zinc-700 bg-zinc-50"
-                />
+                  className="w-full h-9 px-3 rounded border border-zinc-200 focus:outline-none focus:border-[#3b82f6] text-[12px] text-zinc-700 bg-white"
+                >
+                  <option value="Yeni Sipariş">Yeni Sipariş</option>
+                  <option value="Onay Bekleyenler">Onay Bekleyenler</option>
+                  <option value="Hazırlananlar">Hazırlananlar</option>
+                  <option value="Kargolananlar">Kargolananlar</option>
+                  <option value="Teslim Edilenler">Teslim Edilenler</option>
+                  <option value="İade Edilenler">İade Edilenler</option>
+                  <option value="İptal Edilenler">İptal Edilenler</option>
+                  <option value="">Tümü</option>
+                </select>
               </div>
 
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Platform</label>
+              <div className="flex flex-col gap-1">
+                <label className="text-[11.5px] text-zinc-700">Platform</label>
                 <select
                   value={filterPlatform}
                   onChange={(e) => setFilterPlatform(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-zinc-200 focus:outline-none focus:border-zinc-400 text-xs font-bold text-zinc-800 bg-white"
+                  className="w-full h-9 px-3 rounded border border-zinc-200 focus:outline-none focus:border-[#3b82f6] text-[12px] text-zinc-700 bg-white"
                 >
                   <option value="">Hiçbiri seçilmedi</option>
+                  <option value="Cizgibutik">Web Sitesi</option>
                   <option value="WhatsApp">WhatsApp</option>
-                  <option value="Cizgibutik">Cizgibutik</option>
+                  <option value="Instagram">Instagram</option>
+                  <option value="Trendyol">Trendyol</option>
+                  <option value="Hepsiburada">Hepsiburada</option>
+                  <option value="N11">N11</option>
                 </select>
               </div>
 
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Mağaza</label>
+              <div className="flex flex-col gap-1">
+                <label className="text-[11.5px] text-zinc-700">Mağaza</label>
                 <select
                   value={filterStore}
                   onChange={(e) => setFilterStore(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-zinc-200 focus:outline-none focus:border-zinc-400 text-xs font-bold text-zinc-800 bg-white"
+                  className="w-full h-9 px-3 rounded border border-zinc-200 focus:outline-none focus:border-[#3b82f6] text-[12px] text-zinc-700 bg-white"
                 >
                   <option value="">Hiçbiri seçilmedi</option>
-                  <option value="cizgibutik">Cizgibutik</option>
+                  <option value="cizgibutik">Bodykit Merkezi</option>
                 </select>
               </div>
 
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Sipariş Etiketi</label>
+              <div className="flex flex-col gap-1">
+                <label className="text-[11.5px] text-zinc-700">Sipariş Etiketi</label>
                 <select
                   value={filterTag}
                   onChange={(e) => setFilterTag(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-zinc-200 focus:outline-none focus:border-zinc-400 text-xs font-bold text-zinc-800 bg-white"
+                  className="w-full h-9 px-3 rounded border border-zinc-200 focus:outline-none focus:border-[#3b82f6] text-[12px] text-zinc-700 bg-white"
                 >
                   <option value="">Seçilmedi</option>
                   {(opsData.orderTags || []).map((t: any) => (
-                    <option key={t.id} value={t.name}>{t.name}</option>
+                    <option key={t.id} value={t.name}>
+                      {t.name}
+                    </option>
                   ))}
                 </select>
               </div>
 
               {/* Row 2 */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Sipariş No</label>
+              <div className="flex flex-col gap-1">
+                <label className="text-[11.5px] text-zinc-700">Sipariş No</label>
                 <input
                   type="text"
-                  placeholder="Sipariş No giriniz"
                   value={filterOrderNo}
                   onChange={(e) => setFilterOrderNo(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-zinc-200 focus:outline-none focus:border-zinc-400 text-xs font-bold text-zinc-900 bg-white"
+                  className="w-full h-9 px-3 rounded border border-zinc-200 focus:outline-none focus:border-[#3b82f6] text-[12px] text-zinc-800 bg-white"
                 />
               </div>
 
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Sipariş Tarihi</label>
+              <div className="flex flex-col gap-1">
+                <label className="text-[11.5px] text-zinc-700">Sipariş Tarihi</label>
                 <div className="flex items-center gap-2">
                   <input
                     type="date"
                     value={filterOrderDateStart}
                     onChange={(e) => setFilterOrderDateStart(e.target.value)}
-                    className="flex-1 px-3 py-2 rounded-lg border border-zinc-200 focus:outline-none focus:border-zinc-400 text-xs font-semibold text-zinc-800"
+                    className="flex-1 min-w-0 h-9 px-2.5 rounded border border-zinc-200 focus:outline-none focus:border-[#3b82f6] text-[12px] text-zinc-700 bg-white"
                   />
-                  <span className="text-xs text-zinc-400">ile</span>
+                  <span className="text-[11.5px] text-zinc-600 shrink-0">ile</span>
                   <input
                     type="date"
                     value={filterOrderDateEnd}
                     onChange={(e) => setFilterOrderDateEnd(e.target.value)}
-                    className="flex-1 px-3 py-2 rounded-lg border border-zinc-200 focus:outline-none focus:border-zinc-400 text-xs font-semibold text-zinc-800"
+                    className="flex-1 min-w-0 h-9 px-2.5 rounded border border-zinc-200 focus:outline-none focus:border-[#3b82f6] text-[12px] text-zinc-700 bg-white"
                   />
                 </div>
               </div>
 
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Fatura Tarihi</label>
+              <div className="flex flex-col gap-1">
+                <label className="text-[11.5px] text-zinc-700">Fatura Tarihi</label>
                 <div className="flex items-center gap-2">
                   <input
                     type="date"
                     value={filterInvoiceDateStart}
                     onChange={(e) => setFilterInvoiceDateStart(e.target.value)}
-                    className="flex-1 px-3 py-2 rounded-lg border border-zinc-200 focus:outline-none focus:border-zinc-400 text-xs font-semibold text-zinc-800"
+                    className="flex-1 min-w-0 h-9 px-2.5 rounded border border-zinc-200 focus:outline-none focus:border-[#3b82f6] text-[12px] text-zinc-700 bg-white"
                   />
-                  <span className="text-xs text-zinc-400">ile</span>
+                  <span className="text-[11.5px] text-zinc-600 shrink-0">ile</span>
                   <input
                     type="date"
                     value={filterInvoiceDateEnd}
                     onChange={(e) => setFilterInvoiceDateEnd(e.target.value)}
-                    className="flex-1 px-3 py-2 rounded-lg border border-zinc-200 focus:outline-none focus:border-zinc-400 text-xs font-semibold text-zinc-800"
+                    className="flex-1 min-w-0 h-9 px-2.5 rounded border border-zinc-200 focus:outline-none focus:border-[#3b82f6] text-[12px] text-zinc-700 bg-white"
                   />
                 </div>
               </div>
 
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">E-Fatura Tarihi</label>
+              <div className="flex flex-col gap-1">
+                <label className="text-[11.5px] text-zinc-700">E-Fatura Tarihi</label>
                 <div className="flex items-center gap-2">
                   <input
                     type="date"
                     value={filterEInvoiceDateStart}
                     onChange={(e) => setFilterEInvoiceDateStart(e.target.value)}
-                    className="flex-1 px-3 py-2 rounded-lg border border-zinc-200 focus:outline-none focus:border-zinc-400 text-xs font-semibold text-zinc-800"
+                    className="flex-1 min-w-0 h-9 px-2.5 rounded border border-zinc-200 focus:outline-none focus:border-[#3b82f6] text-[12px] text-zinc-700 bg-white"
                   />
-                  <span className="text-xs text-zinc-400">ile</span>
+                  <span className="text-[11.5px] text-zinc-600 shrink-0">ile</span>
                   <input
                     type="date"
                     value={filterEInvoiceDateEnd}
                     onChange={(e) => setFilterEInvoiceDateEnd(e.target.value)}
-                    className="flex-1 px-3 py-2 rounded-lg border border-zinc-200 focus:outline-none focus:border-zinc-400 text-xs font-semibold text-zinc-800"
+                    className="flex-1 min-w-0 h-9 px-2.5 rounded border border-zinc-200 focus:outline-none focus:border-[#3b82f6] text-[12px] text-zinc-700 bg-white"
                   />
                 </div>
               </div>
 
               {/* Row 3 */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Sipariş Tutarı</label>
+              <div className="flex flex-col gap-1">
+                <label className="text-[11.5px] text-zinc-700">Sipariş Tutarı</label>
                 <div className="flex items-center gap-2">
                   <input
                     type="number"
-                    placeholder="Min"
+                    placeholder="0.00"
                     value={filterTotalMin}
                     onChange={(e) => setFilterTotalMin(e.target.value)}
-                    className="flex-1 px-3 py-2 rounded-lg border border-zinc-200 focus:outline-none focus:border-zinc-400 text-xs font-bold text-zinc-900 bg-white"
+                    className="flex-1 min-w-0 h-9 px-3 rounded border border-zinc-200 focus:outline-none focus:border-[#3b82f6] text-[12px] text-zinc-800 bg-white"
                   />
-                  <span className="text-xs text-zinc-400">ile</span>
+                  <span className="text-[11.5px] text-zinc-600 shrink-0">ile</span>
                   <input
                     type="number"
-                    placeholder="Max"
+                    placeholder="0.00"
                     value={filterTotalMax}
                     onChange={(e) => setFilterTotalMax(e.target.value)}
-                    className="flex-1 px-3 py-2 rounded-lg border border-zinc-200 focus:outline-none focus:border-zinc-400 text-xs font-bold text-zinc-900 bg-white"
+                    className="flex-1 min-w-0 h-9 px-3 rounded border border-zinc-200 focus:outline-none focus:border-[#3b82f6] text-[12px] text-zinc-800 bg-white"
                   />
                 </div>
               </div>
 
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Ödeme Yöntemi</label>
+              <div className="flex flex-col gap-1">
+                <label className="text-[11.5px] text-zinc-700">Ödeme Yöntemi</label>
                 <select
                   value={filterPaymentMethod}
                   onChange={(e) => setFilterPaymentMethod(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-zinc-200 focus:outline-none focus:border-zinc-400 text-xs font-bold text-zinc-800 bg-white"
+                  className="w-full h-9 px-3 rounded border border-zinc-200 focus:outline-none focus:border-[#3b82f6] text-[12px] text-zinc-700 bg-white"
                 >
                   <option value="">Seçilmedi</option>
+                  <option value="Kredi Kartı">Kredi Kartı</option>
+                  <option value="PayTR">PayTR</option>
+                  <option value="Havale / EFT">Havale / EFT</option>
                   <option value="Kapıda Nakit Ödeme">Kapıda Nakit Ödeme</option>
                   <option value="Kapıda Kredi Kartı ile Ödeme">Kapıda Kredi Kartı ile Ödeme</option>
-                  <option value="Havale / EFT">Havale / EFT</option>
-                  <option value="PayTR">PayTR</option>
                 </select>
               </div>
 
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Müşteri Adı</label>
+              <div className="flex flex-col gap-1">
+                <label className="text-[11.5px] text-zinc-700">Müşteri Adı</label>
                 <input
                   type="text"
-                  placeholder="Müşteri adı"
                   value={filterCustomerFirstName}
                   onChange={(e) => setFilterCustomerFirstName(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-zinc-200 focus:outline-none focus:border-zinc-400 text-xs font-bold text-zinc-900 bg-white"
+                  className="w-full h-9 px-3 rounded border border-zinc-200 focus:outline-none focus:border-[#3b82f6] text-[12px] text-zinc-800 bg-white"
                 />
               </div>
 
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Müşteri Soyadı</label>
+              <div className="flex flex-col gap-1">
+                <label className="text-[11.5px] text-zinc-700">Müşteri Soyadı</label>
                 <input
                   type="text"
-                  placeholder="Müşteri soyadı"
                   value={filterCustomerLastName}
                   onChange={(e) => setFilterCustomerLastName(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-zinc-200 focus:outline-none focus:border-zinc-400 text-xs font-bold text-zinc-900 bg-white"
+                  className="w-full h-9 px-3 rounded border border-zinc-200 focus:outline-none focus:border-[#3b82f6] text-[12px] text-zinc-800 bg-white"
                 />
               </div>
 
               {/* Row 4 */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Telefon</label>
+              <div className="flex flex-col gap-1">
+                <label className="text-[11.5px] text-zinc-700">Telefon</label>
                 <input
                   type="text"
-                  placeholder="Telefon numarası"
                   value={filterPhone}
                   onChange={(e) => setFilterPhone(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-zinc-200 focus:outline-none focus:border-zinc-400 text-xs font-bold text-zinc-900 bg-white"
+                  className="w-full h-9 px-3 rounded border border-zinc-200 focus:outline-none focus:border-[#3b82f6] text-[12px] text-zinc-800 bg-white"
                 />
               </div>
 
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Vergi Numarası</label>
+              <div className="flex flex-col gap-1">
+                <label className="text-[11.5px] text-zinc-700">Vergi Numarası</label>
                 <input
                   type="text"
                   value={filterTaxNo}
                   onChange={(e) => setFilterTaxNo(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-zinc-200 focus:outline-none focus:border-zinc-400 text-xs font-bold text-zinc-900 bg-white"
+                  className="w-full h-9 px-3 rounded border border-zinc-200 focus:outline-none focus:border-[#3b82f6] text-[12px] text-zinc-800 bg-white"
                 />
               </div>
 
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Vergi Dairesi</label>
+              <div className="flex flex-col gap-1">
+                <label className="text-[11.5px] text-zinc-700">Vergi Dairesi</label>
                 <input
                   type="text"
                   value={filterTaxOffice}
                   onChange={(e) => setFilterTaxOffice(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-zinc-200 focus:outline-none focus:border-zinc-400 text-xs font-bold text-zinc-900 bg-white"
+                  className="w-full h-9 px-3 rounded border border-zinc-200 focus:outline-none focus:border-[#3b82f6] text-[12px] text-zinc-800 bg-white"
                 />
               </div>
 
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">TC Kimlik No</label>
+              <div className="flex flex-col gap-1">
+                <label className="text-[11.5px] text-zinc-700">TC Kimlik No</label>
                 <input
                   type="text"
                   value={filterTcNo}
                   onChange={(e) => setFilterTcNo(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-zinc-200 focus:outline-none focus:border-zinc-400 text-xs font-bold text-zinc-900 bg-white"
+                  className="w-full h-9 px-3 rounded border border-zinc-200 focus:outline-none focus:border-[#3b82f6] text-[12px] text-zinc-800 bg-white"
                 />
               </div>
 
-              {/* Row 5 */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Üye No</label>
+              {/* Row 5 (Col 4 split into Ürün No & Ürün Barkodu matching Görsel 4) */}
+              <div className="flex flex-col gap-1">
+                <label className="text-[11.5px] text-zinc-700">Üye No</label>
                 <input
                   type="text"
                   value={filterMemberNo}
                   onChange={(e) => setFilterMemberNo(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-zinc-200 focus:outline-none focus:border-zinc-400 text-xs font-bold text-zinc-900 bg-white"
+                  className="w-full h-9 px-3 rounded border border-zinc-200 focus:outline-none focus:border-[#3b82f6] text-[12px] text-zinc-800 bg-white"
                 />
               </div>
 
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Ülke</label>
+              <div className="flex flex-col gap-1">
+                <label className="text-[11.5px] text-zinc-700">Ülke</label>
                 <select
                   value={filterCountry}
                   onChange={(e) => setFilterCountry(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-zinc-200 focus:outline-none focus:border-zinc-400 text-xs font-bold text-zinc-800 bg-white"
+                  className="w-full h-9 px-3 rounded border border-zinc-200 focus:outline-none focus:border-[#3b82f6] text-[12px] text-zinc-700 bg-white"
                 >
                   <option value="">Hiçbiri seçilmedi</option>
                   <option value="tr">Türkiye</option>
                 </select>
               </div>
 
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">İl</label>
+              <div className="flex flex-col gap-1">
+                <label className="text-[11.5px] text-zinc-700">İl</label>
                 <input
                   type="text"
                   value={filterProvince}
                   onChange={(e) => setFilterProvince(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-zinc-200 focus:outline-none focus:border-zinc-400 text-xs font-bold text-zinc-900 bg-white"
+                  className="w-full h-9 px-3 rounded border border-zinc-200 focus:outline-none focus:border-[#3b82f6] text-[12px] text-zinc-800 bg-white"
                 />
               </div>
 
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Ürün No</label>
-                <input
-                  type="text"
-                  value={filterProductNo}
-                  onChange={(e) => setFilterProductNo(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-zinc-200 focus:outline-none focus:border-zinc-400 text-xs font-bold text-zinc-900 bg-white"
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[11.5px] text-zinc-700">Ürün No</label>
+                  <input
+                    type="text"
+                    value={filterProductNo}
+                    onChange={(e) => setFilterProductNo(e.target.value)}
+                    className="w-full h-9 px-3 rounded border border-zinc-200 focus:outline-none focus:border-[#3b82f6] text-[12px] text-zinc-800 bg-white"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[11.5px] text-zinc-700">Ürün Barkodu</label>
+                  <input
+                    type="text"
+                    value={filterProductBarcode}
+                    onChange={(e) => setFilterProductBarcode(e.target.value)}
+                    className="w-full h-9 px-3 rounded border border-zinc-200 focus:outline-none focus:border-[#3b82f6] text-[12px] text-zinc-800 bg-white"
+                  />
+                </div>
               </div>
 
               {/* Row 6 */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Ürün Barkodu</label>
-                <input
-                  type="text"
-                  value={filterProductBarcode}
-                  onChange={(e) => setFilterProductBarcode(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-zinc-200 focus:outline-none focus:border-zinc-400 text-xs font-bold text-zinc-900 bg-white"
-                />
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Ürün Adı</label>
+              <div className="flex flex-col gap-1">
+                <label className="text-[11.5px] text-zinc-700">Ürün Adı</label>
                 <input
                   type="text"
                   value={filterProductName}
                   onChange={(e) => setFilterProductName(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-zinc-200 focus:outline-none focus:border-zinc-400 text-xs font-bold text-zinc-900 bg-white"
+                  className="w-full h-9 px-3 rounded border border-zinc-200 focus:outline-none focus:border-[#3b82f6] text-[12px] text-zinc-800 bg-white"
                 />
               </div>
 
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Ürün Etiketleri</label>
+              <div className="flex flex-col gap-1">
+                <label className="text-[11.5px] text-zinc-700">Ürün Etiketleri</label>
                 <select
                   value={filterProductTag}
                   onChange={(e) => setFilterProductTag(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-zinc-200 focus:outline-none focus:border-zinc-400 text-xs font-bold text-zinc-800 bg-white"
+                  className="w-full h-9 px-3 rounded border border-zinc-200 focus:outline-none focus:border-[#3b82f6] text-[12px] text-zinc-700 bg-white"
                 >
                   <option value="">Etiket Seçilmedi</option>
+                  <option value="Yeni Ürün">Yeni Ürün</option>
+                  <option value="İndirimli Ürün">İndirimli Ürün</option>
+                  <option value="Çok Satan">Çok Satan</option>
                 </select>
               </div>
 
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Hediye Çeki Kodu</label>
+              <div className="flex flex-col gap-1">
+                <label className="text-[11.5px] text-zinc-700">Hediye Çeki Kodu</label>
                 <input
                   type="text"
                   value={filterGiftCardCode}
                   onChange={(e) => setFilterGiftCardCode(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-zinc-200 focus:outline-none focus:border-zinc-400 text-xs font-bold text-zinc-900 bg-white"
+                  className="w-full h-9 px-3 rounded border border-zinc-200 focus:outline-none focus:border-[#3b82f6] text-[12px] text-zinc-800 bg-white"
                 />
               </div>
 
-              {/* Row 7 */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Promosyon</label>
+              <div className="flex flex-col gap-1">
+                <label className="text-[11.5px] text-zinc-700">Promosyon</label>
                 <select
                   value={filterPromo}
                   onChange={(e) => setFilterPromo(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-zinc-200 focus:outline-none focus:border-zinc-400 text-xs font-bold text-zinc-800 bg-white"
+                  className="w-full h-9 px-3 rounded border border-zinc-200 focus:outline-none focus:border-[#3b82f6] text-[12px] text-zinc-700 bg-white"
                 >
                   <option value="">Seçilmedi</option>
+                  <option value="Sepette İndirim">Sepette İndirim</option>
+                  <option value="Ücretsiz Kargo">Ücretsiz Kargo</option>
                 </select>
               </div>
 
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Kargo Firması</label>
+              {/* Row 7 */}
+              <div className="flex flex-col gap-1">
+                <label className="text-[11.5px] text-zinc-700">Kargo Firması</label>
                 <select
                   value={filterCarrier}
                   onChange={(e) => setFilterCarrier(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-zinc-200 focus:outline-none focus:border-zinc-400 text-xs font-bold text-zinc-800 bg-white"
+                  className="w-full h-9 px-3 rounded border border-zinc-200 focus:outline-none focus:border-[#3b82f6] text-[12px] text-zinc-700 bg-white"
                 >
                   <option value="">Seçilmedi</option>
+                  <option value="Yurtiçi Kargo">Yurtiçi Kargo</option>
+                  <option value="Aras Kargo">Aras Kargo</option>
+                  <option value="MNG Kargo">MNG Kargo</option>
+                  <option value="Sürat Kargo">Sürat Kargo</option>
+                  <option value="PTT Kargo">PTT Kargo</option>
                   <option value="KARGOİST">Kargoist</option>
                   <option value="INTERLINE KARGO">Interline Kargo</option>
                 </select>
               </div>
 
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Gelişmiş Arama</label>
+              <div className="flex flex-col gap-1">
+                <label className="text-[11.5px] text-zinc-700">Gelişmiş Arama</label>
                 <select
                   value={filterAdvancedSearch}
                   onChange={(e) => setFilterAdvancedSearch(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-zinc-200 focus:outline-none focus:border-zinc-400 text-xs font-bold text-zinc-800 bg-white"
+                  className="w-full h-9 px-3 rounded border border-zinc-200 focus:outline-none focus:border-[#3b82f6] text-[12px] text-zinc-700 bg-white"
                 >
                   <option value="">Hiçbiri seçilmedi</option>
+                  <option value="invoiced">Faturalandırılmış</option>
+                  <option value="not_invoiced">Faturalandırılmamış</option>
+                  <option value="has_barcode">Kargo Barkodu Oluşturulmuş</option>
+                  <option value="has_note">Notu Olan Siparişler</option>
                 </select>
               </div>
             </div>
 
-            <div className="flex justify-start gap-3 pt-3 border-t border-zinc-100">
-              <button 
+            <div className="flex items-center gap-3 pt-1">
+              <button
+                type="button"
                 onClick={() => setShowFilters(false)}
-                className="bg-sky-600 hover:bg-sky-700 text-white font-semibold text-[11px] px-5 py-2.5 rounded-lg shadow-sm"
+                className="bg-[#1a73e8] hover:bg-[#155fc0] text-white font-medium text-[12px] px-4 py-2 rounded shadow-2xs transition-colors cursor-pointer"
               >
                 Filtrele
               </button>
-              <button 
+              <button
+                type="button"
                 onClick={handleClearFilters}
-                className="bg-white border border-zinc-200 text-zinc-700 hover:bg-zinc-50 font-semibold text-[11px] px-5 py-2.5 rounded-lg"
+                className="bg-transparent text-zinc-700 hover:text-zinc-900 font-medium text-[12px] px-2 py-2 rounded cursor-pointer"
               >
                 Temizle
               </button>

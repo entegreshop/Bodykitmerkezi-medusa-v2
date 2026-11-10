@@ -758,9 +758,9 @@ const IkasProductsPage = () => {
     setLoading(true)
     try {
       const [productsRes, priceListsRes, categoriesRes, collectionsRes, inventoryItemsRes] = await Promise.all([
-        fetch("/admin/products?limit=3000&order=-created_at&fields=id,title,description,thumbnail,images,collection_id,categories.id,categories.name,options.id,options.title,options.values.id,options.values.value,variants.id,variants.title,variants.sku,variants.barcode,variants.manage_inventory,variants.prices.amount,variants.prices.currency_code,variants.metadata,variants.inventory_items.inventory_item_id,variants.options.id,variants.options.value,variants.options.option_id").then(res => res.json()).catch(() => ({ products: [] })),
+        fetch("/admin/products?limit=3000&order=-created_at&fields=id,title,handle,status,metadata,description,thumbnail,images,collection_id,categories.id,categories.name,options.id,options.title,options.values.id,options.values.value,variants.id,variants.title,variants.sku,variants.barcode,variants.manage_inventory,variants.prices.amount,variants.prices.currency_code,variants.metadata,variants.inventory_items.inventory_item_id,variants.options.id,variants.options.value,variants.options.option_id").then(res => res.json()).catch(() => ({ products: [] })),
         fetch("/admin/price-lists?fields=id,title,type,status,prices.id,prices.amount,prices.currency_code,prices.price_set.variant.id").then(res => res.json()).catch(() => ({ price_lists: [] })),
-        fetch("/admin/product-categories").then(res => res.json()).catch(() => ({ product_categories: [] })),
+        fetch("/admin/product-categories?limit=500&fields=id,name,handle,description,is_active,rank,parent_category_id,parent_category.id,parent_category.name,metadata").then(res => res.json()).catch(() => ({ product_categories: [] })),
         fetch("/admin/collections").then(res => res.json()).catch(() => ({ collections: [] })),
         fetch("/admin/inventory-items?limit=3000").then(res => res.json()).catch(() => ({ inventory_items: [] }))
       ])
@@ -1449,10 +1449,259 @@ const IkasProductsPage = () => {
     return prod.variants?.reduce((sum: number, v: any) => sum + (v.inventory_quantity || v.inventory_items?.[0]?.inventory_quantity || 0), 0) || 0
   }
 
+  // --- GÖRSEL 1 & 2: ÜRÜNLER FİLTRELEME ALANI STATE'LERİ ---
+  const DEFAULT_PRODUCT_FILTER = {
+    searchTerm: "",
+    searchField: "Ürün No, Ürün Adı, Ürün Kodu",
+    advanced: "Seçilmedi",
+    sortField: "Varsayılan",
+    sortDir: "Azalan (Z -> A)",
+    source: "Kaynak Seçilmedi",
+    category: "",
+    brand: "",
+    tag: "",
+    productType: "Seçilmedi",
+    stockMin: "0.00",
+    stockMax: "0.00",
+    desiMin: "0.00",
+    desiMax: "0.00",
+    costPriceMin: "0.00",
+    costPriceMax: "0.00",
+    marketPriceMin: "0.00",
+    marketPriceMax: "0.00",
+    salePriceMin: "0.00",
+    salePriceMax: "0.00",
+    currency: "Seçilmedi",
+  }
+  const [showProductFilters, setShowProductFilters] = useState(false)
+  const [prodFilter, setProdFilter] = useState({ ...DEFAULT_PRODUCT_FILTER })
+  const [appliedProdFilter, setAppliedProdFilter] = useState({ ...DEFAULT_PRODUCT_FILTER })
+
+  // --- GÖRSEL 3: KATEGORİLER FİLTRELEME VE MODAL STATE'LERİ ---
+  const DEFAULT_CATEGORY_FILTER = {
+    searchTerm: "",
+    searchField: "Kategori No, Kategori Adı",
+    parentCategoryId: "",
+    advanced: "Seçilmedi",
+  }
+  const [showCategoryFilters, setShowCategoryFilters] = useState(false)
+  const [catQuickSearch, setCatQuickSearch] = useState("")
+  const [catFilter, setCatFilter] = useState({ ...DEFAULT_CATEGORY_FILTER })
+  const [appliedCatFilter, setAppliedCatFilter] = useState({ ...DEFAULT_CATEGORY_FILTER })
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([])
+  const [categoryPageSize, setCategoryPageSize] = useState(15)
+  const [showCategoryModal, setShowCategoryModal] = useState(false)
+  const [showCategoryTreeModal, setShowCategoryTreeModal] = useState(false)
+  const [showCategoryMarketplaceModal, setShowCategoryMarketplaceModal] = useState(false)
+  const [editingCategory, setEditingCategory] = useState<{
+    id?: string
+    name: string
+    handle: string
+    parent_category_id: string
+    is_active: boolean
+    rank: number
+    description: string
+  }>({
+    name: "",
+    handle: "",
+    parent_category_id: "",
+    is_active: true,
+    rank: 0,
+    description: "",
+  })
+
+  const handleSaveCategory = async () => {
+    if (!editingCategory.name.trim()) {
+      alert("Lütfen kategori adını girin.")
+      return
+    }
+    try {
+      const payload: any = {
+        name: editingCategory.name.trim(),
+        handle: (editingCategory.handle || slugify(editingCategory.name)).trim(),
+        description: editingCategory.description || "",
+        is_active: editingCategory.is_active,
+        rank: Number(editingCategory.rank) || 0,
+        parent_category_id: editingCategory.parent_category_id || null,
+      }
+      const url = editingCategory.id
+        ? `/admin/product-categories/${editingCategory.id}`
+        : "/admin/product-categories"
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.message || "Kategori kaydedilemedi.")
+      }
+      await fetchData()
+      setShowCategoryModal(false)
+    } catch (e: any) {
+      alert("Hata: " + e.message)
+    }
+  }
+
+  const handleDeleteCategory = async (catId: string) => {
+    if (!confirm("Bu kategoriyi silmek istediğinize emin misiniz?")) return
+    try {
+      const res = await fetch(`/admin/product-categories/${catId}`, { method: "DELETE" })
+      if (res.ok) {
+        setCategories((prev) => prev.filter((c) => c.id !== catId))
+      } else {
+        alert("Kategori silinemedi.")
+      }
+    } catch (e) {
+      alert("Kategori silinirken hata oluştu.")
+    }
+  }
+
+  const handleDuplicateProduct = async (prod: any) => {
+    if (!confirm(`"${prod.title}" ürününü kopyalamak istediğinize emin misiniz?`)) return
+    try {
+      const firstV = prod.variants?.[0]
+      const origPrice = firstV?.prices?.find((p: any) => p.currency_code === "try")?.amount || 10000
+      const copyPayload: any = {
+        title: `${prod.title} (Kopya)`,
+        handle: `${prod.handle || slugify(prod.title)}-kopya-${Date.now().toString().slice(-4)}`,
+        description: prod.description || "",
+        status: "published",
+        thumbnail: prod.thumbnail || undefined,
+        images: (prod.images || []).map((img: any) => ({ url: img.url })),
+        categories: (prod.categories || []).map((c: any) => ({ id: c.id })),
+        collection_id: prod.collection_id || undefined,
+        options: [{ title: "Varsayılan", values: ["Standart"] }],
+        variants: [
+          {
+            title: "Standart",
+            sku: firstV?.sku ? `${firstV.sku}-COPY` : `SKU-${Date.now().toString().slice(-5)}`,
+            barcode: firstV?.barcode || undefined,
+            manage_inventory: false,
+            options: { Varsayılan: "Standart" },
+            prices: [{ currency_code: "try", amount: origPrice }],
+            metadata: firstV?.metadata || {},
+          },
+        ],
+      }
+      const res = await fetch("/admin/products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(copyPayload),
+      })
+      if (res.ok) {
+        await fetchData()
+      } else {
+        alert("Ürün kopyalanamadı.")
+      }
+    } catch (e) {
+      alert("Ürün kopyalanırken hata oluştu.")
+    }
+  }
+
   // --- Filtered Products list ---
-  const filteredProducts = products.filter(p => 
-    p.title.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const filteredProducts = products
+    .filter((p, idx) => {
+      const prodNo = String(5556 - idx)
+      const firstV = p.variants?.[0]
+      const sku = String(firstV?.sku || p.handle || "")
+      const barcode = String(firstV?.barcode || sku)
+      const originalPrice = (firstV?.prices?.find((pr: any) => pr.currency_code === "try")?.amount || 0) / 100
+      const salePrice = getSalePriceForVariant(firstV?.id) || originalPrice
+      const costPrice = Number(firstV?.metadata?.cost_price || 0)
+      const stockCount = getProductTotalStock(p)
+      const desi = Number(firstV?.metadata?.desi || p.metadata?.desi || 0)
+
+      // Quick search bar
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim()
+        const matchQuick =
+          String(p.title || "").toLowerCase().includes(q) ||
+          sku.toLowerCase().includes(q) ||
+          barcode.toLowerCase().includes(q) ||
+          prodNo.includes(q)
+        if (!matchQuick) return false
+      }
+
+      // Detailed Filter Box: Arama Terimi
+      if (appliedProdFilter.searchTerm.trim()) {
+        const term = appliedProdFilter.searchTerm.toLowerCase().trim()
+        if (appliedProdFilter.searchField === "Ürün No") {
+          if (!prodNo.includes(term)) return false
+        } else if (appliedProdFilter.searchField === "Ürün Adı") {
+          if (!String(p.title || "").toLowerCase().includes(term)) return false
+        } else if (appliedProdFilter.searchField === "Ürün Kodu") {
+          if (!sku.toLowerCase().includes(term)) return false
+        } else if (appliedProdFilter.searchField === "Barkod") {
+          if (!barcode.toLowerCase().includes(term)) return false
+        } else {
+          const matchAny =
+            prodNo.includes(term) ||
+            String(p.title || "").toLowerCase().includes(term) ||
+            sku.toLowerCase().includes(term) ||
+            barcode.toLowerCase().includes(term)
+          if (!matchAny) return false
+        }
+      }
+
+      // Gelişmiş Filtreleme
+      if (appliedProdFilter.advanced === "Stokta Olanlar" && stockCount <= 0) return false
+      if (appliedProdFilter.advanced === "Stokta Olmayanlar" && stockCount > 0) return false
+      if (appliedProdFilter.advanced === "Resimsiz Ürünler" && p.thumbnail) return false
+      if (appliedProdFilter.advanced === "İndirimli Ürünler" && salePrice >= originalPrice) return false
+      if (appliedProdFilter.advanced === "Aktif Ürünler" && p.status === "draft") return false
+      if (appliedProdFilter.advanced === "Pasif Ürünler" && p.status !== "draft") return false
+
+      // Kategori
+      if (appliedProdFilter.category) {
+        const hasCat = (p.categories || []).some((c: any) => c.id === appliedProdFilter.category || c.name === appliedProdFilter.category)
+        if (!hasCat) return false
+      }
+
+      // Marka
+      if (appliedProdFilter.brand) {
+        const col = collections.find((c: any) => c.id === p.collection_id)
+        const brandName = col?.title || p.metadata?.brand || "BODYKİT MERKEZİ"
+        if (p.collection_id !== appliedProdFilter.brand && brandName !== appliedProdFilter.brand) return false
+      }
+
+      // Ürün Tipi
+      if (appliedProdFilter.productType === "Standart Ürün" && (p.variants?.length || 0) > 1) return false
+      if (appliedProdFilter.productType === "Varyantlı Ürün" && (p.variants?.length || 0) <= 1) return false
+
+      // Numeric ranges (ignore when both min & max are 0.00)
+      const checkRange = (val: number, minStr: string, maxStr: string) => {
+        const min = parseFloat(minStr) || 0
+        const max = parseFloat(maxStr) || 0
+        if (min === 0 && max === 0) return true
+        if (min > 0 && val < min) return false
+        if (max > 0 && val > max) return false
+        return true
+      }
+
+      if (!checkRange(stockCount, appliedProdFilter.stockMin, appliedProdFilter.stockMax)) return false
+      if (!checkRange(desi, appliedProdFilter.desiMin, appliedProdFilter.desiMax)) return false
+      if (!checkRange(costPrice, appliedProdFilter.costPriceMin, appliedProdFilter.costPriceMax)) return false
+      if (!checkRange(originalPrice, appliedProdFilter.marketPriceMin, appliedProdFilter.marketPriceMax)) return false
+      if (!checkRange(salePrice, appliedProdFilter.salePriceMin, appliedProdFilter.salePriceMax)) return false
+
+      return true
+    })
+    .sort((a, b) => {
+      const dir = appliedProdFilter.sortDir.includes("Artan") ? 1 : -1
+      if (appliedProdFilter.sortField === "Ürün Adı") {
+        return String(a.title || "").localeCompare(String(b.title || ""), "tr") * dir
+      }
+      if (appliedProdFilter.sortField === "Fiyat") {
+        const pa = (a.variants?.[0]?.prices?.[0]?.amount || 0)
+        const pb = (b.variants?.[0]?.prices?.[0]?.amount || 0)
+        return (pa - pb) * dir
+      }
+      if (appliedProdFilter.sortField === "Stok") {
+        return (getProductTotalStock(a) - getProductTotalStock(b)) * dir
+      }
+      return 0
+    })
   const totalPages = Math.ceil(filteredProducts.length / pageSize)
   const paginatedProducts = filteredProducts.slice((currentPage - 1) * pageSize, currentPage * pageSize)
 
@@ -3414,333 +3663,1357 @@ const IkasProductsPage = () => {
                   ))}
               </div>
             </div>
-          ) : (
-            <>
+          ) : activeSubTab === "kategoriler" ? (
+            /* GÖRSEL 3: KATEGORİLER (/product-management?tab=kategoriler) */
+            <div className="flex flex-col gap-4 max-w-[1600px] mx-auto">
+              {/* Top Action Bar */}
+              <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+                <div className="flex items-center gap-2 flex-1 max-w-[440px]">
+                  <button
+                    type="button"
+                    onClick={() => setShowCategoryFilters((prev) => !prev)}
+                    className={`bg-white border ${
+                      showCategoryFilters ? "border-[#3b82f6] text-zinc-900" : "border-zinc-300 text-zinc-700"
+                    } hover:bg-zinc-50 px-3.5 py-2 rounded-md text-xs font-semibold inline-flex items-center gap-2 shadow-2xs transition-colors cursor-pointer shrink-0`}
+                  >
+                    <svg className="w-3.5 h-3.5 text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                    </svg>
+                    <span>Filtreler</span>
+                    <span className="text-[10px] text-zinc-500">⌄</span>
+                  </button>
 
-          <div className="flex justify-between items-center mb-6">
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold text-slate-900">Ürünler</h1>
-            </div>
-            
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={initCreateMode}
-                style={{ backgroundColor: "#10b981", color: "#ffffff" }}
-                className="hover:opacity-95 text-white text-xs font-bold px-4 py-2.5 rounded-lg shadow-sm flex items-center gap-1.5 transition-all cursor-pointer"
-              >
-                <span>+ Yeni Ürün</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  const nav = (window as any).__entegreshopNavigate
-                  if (typeof nav === "function") nav("/xml-operations?tab=import")
-                  else window.location.href = "/app/xml-operations?tab=import"
-                }}
-                style={{ backgroundColor: "#1976d2", color: "#ffffff" }}
-                className="hover:opacity-95 text-white text-xs font-bold px-4 py-2.5 rounded-lg shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
-              >
-                <span>📄 XML İşlemleri</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  const nav = (window as any).__entegreshopNavigate
-                  if (typeof nav === "function") nav("/xml-operations?tab=excel")
-                  else window.location.href = "/app/xml-operations?tab=excel"
-                }}
-                style={{ backgroundColor: "#1976d2", color: "#ffffff" }}
-                className="hover:opacity-95 text-white text-xs font-bold px-4 py-2.5 rounded-lg shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
-              >
-                <span>📊 Excel İşlemleri</span>
-              </button>
-            </div>
-          </div>
+                  <div className="relative flex-1">
+                    <span className="absolute inset-y-0 left-3 flex items-center text-zinc-400 text-xs pointer-events-none">
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                    </span>
+                    <input
+                      type="text"
+                      placeholder="Hızlı ara.."
+                      value={catQuickSearch}
+                      onChange={(e) => setCatQuickSearch(e.target.value)}
+                      className="w-full bg-white border border-zinc-200 rounded-md pl-8 pr-3 py-2 text-xs font-medium text-zinc-800 focus:outline-none focus:border-[#3b82f6] shadow-2xs"
+                    />
+                  </div>
+                </div>
 
-          {/* Search, Filter, and View Controls */}
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
-            <div className="flex gap-2 w-full md:w-auto flex-1 max-w-md">
-              <div className="relative flex-1">
-                <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </span>
-                <input
-                  type="text"
-                  placeholder="Tabloda arama yapın"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-white border border-slate-200 rounded-lg pl-9 pr-3.5 py-2.5 text-xs font-medium focus:outline-none focus:border-violet-500 text-slate-800 transition-colors shadow-xs"
-                />
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingCategory({
+                        name: "",
+                        handle: "",
+                        parent_category_id: "",
+                        is_active: true,
+                        rank: 0,
+                        description: "",
+                      })
+                      setShowCategoryModal(true)
+                    }}
+                    style={{ backgroundColor: "#00b259", color: "#ffffff" }}
+                    className="hover:opacity-95 text-white px-3.5 py-2 rounded-md text-xs font-bold inline-flex items-center gap-1.5 shadow-2xs transition-opacity cursor-pointer"
+                  >
+                    <span className="text-sm leading-none font-black">+</span>
+                    <span>Yeni Kategori</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowCategoryTreeModal(true)}
+                    style={{ backgroundColor: "#f59e0b", color: "#ffffff" }}
+                    className="hover:opacity-95 text-white px-3.5 py-2 rounded-md text-xs font-bold inline-flex items-center gap-1.5 shadow-2xs transition-opacity cursor-pointer"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16m-7 6h7" />
+                    </svg>
+                    <span>Kategori Ağacı</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowCategoryMarketplaceModal(true)}
+                    style={{ backgroundColor: "#1a73e8", color: "#ffffff" }}
+                    className="hover:opacity-95 text-white px-3.5 py-2 rounded-md text-xs font-bold inline-flex items-center gap-1.5 shadow-2xs transition-opacity cursor-pointer"
+                  >
+                    <span>=</span>
+                    <span>Pazaryeri Eşleştirmeleri</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const csvRows = [
+                        ["No", "Kategori Adı", "Üst Kategori", "Durum", "Sıra"].join(";"),
+                        ...categories.map((c: any, idx: number) => {
+                          const parentName =
+                            c.parent_category?.name ||
+                            categories.find((p: any) => p.id === c.parent_category_id)?.name ||
+                            "Ana Kategori"
+                          return [
+                            280 - idx,
+                            c.name,
+                            parentName,
+                            c.is_active !== false ? "Aktif" : "Pasif",
+                            c.rank ?? 0,
+                          ].join(";")
+                        }),
+                      ].join("\n")
+                      const blob = new Blob(["\uFEFF" + csvRows], { type: "text/csv;charset=utf-8;" })
+                      const url = URL.createObjectURL(blob)
+                      const a = document.createElement("a")
+                      a.href = url
+                      a.download = "kategoriler.csv"
+                      a.click()
+                    }}
+                    style={{ backgroundColor: "#1a73e8", color: "#ffffff" }}
+                    className="hover:opacity-95 text-white px-3.5 py-2 rounded-md text-xs font-bold inline-flex items-center gap-1.5 shadow-2xs transition-opacity cursor-pointer"
+                  >
+                    <span>📊</span>
+                    <span>Excel İşlemleri</span>
+                  </button>
+                </div>
               </div>
-              <button
-                type="button"
-                className="bg-white border border-slate-200 text-slate-700 text-xs font-semibold px-4 py-2.5 rounded-lg shadow-sm hover:bg-slate-50 transition-all flex items-center gap-1.5"
-              >
-                <svg className="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-                </svg>
-                <span>Filtre</span>
-              </button>
-            </div>
-            
-            <div className="flex gap-2">
-              <button type="button" className="bg-white border border-slate-200 text-slate-500 p-2 rounded-lg hover:bg-slate-50 transition-all shadow-sm">
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-                </svg>
-              </button>
-              <button type="button" className="bg-white border border-slate-200 text-slate-500 p-2 rounded-lg hover:bg-slate-50 transition-all shadow-sm">
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              </button>
-              <button type="button" className="bg-white border border-slate-200 text-slate-500 p-2 rounded-lg hover:bg-slate-50 transition-all shadow-sm">
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h2v2H4V6zm6 0h2v2h-2V6zm6 0h2v2h-2V6zM4 12h2v2H4v-2zm6 0h2v2h-2v-2zm6 0h2v2h-2v-2zM4 18h2v2H4v-2zm6 0h2v2h-2v-2zm6 0h2v2h-2v-2z" />
-                </svg>
-              </button>
-            </div>
-          </div>
 
-          {/* Table */}
-          {loading ? (
-            <div className="flex justify-center items-center py-20 text-slate-400 text-sm gap-2">
-              <ArrowPath className="w-4 h-4 animate-spin text-violet-600" />
-              <span>Ürünler yükleniyor...</span>
+              {/* Collapsible Blue-Bordered Category Filter Panel (Image 3) */}
+              {showCategoryFilters && (
+                <div className="bg-white border border-[#3b82f6] rounded-md p-5 shadow-2xs">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-[11.5px] font-bold text-zinc-800 mb-1.5">Arama Terimi</label>
+                      <div className="flex items-center">
+                        <input
+                          type="text"
+                          value={catFilter.searchTerm}
+                          onChange={(e) => setCatFilter({ ...catFilter, searchTerm: e.target.value })}
+                          className="w-1/2 border border-zinc-200 rounded-l-md px-3 py-2 text-xs text-zinc-800 focus:outline-none focus:border-[#3b82f6]"
+                        />
+                        <select
+                          value={catFilter.searchField}
+                          onChange={(e) => setCatFilter({ ...catFilter, searchField: e.target.value })}
+                          className="w-1/2 border border-l-0 border-zinc-200 rounded-r-md px-2.5 py-2 text-xs text-zinc-700 bg-white focus:outline-none focus:border-[#3b82f6]"
+                        >
+                          <option value="Kategori No, Kategori Adı">Kategori No, Kategori Adı</option>
+                          <option value="Kategori No">Kategori No</option>
+                          <option value="Kategori Adı">Kategori Adı</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11.5px] font-bold text-zinc-800 mb-1.5">Üst Kategori</label>
+                      <select
+                        value={catFilter.parentCategoryId}
+                        onChange={(e) => setCatFilter({ ...catFilter, parentCategoryId: e.target.value })}
+                        className="w-full border border-zinc-200 rounded-md px-3 py-2 text-xs text-zinc-700 bg-white focus:outline-none focus:border-[#3b82f6]"
+                      >
+                        <option value="">Kategori Seçilmedi</option>
+                        <option value="__root__">Ana Kategori</option>
+                        {categories.map((cat: any) => (
+                          <option key={cat.id} value={cat.id}>
+                            {cat.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11.5px] font-bold text-zinc-800 mb-1.5">Gelişmiş Filtreleme</label>
+                      <select
+                        value={catFilter.advanced}
+                        onChange={(e) => setCatFilter({ ...catFilter, advanced: e.target.value })}
+                        className="w-full border border-zinc-200 rounded-md px-3 py-2 text-xs text-zinc-700 bg-white focus:outline-none focus:border-[#3b82f6]"
+                      >
+                        <option value="Seçilmedi">Seçilmedi</option>
+                        <option value="Aktif Kategoriler">Aktif Kategoriler</option>
+                        <option value="Pasif Kategoriler">Pasif Kategoriler</option>
+                        <option value="Ana Kategoriler">Ana Kategoriler</option>
+                        <option value="Alt Kategoriler">Alt Kategoriler</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 mt-4">
+                    <button
+                      type="button"
+                      onClick={() => setAppliedCatFilter({ ...catFilter })}
+                      style={{ backgroundColor: "#1a73e8", color: "#ffffff" }}
+                      className="hover:opacity-95 text-white px-4 py-1.5 rounded text-xs font-bold shadow-2xs transition-opacity cursor-pointer"
+                    >
+                      Filtrele
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCatFilter({ ...DEFAULT_CATEGORY_FILTER })
+                        setAppliedCatFilter({ ...DEFAULT_CATEGORY_FILTER })
+                        setCatQuickSearch("")
+                      }}
+                      className="bg-white hover:bg-zinc-50 text-zinc-700 border border-zinc-300 px-4 py-1.5 rounded text-xs font-semibold transition-colors cursor-pointer"
+                    >
+                      Temizle
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Categories Table Card (Image 3) */}
+              <div className="bg-white border border-zinc-200 rounded-lg p-5 shadow-2xs flex flex-col gap-4">
+                <div className="border border-zinc-200 rounded overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse text-left bg-white text-[12px]">
+                      <thead>
+                        <tr className="bg-white border-b border-zinc-200 text-[11.5px] font-bold text-zinc-800 divide-x divide-zinc-200">
+                          <th className="py-3 px-3 w-10 text-center">
+                            <input
+                              type="checkbox"
+                              checked={categories.length > 0 && selectedCategoryIds.length === categories.length}
+                              onChange={(e) =>
+                                setSelectedCategoryIds(
+                                  e.target.checked ? categories.map((c: any) => c.id) : []
+                                )
+                              }
+                              className="w-4 h-4 rounded border-zinc-300 cursor-pointer"
+                            />
+                          </th>
+                          <th className="py-3 px-3.5 w-[7%]">No</th>
+                          <th className="py-3 px-3.5 w-[21%]">Kategori Adı</th>
+                          <th className="py-3 px-3.5 w-[20%]">Üst Kategori</th>
+                          <th className="py-3 px-3.5 w-[7%]">Durum</th>
+                          <th className="py-3 px-3.5 w-[27%]">Pazaryeri Eşleştirmeleri</th>
+                          <th className="py-3 px-3.5 w-[7%]">Sıra</th>
+                          <th className="py-3 px-3.5 w-[11%]">İşlemler</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-zinc-200 text-zinc-700">
+                        {(() => {
+                          const getCategoryFullPath = (cat: any): string => {
+                            if (!cat.parent_category_id && !cat.parent_category) return "Ana Kategori"
+                            const chain: string[] = []
+                            let currentParentId = cat.parent_category_id || cat.parent_category?.id
+                            let guard = 0
+                            while (currentParentId && guard < 6) {
+                              const parentObj = categories.find((c: any) => c.id === currentParentId)
+                              if (parentObj) {
+                                chain.unshift(parentObj.name)
+                                currentParentId = parentObj.parent_category_id || parentObj.parent_category?.id
+                              } else if (cat.parent_category?.name && chain.length === 0) {
+                                chain.unshift(cat.parent_category.name)
+                                break
+                              } else {
+                                break
+                              }
+                              guard++
+                            }
+                            return chain.length > 0 ? chain.join(" > ") : "Ana Kategori"
+                          }
+
+                          const filteredCats = categories.filter((c: any, idx: number) => {
+                            const catNo = String(280 - idx)
+                            const name = String(c.name || "")
+                            if (catQuickSearch.trim()) {
+                              const q = catQuickSearch.toLowerCase().trim()
+                              if (!name.toLowerCase().includes(q) && !catNo.includes(q)) return false
+                            }
+                            if (appliedCatFilter.searchTerm.trim()) {
+                              const t = appliedCatFilter.searchTerm.toLowerCase().trim()
+                              if (appliedCatFilter.searchField === "Kategori No") {
+                                if (!catNo.includes(t)) return false
+                              } else if (appliedCatFilter.searchField === "Kategori Adı") {
+                                if (!name.toLowerCase().includes(t)) return false
+                              } else {
+                                if (!name.toLowerCase().includes(t) && !catNo.includes(t)) return false
+                              }
+                            }
+                            if (appliedCatFilter.parentCategoryId === "__root__") {
+                              if (c.parent_category_id) return false
+                            } else if (appliedCatFilter.parentCategoryId) {
+                              if (c.parent_category_id !== appliedCatFilter.parentCategoryId) return false
+                            }
+                            if (appliedCatFilter.advanced === "Aktif Kategoriler" && c.is_active === false) return false
+                            if (appliedCatFilter.advanced === "Pasif Kategoriler" && c.is_active !== false) return false
+                            if (appliedCatFilter.advanced === "Ana Kategoriler" && c.parent_category_id) return false
+                            if (appliedCatFilter.advanced === "Alt Kategoriler" && !c.parent_category_id) return false
+                            return true
+                          })
+
+                          if (filteredCats.length === 0) {
+                            return (
+                              <tr>
+                                <td colSpan={8} className="py-12 text-center text-zinc-400 font-semibold">
+                                  Kategori bulunamadı.
+                                </td>
+                              </tr>
+                            )
+                          }
+
+                          const mpBadges = [
+                            { key: "n11", label: "n11" },
+                            { key: "hb", label: "hb" },
+                            { key: "ptt", label: "Ptt" },
+                            { key: "amz", label: "a" },
+                            { key: "ty", label: "ty" },
+                            { key: "cs", label: "çs" },
+                            { key: "pzr", label: "pz" },
+                            { key: "alg", label: "A" },
+                            { key: "idf", label: "id" },
+                            { key: "lcw", label: "LCW" },
+                            { key: "byn", label: "B" },
+                          ]
+
+                          return filteredCats.slice(0, categoryPageSize).map((cat: any, idx: number) => {
+                            const catNo = 280 - idx
+                            const parentPath = getCategoryFullPath(cat)
+                            return (
+                              <tr
+                                key={cat.id}
+                                className={`divide-x divide-zinc-200 transition-colors ${
+                                  idx % 2 === 0 ? "bg-zinc-50/50" : "bg-white"
+                                } hover:bg-blue-50/20`}
+                              >
+                                <td className="py-3 px-3 text-center">
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedCategoryIds.includes(cat.id)}
+                                    onChange={(e) =>
+                                      setSelectedCategoryIds((prev) =>
+                                        e.target.checked ? [...prev, cat.id] : prev.filter((id) => id !== cat.id)
+                                      )
+                                    }
+                                    className="w-4 h-4 rounded border-zinc-300 cursor-pointer"
+                                  />
+                                </td>
+                                <td className="py-3 px-3.5">
+                                  <span
+                                    onClick={() => {
+                                      setEditingCategory({
+                                        id: cat.id,
+                                        name: cat.name || "",
+                                        handle: cat.handle || "",
+                                        parent_category_id: cat.parent_category_id || "",
+                                        is_active: cat.is_active !== false,
+                                        rank: cat.rank ?? 0,
+                                        description: cat.description || "",
+                                      })
+                                      setShowCategoryModal(true)
+                                    }}
+                                    className="font-bold text-[#1a73e8] hover:underline cursor-pointer"
+                                  >
+                                    {catNo}
+                                  </span>
+                                </td>
+                                <td className="py-3 px-3.5 font-medium text-zinc-700">{cat.name}</td>
+                                <td className="py-3 px-3.5 font-medium text-zinc-600">{parentPath}</td>
+                                <td className="py-3 px-3.5">
+                                  {cat.is_active !== false ? (
+                                    <span className="inline-flex items-center justify-center w-5 h-5 rounded-full border border-emerald-500 text-emerald-500">
+                                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                      </svg>
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center justify-center w-5 h-5 rounded-full border border-rose-400 text-rose-500 text-[10px] font-bold">
+                                      ✕
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="py-3 px-3.5">
+                                  <div className="flex items-center gap-1 flex-wrap">
+                                    {mpBadges.map((mp) => (
+                                      <span
+                                        key={mp.key}
+                                        title={mp.key.toUpperCase()}
+                                        onClick={() => setShowCategoryMarketplaceModal(true)}
+                                        className="w-6 h-6 rounded-full bg-zinc-200/80 hover:bg-zinc-300 text-zinc-500 text-[8.5px] font-extrabold inline-flex items-center justify-center select-none cursor-pointer transition-colors"
+                                      >
+                                        {mp.label}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </td>
+                                <td className="py-3 px-3.5 text-zinc-700 font-medium">{cat.rank ?? 0}</td>
+                                <td className="py-3 px-3.5">
+                                  <div className="flex items-center gap-1.5">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setEditingCategory({
+                                          id: cat.id,
+                                          name: cat.name || "",
+                                          handle: cat.handle || "",
+                                          parent_category_id: cat.parent_category_id || "",
+                                          is_active: cat.is_active !== false,
+                                          rank: cat.rank ?? 0,
+                                          description: cat.description || "",
+                                        })
+                                        setShowCategoryModal(true)
+                                      }}
+                                      style={{ backgroundColor: "#9353d3", color: "#ffffff" }}
+                                      className="w-7 h-7 rounded hover:opacity-90 text-white flex items-center justify-center shadow-2xs cursor-pointer transition-opacity"
+                                      title="Kategoriyi Düzenle"
+                                    >
+                                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                      </svg>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        window.open(`https://bodykitmerkezi.com/categories/${cat.handle || slugify(cat.name)}`, "_blank")
+                                      }
+                                      className="w-7 h-7 rounded bg-zinc-100 border border-zinc-200 hover:bg-zinc-200 text-zinc-700 flex items-center justify-center shadow-2xs cursor-pointer transition-colors"
+                                      title="Sitede Görüntüle"
+                                    >
+                                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                                      </svg>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteCategory(cat.id)}
+                                      style={{ backgroundColor: "#f31260", color: "#ffffff" }}
+                                      className="w-7 h-7 rounded hover:opacity-90 text-white flex items-center justify-center shadow-2xs cursor-pointer transition-opacity"
+                                      title="Kategoriyi Sil"
+                                    >
+                                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                      </svg>
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            )
+                          })
+                        })()}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-1">
+                  <div className="flex items-center gap-2.5">
+                    <select
+                      value={categoryPageSize}
+                      onChange={(e) => setCategoryPageSize(Number(e.target.value))}
+                      className="border border-zinc-200 rounded px-2.5 py-1.5 text-xs font-semibold text-zinc-700 bg-white focus:outline-none"
+                    >
+                      <option value={15}>15</option>
+                      <option value={30}>30</option>
+                      <option value={50}>50</option>
+                      <option value={100}>100</option>
+                    </select>
+                    <span className="text-xs text-zinc-600">
+                      {categories.length} kayıttan {categories.length > 0 ? 1 : 0} ile {Math.min(categoryPageSize, categories.length)} arası gösteriliyor
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
           ) : (
-            <div>
-              <div className="bg-white border border-slate-150 rounded-xl shadow-sm overflow-hidden">
-                <table className="w-full border-collapse text-left">
-                  <thead>
-                    <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                      <th className="py-3 px-4 w-10">
-                        <input
-                          type="checkbox"
-                          className="w-4 h-4 text-violet-600 border-slate-300 rounded focus:ring-violet-500"
-                          checked={paginatedProducts.length > 0 && selectedProductIds.length === paginatedProducts.length}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedProductIds(paginatedProducts.map((p) => p.id))
-                            } else {
-                              setSelectedProductIds([])
-                            }
-                          }}
-                        />
-                      </th>
-                      <th className="py-3 px-4 text-slate-600 font-bold select-none cursor-pointer">
-                        <span>Ürün</span>
-                        <svg className="w-3.5 h-3.5 inline ml-1 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-                        </svg>
-                      </th>
-                      <th className="py-3 px-4 text-slate-600 font-bold">Satış Fiyatı</th>
-                      <th className="py-3 px-4 text-slate-600 font-bold">Alış Fiyatı</th>
-                      <th className="py-3 px-4 text-slate-600 font-bold select-none cursor-pointer">
-                        <span>Envanter</span>
-                        <svg className="w-3.5 h-3.5 inline ml-1 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-                        </svg>
-                      </th>
-                      <th className="py-3 px-4 text-slate-600 font-bold">Satış Kanalları</th>
-                      <th className="py-3 px-4 text-right text-slate-600 font-bold">İşlemler</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-150 text-xs">
-                    {filteredProducts.length === 0 ? (
-                      <tr>
-                        <td colSpan={7} className="py-12 text-center text-slate-400 font-medium">Hiç ürün bulunamadı.</td>
-                      </tr>
-                    ) : (
-                      paginatedProducts.map((prod) => {
-                        const firstV = prod.variants?.[0]
-                        const originalPrice = (firstV?.prices?.find((p: any) => p.currency_code === "try")?.amount || 0) / 100
-                        const salePrice = getSalePriceForVariant(firstV?.id) || originalPrice
-                        const costPrice = firstV?.metadata?.cost_price || 0
-                        const stockCount = getProductTotalStock(prod)
+            /* GÖRSEL 1 & 2: ÜRÜNLER LİSTESİ VE FİLTRELEME ALANI (/product-management) */
+            <div className="flex flex-col gap-4 max-w-[1600px] mx-auto">
+              {/* Top Action Bar (Image 1 & 2) */}
+              <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+                <div className="flex items-center gap-2 flex-1 max-w-[440px]">
+                  <button
+                    type="button"
+                    onClick={() => setShowProductFilters((prev) => !prev)}
+                    className={`bg-white border ${
+                      showProductFilters ? "border-[#3b82f6] text-zinc-900" : "border-zinc-300 text-zinc-700"
+                    } hover:bg-zinc-50 px-3.5 py-2 rounded-md text-xs font-semibold inline-flex items-center gap-2 shadow-2xs transition-colors cursor-pointer shrink-0`}
+                  >
+                    <svg className="w-3.5 h-3.5 text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                    </svg>
+                    <span>Filtreler</span>
+                    <span className="text-[10px] text-zinc-500">⌄</span>
+                  </button>
 
-                        return (
-                          <tr key={prod.id} className="hover:bg-slate-50/50 transition-colors">
-                            <td className="py-3.5 px-4 w-10">
+                  <div className="relative flex-1">
+                    <span className="absolute inset-y-0 left-3 flex items-center text-zinc-400 text-xs pointer-events-none">
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                    </span>
+                    <input
+                      type="text"
+                      placeholder="Hızlı ara.."
+                      value={searchQuery}
+                      onChange={(e) => {
+                        setSearchQuery(e.target.value)
+                        setCurrentPage(1)
+                      }}
+                      className="w-full bg-white border border-zinc-200 rounded-md pl-8 pr-3 py-2 text-xs font-medium text-zinc-800 focus:outline-none focus:border-[#3b82f6] shadow-2xs"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={initCreateMode}
+                    style={{ backgroundColor: "#00b259", color: "#ffffff" }}
+                    className="hover:opacity-95 text-white text-xs font-bold px-3.5 py-2 rounded-md shadow-2xs flex items-center gap-1.5 transition-opacity cursor-pointer"
+                  >
+                    <span className="text-sm leading-none font-black">+</span>
+                    <span>Yeni Ürün</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const nav = (window as any).__entegreshopNavigate
+                      if (typeof nav === "function") nav("/xml-operations?tab=import")
+                      else window.location.href = "/app/xml-operations?tab=import"
+                    }}
+                    style={{ backgroundColor: "#1a73e8", color: "#ffffff" }}
+                    className="hover:opacity-95 text-white text-xs font-bold px-3.5 py-2 rounded-md shadow-2xs transition-opacity flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <span>📄 XML İşlemleri</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const nav = (window as any).__entegreshopNavigate
+                      if (typeof nav === "function") nav("/xml-operations?tab=excel")
+                      else window.location.href = "/app/xml-operations?tab=excel"
+                    }}
+                    style={{ backgroundColor: "#1a73e8", color: "#ffffff" }}
+                    className="hover:opacity-95 text-white text-xs font-bold px-3.5 py-2 rounded-md shadow-2xs transition-opacity flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <span>📊 Excel İşlemleri</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Collapsible Blue-Bordered Product Filter Panel (Image 2) */}
+              {showProductFilters && (
+                <div className="bg-white border border-[#3b82f6] rounded-md p-5 shadow-2xs">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-5 gap-y-4">
+                    {/* Row 1 */}
+                    <div>
+                      <label className="block text-[11.5px] font-bold text-zinc-800 mb-1.5">Arama Terimi</label>
+                      <div className="flex items-center">
+                        <input
+                          type="text"
+                          value={prodFilter.searchTerm}
+                          onChange={(e) => setProdFilter({ ...prodFilter, searchTerm: e.target.value })}
+                          className="w-1/2 border border-zinc-200 rounded-l-md px-3 py-2 text-xs text-zinc-800 focus:outline-none focus:border-[#3b82f6]"
+                        />
+                        <select
+                          value={prodFilter.searchField}
+                          onChange={(e) => setProdFilter({ ...prodFilter, searchField: e.target.value })}
+                          className="w-1/2 border border-l-0 border-zinc-200 rounded-r-md px-2 py-2 text-xs text-zinc-700 bg-white focus:outline-none focus:border-[#3b82f6]"
+                        >
+                          <option value="Ürün No, Ürün Adı, Ürün Kodu">Ürün No, Ürün Adı, Ürün Kodu</option>
+                          <option value="Ürün No">Ürün No</option>
+                          <option value="Ürün Adı">Ürün Adı</option>
+                          <option value="Ürün Kodu">Ürün Kodu</option>
+                          <option value="Barkod">Barkod</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11.5px] font-bold text-zinc-800 mb-1.5">Gelişmiş Filtreleme</label>
+                      <select
+                        value={prodFilter.advanced}
+                        onChange={(e) => setProdFilter({ ...prodFilter, advanced: e.target.value })}
+                        className="w-full border border-zinc-200 rounded-md px-3 py-2 text-xs text-zinc-700 bg-white focus:outline-none focus:border-[#3b82f6]"
+                      >
+                        <option value="Seçilmedi">Seçilmedi</option>
+                        <option value="Stokta Olanlar">Stokta Olanlar</option>
+                        <option value="Stokta Olmayanlar">Stokta Olmayanlar</option>
+                        <option value="İndirimli Ürünler">İndirimli Ürünler</option>
+                        <option value="Resimsiz Ürünler">Resimsiz Ürünler</option>
+                        <option value="Aktif Ürünler">Aktif Ürünler</option>
+                        <option value="Pasif Ürünler">Pasif Ürünler</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11.5px] font-bold text-zinc-800 mb-1.5">Sıralama</label>
+                      <div className="flex items-center">
+                        <select
+                          value={prodFilter.sortField}
+                          onChange={(e) => setProdFilter({ ...prodFilter, sortField: e.target.value })}
+                          className="w-1/2 border border-zinc-200 rounded-l-md px-2.5 py-2 text-xs text-zinc-700 bg-white focus:outline-none focus:border-[#3b82f6]"
+                        >
+                          <option value="Varsayılan">Varsayılan</option>
+                          <option value="Ürün Adı">Ürün Adı</option>
+                          <option value="Fiyat">Fiyat</option>
+                          <option value="Stok">Stok</option>
+                        </select>
+                        <select
+                          value={prodFilter.sortDir}
+                          onChange={(e) => setProdFilter({ ...prodFilter, sortDir: e.target.value })}
+                          className="w-1/2 border border-l-0 border-zinc-200 rounded-r-md px-2.5 py-2 text-xs text-zinc-700 bg-white focus:outline-none focus:border-[#3b82f6]"
+                        >
+                          <option value="Azalan (Z -> A)">Azalan (Z -&gt; A)</option>
+                          <option value="Artan (A -> Z)">Artan (A -&gt; Z)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11.5px] font-bold text-zinc-800 mb-1.5">Ürün Kaynağı</label>
+                      <select
+                        value={prodFilter.source}
+                        onChange={(e) => setProdFilter({ ...prodFilter, source: e.target.value })}
+                        className="w-full border border-zinc-200 rounded-md px-3 py-2 text-xs text-zinc-700 bg-white focus:outline-none focus:border-[#3b82f6]"
+                      >
+                        <option value="Kaynak Seçilmedi">Kaynak Seçilmedi</option>
+                        <option value="Yönetim Paneli">Yönetim Paneli</option>
+                        <option value="XML Tedarikçi">XML Tedarikçi</option>
+                        <option value="Excel Aktarımı">Excel Aktarımı</option>
+                      </select>
+                    </div>
+
+                    {/* Row 2 */}
+                    <div>
+                      <label className="block text-[11.5px] font-bold text-zinc-800 mb-1.5">Kategori</label>
+                      <select
+                        value={prodFilter.category}
+                        onChange={(e) => setProdFilter({ ...prodFilter, category: e.target.value })}
+                        className="w-full border border-zinc-200 rounded-md px-3 py-2 text-xs text-zinc-700 bg-white focus:outline-none focus:border-[#3b82f6]"
+                      >
+                        <option value="">Kategori Seçilmedi</option>
+                        {categories.map((cat: any) => (
+                          <option key={cat.id} value={cat.id}>
+                            {cat.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11.5px] font-bold text-zinc-800 mb-1.5">Marka</label>
+                      <select
+                        value={prodFilter.brand}
+                        onChange={(e) => setProdFilter({ ...prodFilter, brand: e.target.value })}
+                        className="w-full border border-zinc-200 rounded-md px-3 py-2 text-xs text-zinc-700 bg-white focus:outline-none focus:border-[#3b82f6]"
+                      >
+                        <option value="">Marka Seçilmedi</option>
+                        <option value="BODYKİT MERKEZİ">BODYKİT MERKEZİ</option>
+                        {collections.map((col: any) => (
+                          <option key={col.id} value={col.id}>
+                            {col.title}
+                          </option>
+                        ))}
+                        {(catalogData.brands || []).map((b: any) => (
+                          <option key={b.id} value={b.name}>
+                            {b.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11.5px] font-bold text-zinc-800 mb-1.5">Ürün Etiketleri</label>
+                      <select
+                        value={prodFilter.tag}
+                        onChange={(e) => setProdFilter({ ...prodFilter, tag: e.target.value })}
+                        className="w-full border border-zinc-200 rounded-md px-3 py-2 text-xs text-zinc-700 bg-white focus:outline-none focus:border-[#3b82f6]"
+                      >
+                        <option value="">Etiket Seçilmedi</option>
+                        {(catalogData.tags || []).map((t: any) => (
+                          <option key={t.id} value={t.name}>
+                            {t.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11.5px] font-bold text-zinc-800 mb-1.5">Ürün Tipi</label>
+                      <select
+                        value={prodFilter.productType}
+                        onChange={(e) => setProdFilter({ ...prodFilter, productType: e.target.value })}
+                        className="w-full border border-zinc-200 rounded-md px-3 py-2 text-xs text-zinc-700 bg-white focus:outline-none focus:border-[#3b82f6]"
+                      >
+                        <option value="Seçilmedi">Seçilmedi</option>
+                        <option value="Standart Ürün">Standart Ürün</option>
+                        <option value="Varyantlı Ürün">Varyantlı Ürün</option>
+                      </select>
+                    </div>
+
+                    {/* Row 3 */}
+                    <div>
+                      <label className="block text-[11.5px] font-bold text-zinc-800 mb-1.5">Stok Miktarı</label>
+                      <div className="flex items-center">
+                        <input
+                          type="text"
+                          value={prodFilter.stockMin}
+                          onChange={(e) => setProdFilter({ ...prodFilter, stockMin: e.target.value })}
+                          className="w-full border border-zinc-200 rounded-l-md px-3 py-2 text-xs text-zinc-700 focus:outline-none focus:border-[#3b82f6]"
+                        />
+                        <span className="bg-zinc-100 border-y border-zinc-200 px-2.5 py-2 text-xs text-zinc-600 font-medium shrink-0">
+                          ile
+                        </span>
+                        <input
+                          type="text"
+                          value={prodFilter.stockMax}
+                          onChange={(e) => setProdFilter({ ...prodFilter, stockMax: e.target.value })}
+                          className="w-full border border-zinc-200 rounded-r-md px-3 py-2 text-xs text-zinc-700 focus:outline-none focus:border-[#3b82f6]"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11.5px] font-bold text-zinc-800 mb-1.5">Desi</label>
+                      <div className="flex items-center">
+                        <input
+                          type="text"
+                          value={prodFilter.desiMin}
+                          onChange={(e) => setProdFilter({ ...prodFilter, desiMin: e.target.value })}
+                          className="w-full border border-zinc-200 rounded-l-md px-3 py-2 text-xs text-zinc-700 focus:outline-none focus:border-[#3b82f6]"
+                        />
+                        <span className="bg-zinc-100 border-y border-zinc-200 px-2.5 py-2 text-xs text-zinc-600 font-medium shrink-0">
+                          ile
+                        </span>
+                        <input
+                          type="text"
+                          value={prodFilter.desiMax}
+                          onChange={(e) => setProdFilter({ ...prodFilter, desiMax: e.target.value })}
+                          className="w-full border border-zinc-200 rounded-r-md px-3 py-2 text-xs text-zinc-700 focus:outline-none focus:border-[#3b82f6]"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11.5px] font-bold text-zinc-800 mb-1.5">Alış Fiyatı</label>
+                      <div className="flex items-center">
+                        <input
+                          type="text"
+                          value={prodFilter.costPriceMin}
+                          onChange={(e) => setProdFilter({ ...prodFilter, costPriceMin: e.target.value })}
+                          className="w-full border border-zinc-200 rounded-l-md px-3 py-2 text-xs text-zinc-700 focus:outline-none focus:border-[#3b82f6]"
+                        />
+                        <span className="bg-zinc-100 border-y border-zinc-200 px-2.5 py-2 text-xs text-zinc-600 font-medium shrink-0">
+                          ile
+                        </span>
+                        <input
+                          type="text"
+                          value={prodFilter.costPriceMax}
+                          onChange={(e) => setProdFilter({ ...prodFilter, costPriceMax: e.target.value })}
+                          className="w-full border border-zinc-200 rounded-r-md px-3 py-2 text-xs text-zinc-700 focus:outline-none focus:border-[#3b82f6]"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11.5px] font-bold text-zinc-800 mb-1.5">Piyasa Fiyatı</label>
+                      <div className="flex items-center">
+                        <input
+                          type="text"
+                          value={prodFilter.marketPriceMin}
+                          onChange={(e) => setProdFilter({ ...prodFilter, marketPriceMin: e.target.value })}
+                          className="w-full border border-zinc-200 rounded-l-md px-3 py-2 text-xs text-zinc-700 focus:outline-none focus:border-[#3b82f6]"
+                        />
+                        <span className="bg-zinc-100 border-y border-zinc-200 px-2.5 py-2 text-xs text-zinc-600 font-medium shrink-0">
+                          ile
+                        </span>
+                        <input
+                          type="text"
+                          value={prodFilter.marketPriceMax}
+                          onChange={(e) => setProdFilter({ ...prodFilter, marketPriceMax: e.target.value })}
+                          className="w-full border border-zinc-200 rounded-r-md px-3 py-2 text-xs text-zinc-700 focus:outline-none focus:border-[#3b82f6]"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Row 4 */}
+                    <div>
+                      <label className="block text-[11.5px] font-bold text-zinc-800 mb-1.5">Satış Fiyatı</label>
+                      <div className="flex items-center">
+                        <input
+                          type="text"
+                          value={prodFilter.salePriceMin}
+                          onChange={(e) => setProdFilter({ ...prodFilter, salePriceMin: e.target.value })}
+                          className="w-full border border-zinc-200 rounded-l-md px-3 py-2 text-xs text-zinc-700 focus:outline-none focus:border-[#3b82f6]"
+                        />
+                        <span className="bg-zinc-100 border-y border-zinc-200 px-2.5 py-2 text-xs text-zinc-600 font-medium shrink-0">
+                          ile
+                        </span>
+                        <input
+                          type="text"
+                          value={prodFilter.salePriceMax}
+                          onChange={(e) => setProdFilter({ ...prodFilter, salePriceMax: e.target.value })}
+                          className="w-full border border-zinc-200 rounded-r-md px-3 py-2 text-xs text-zinc-700 focus:outline-none focus:border-[#3b82f6]"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11.5px] font-bold text-zinc-800 mb-1.5">Para Birimi</label>
+                      <select
+                        value={prodFilter.currency}
+                        onChange={(e) => setProdFilter({ ...prodFilter, currency: e.target.value })}
+                        className="w-full border border-zinc-200 rounded-md px-3 py-2 text-xs text-zinc-700 bg-white focus:outline-none focus:border-[#3b82f6]"
+                      >
+                        <option value="Seçilmedi">Seçilmedi</option>
+                        <option value="TL">TL (₺)</option>
+                        <option value="USD">USD ($)</option>
+                        <option value="EUR">EUR (€)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 mt-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAppliedProdFilter({ ...prodFilter })
+                        setCurrentPage(1)
+                      }}
+                      style={{ backgroundColor: "#1a73e8", color: "#ffffff" }}
+                      className="hover:opacity-95 text-white px-4 py-1.5 rounded text-xs font-bold shadow-2xs transition-opacity cursor-pointer"
+                    >
+                      Filtrele
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setProdFilter({ ...DEFAULT_PRODUCT_FILTER })
+                        setAppliedProdFilter({ ...DEFAULT_PRODUCT_FILTER })
+                        setSearchQuery("")
+                        setCurrentPage(1)
+                      }}
+                      className="bg-white hover:bg-zinc-50 text-zinc-700 border border-zinc-300 px-4 py-1.5 rounded text-xs font-semibold transition-colors cursor-pointer"
+                    >
+                      Temizle
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Products Table (Image 1) */}
+              {loading ? (
+                <div className="flex justify-center items-center py-20 text-slate-400 text-sm gap-2 bg-white border border-zinc-200 rounded-lg">
+                  <ArrowPath className="w-4 h-4 animate-spin text-blue-600" />
+                  <span>Ürünler yükleniyor...</span>
+                </div>
+              ) : (
+                <div className="bg-white border border-zinc-200 rounded-lg p-5 shadow-2xs flex flex-col gap-4">
+                  <div className="border border-zinc-200 rounded overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <table className="w-full border-collapse text-left bg-white text-[12px]">
+                        <thead>
+                          <tr className="bg-white border-b border-zinc-200 text-[11.5px] font-bold text-zinc-800 divide-x divide-zinc-200">
+                            <th className="py-3 px-3 w-10 text-center">
                               <input
                                 type="checkbox"
-                                className="w-4 h-4 text-violet-600 border-slate-300 rounded focus:ring-violet-500"
-                                checked={selectedProductIds.includes(prod.id)}
+                                className="w-4 h-4 rounded border-zinc-300 cursor-pointer"
+                                checked={paginatedProducts.length > 0 && selectedProductIds.length === paginatedProducts.length}
                                 onChange={(e) => {
                                   if (e.target.checked) {
-                                    setSelectedProductIds((prev) => [...prev, prod.id])
+                                    setSelectedProductIds(paginatedProducts.map((p) => p.id))
                                   } else {
-                                    setSelectedProductIds((prev) => prev.filter((id) => id !== prod.id))
+                                    setSelectedProductIds([])
                                   }
                                 }}
                               />
-                            </td>
-                            <td className="py-3.5 px-4">
-                              <div className="flex items-center gap-3">
-                                <div className="w-12 h-16 bg-slate-50 border border-slate-100 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center">
-                                  {prod.thumbnail ? (
-                                    <img src={prod.thumbnail} alt={prod.title} className="w-full h-full object-cover" />
-                                  ) : (
-                                    <span className="text-xl">👕</span>
-                                  )}
-                                </div>
-                                <div className="flex flex-col">
-                                  <span className="font-bold text-slate-900 hover:text-violet-600 transition-colors cursor-pointer text-sm" onClick={() => initEditMode(prod)}>{prod.title}</span>
-                                  <span className="text-xs text-slate-400 mt-1">{prod.variants?.length || 0} varyant</span>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="py-3.5 px-4">
-                              <div className="flex flex-col justify-center">
-                                {salePrice < originalPrice ? (
-                                  <>
-                                    <span className="line-through text-slate-400 text-xs">₺ {originalPrice.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</span>
-                                    <span className="text-slate-900 font-extrabold text-sm mt-0.5">₺ {salePrice.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <span className="line-through text-transparent text-xs select-none">₺ 0.00</span>
-                                    <span className="text-slate-900 font-extrabold text-sm mt-0.5">₺ {originalPrice.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</span>
-                                  </>
-                                )}
-                              </div>
-                            </td>
-                            <td className="py-3.5 px-4 font-semibold text-slate-900 text-sm">
-                              {costPrice > 0 ? `₺ ${costPrice.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}` : "-"}
-                            </td>
-                            <td className="py-3.5 px-4">
-                              <div className="flex flex-col justify-center">
-                                <span className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
-                                  {stockCount === 0 && (
-                                    <span className="inline-flex items-center justify-center w-4.5 h-4.5 rounded-full bg-amber-500 text-white text-[10px] font-extrabold" title="Stok Yok!">!</span>
-                                  )}
-                                  {stockCount} adet
-                                </span>
-                                <span className="text-violet-600 font-bold text-xs mt-0.5">{prod.variants?.length || 0} varyant</span>
-                              </div>
-                            </td>
-                            <td className="py-3.5 px-4">
-                              <div className="inline-flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 cursor-pointer select-none">
-                                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                                <span className="text-slate-800 font-semibold text-xs">1 Satış Kanalı</span>
-                                <svg className="w-3.5 h-3.5 text-slate-400 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                                </svg>
-                              </div>
-                            </td>
-                            <td className="py-3.5 px-4 text-right">
-                              <div className="flex justify-end gap-1">
-                                <button
-                                  type="button"
-                                  onClick={() => initEditMode(prod)}
-                                  className="p-1.5 rounded-lg text-slate-400 hover:text-violet-600 hover:bg-violet-50 transition-all"
-                                >
-                                  <Pencil className="w-4 h-4" />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleDeleteProduct(prod.id)}
-                                  className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-all"
-                                >
-                                  <Trash className="w-4 h-4" />
-                                </button>
-                              </div>
-                            </td>
+                            </th>
+                            <th className="py-3 px-3 w-[6%]">No</th>
+                            <th className="py-3 px-3 w-[7%]">Resim</th>
+                            <th className="py-3 px-3.5 w-[31%]">Ürün Bilgileri</th>
+                            <th className="py-3 px-3.5 w-[13%]">Site</th>
+                            <th className="py-3 px-3 w-[23%]">Pazaryerleri</th>
+                            <th className="py-3 px-3 w-[6%]">Desi</th>
+                            <th className="py-3 px-3 w-[6%]">Stok</th>
+                            <th className="py-3 px-3 w-[8%]">İşlemler</th>
                           </tr>
-                        )
-                      })
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                        </thead>
+                        <tbody className="divide-y divide-zinc-200 text-zinc-700">
+                          {filteredProducts.length === 0 ? (
+                            <tr>
+                              <td colSpan={9} className="py-12 text-center text-zinc-400 font-semibold">
+                                Hiç ürün bulunamadı.
+                              </td>
+                            </tr>
+                          ) : (
+                            paginatedProducts.map((prod, idx) => {
+                              const globalIdx = (currentPage - 1) * pageSize + idx
+                              const prodNo = 5556 - globalIdx
+                              const firstV = prod.variants?.[0]
+                              const originalPrice =
+                                (firstV?.prices?.find((p: any) => p.currency_code === "try")?.amount || 0) / 100
+                              const salePrice = getSalePriceForVariant(firstV?.id) || originalPrice
+                              const costPrice = Number(firstV?.metadata?.cost_price || 0)
+                              const marketPrice = Number(firstV?.metadata?.market_price || (salePrice < originalPrice ? originalPrice : 0))
+                              const stockCount = getProductTotalStock(prod)
+                              const desi = Number(firstV?.metadata?.desi || prod.metadata?.desi || 0)
+                              const sku = firstV?.sku || prod.handle?.toUpperCase().slice(0, 14) || `BKM-${prodNo}`
+                              const barcode = firstV?.barcode || sku
+                              const catNames =
+                                (prod.categories || []).map((c: any) => c.name).filter(Boolean).join(" > ") ||
+                                "Genel Kategori"
+                              const colObj = collections.find((c: any) => c.id === prod.collection_id)
+                              const brandLabel = (colObj?.title || prod.metadata?.brand || "BODYKİT MERKEZİ").toUpperCase()
+                              const isPublished = prod.status !== "draft"
+                              const fmtPrice = (val: number) =>
+                                `${val.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TL`
 
-              {/* Pagination Footer */}
-              <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-6 text-xs text-slate-500 font-semibold select-none bg-white border border-slate-150 rounded-xl p-4.5 shadow-sm">
-                <div className="flex items-center gap-4.5">
-                  <div className="flex items-center gap-2">
-                    <span>Satır Adedi:</span>
-                    <div className="relative">
-                      <select 
+                              return (
+                                <tr
+                                  key={prod.id}
+                                  className={`divide-x divide-zinc-200 transition-colors ${
+                                    idx % 2 === 0 ? "bg-zinc-50/50" : "bg-white"
+                                  } hover:bg-blue-50/20`}
+                                >
+                                  <td className="py-3.5 px-3 text-center align-middle">
+                                    <input
+                                      type="checkbox"
+                                      className="w-4 h-4 rounded border-zinc-300 cursor-pointer"
+                                      checked={selectedProductIds.includes(prod.id)}
+                                      onChange={(e) => {
+                                        if (e.target.checked) {
+                                          setSelectedProductIds((prev) => [...prev, prod.id])
+                                        } else {
+                                          setSelectedProductIds((prev) => prev.filter((id) => id !== prod.id))
+                                        }
+                                      }}
+                                    />
+                                  </td>
+
+                                  <td className="py-3.5 px-3 align-middle">
+                                    <span
+                                      onClick={() => initEditMode(prod)}
+                                      className="font-bold text-[#1a73e8] hover:underline cursor-pointer"
+                                    >
+                                      {prodNo}
+                                    </span>
+                                  </td>
+
+                                  <td className="py-3.5 px-3 align-middle">
+                                    <div
+                                      onClick={() => initEditMode(prod)}
+                                      className="w-12 h-15 bg-white border border-zinc-200 rounded overflow-hidden flex items-center justify-center cursor-pointer mx-auto"
+                                    >
+                                      {prod.thumbnail ? (
+                                        <img src={prod.thumbnail} alt={prod.title} className="w-full h-full object-cover" />
+                                      ) : (
+                                        <span className="text-zinc-300 text-xs">Resim</span>
+                                      )}
+                                    </div>
+                                  </td>
+
+                                  <td className="py-3.5 px-3.5 align-middle">
+                                    <div className="flex flex-col gap-0.5 text-[11.5px] leading-snug">
+                                      <span
+                                        onClick={() => initEditMode(prod)}
+                                        className="font-bold text-zinc-800 hover:text-[#1a73e8] cursor-pointer"
+                                      >
+                                        {prod.title}
+                                      </span>
+                                      <div className="text-zinc-600">
+                                        <span className="font-bold text-zinc-700">Kategori:</span> {catNames}
+                                      </div>
+                                      <div className="text-zinc-600">
+                                        <span className="font-bold text-zinc-700">Kodu:</span> {sku}
+                                      </div>
+                                      <div className="text-zinc-600">
+                                        <span className="font-bold text-zinc-700">Barkod:</span> {barcode}
+                                      </div>
+                                      <div className="text-zinc-700 font-semibold">{brandLabel}</div>
+                                    </div>
+                                  </td>
+
+                                  <td className="py-3.5 px-3.5 align-middle">
+                                    <div className="flex flex-col gap-0.5 text-[11.5px]">
+                                      <div className="mb-0.5">
+                                        {isPublished ? (
+                                          <span className="inline-flex items-center justify-center w-4.5 h-4.5 rounded-full border border-emerald-500 text-emerald-500">
+                                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                            </svg>
+                                          </span>
+                                        ) : (
+                                          <span className="inline-flex items-center justify-center w-4.5 h-4.5 rounded-full border border-rose-400 text-rose-500 text-[9px] font-bold">
+                                            ✕
+                                          </span>
+                                        )}
+                                      </div>
+                                      <span className="font-bold text-zinc-800">{fmtPrice(salePrice)}</span>
+                                      <span className="text-zinc-600">
+                                        <strong className="text-zinc-700">P:</strong> {fmtPrice(marketPrice)}
+                                      </span>
+                                      <span className="text-zinc-600">
+                                        <strong className="text-zinc-700">A:</strong> {fmtPrice(costPrice)}
+                                      </span>
+                                    </div>
+                                  </td>
+
+                                  <td className="py-3.5 px-2.5 align-middle">
+                                    <div className="grid grid-cols-4 gap-1 text-center">
+                                      {[
+                                        { key: "n11", badge: "n11" },
+                                        { key: "hb", badge: "hb" },
+                                        { key: "ty", badge: "ty" },
+                                        { key: "cs", badge: "çs" },
+                                      ].map((mp) => (
+                                        <div key={mp.key} className="flex flex-col items-center gap-1">
+                                          <span className="w-7 h-7 rounded-full bg-zinc-200/80 text-zinc-500 text-[9px] font-extrabold inline-flex items-center justify-center select-none">
+                                            {mp.badge}
+                                          </span>
+                                          <span className="text-[10.5px] font-medium text-zinc-700 leading-tight">
+                                            {salePrice.toLocaleString("en-US", {
+                                              minimumFractionDigits: 2,
+                                              maximumFractionDigits: 2,
+                                            })}
+                                            <br />
+                                            TL
+                                          </span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </td>
+
+                                  <td className="py-3.5 px-3 align-middle text-zinc-700 font-medium">{desi}</td>
+
+                                  <td className="py-3.5 px-3 align-middle text-zinc-800 font-semibold">{stockCount}</td>
+
+                                  <td className="py-3.5 px-3 align-middle">
+                                    <div className="grid grid-cols-2 gap-1.5 w-15">
+                                      <button
+                                        type="button"
+                                        onClick={() => initEditMode(prod)}
+                                        style={{ backgroundColor: "#9353d3", color: "#ffffff" }}
+                                        className="w-7 h-7 rounded hover:opacity-90 text-white flex items-center justify-center shadow-2xs cursor-pointer transition-opacity"
+                                        title="Ürünü Düzenle"
+                                      >
+                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                        </svg>
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDuplicateProduct(prod)}
+                                        className="w-7 h-7 rounded bg-zinc-100 border border-zinc-200 hover:bg-zinc-200 text-zinc-700 flex items-center justify-center shadow-2xs cursor-pointer transition-colors"
+                                        title="Ürünü Kopyala"
+                                      >
+                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                          <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                        </svg>
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          window.open(
+                                            `https://bodykitmerkezi.com/products/${prod.handle || slugify(prod.title)}`,
+                                            "_blank"
+                                          )
+                                        }
+                                        className="w-7 h-7 rounded bg-zinc-100 border border-zinc-200 hover:bg-zinc-200 text-zinc-700 flex items-center justify-center shadow-2xs cursor-pointer transition-colors"
+                                        title="Sitede Görüntüle"
+                                      >
+                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                          <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                                        </svg>
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDeleteProduct(prod.id)}
+                                        style={{ backgroundColor: "#f31260", color: "#ffffff" }}
+                                        className="w-7 h-7 rounded hover:opacity-90 text-white flex items-center justify-center shadow-2xs cursor-pointer transition-opacity"
+                                        title="Ürünü Sil"
+                                      >
+                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              )
+                            })
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Pagination Footer */}
+                  <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-1 text-xs text-zinc-600 select-none">
+                    <div className="flex items-center gap-3">
+                      <select
                         value={pageSize}
                         onChange={(e) => {
                           setPageSize(Number(e.target.value))
                           setCurrentPage(1)
                         }}
-                        className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 font-bold focus:outline-none pr-7 appearance-none cursor-pointer">
+                        className="bg-white border border-zinc-200 rounded px-2.5 py-1.5 text-xs text-zinc-800 font-semibold focus:outline-none cursor-pointer"
+                      >
+                        <option value={15}>15</option>
                         <option value={20}>20</option>
                         <option value={50}>50</option>
                         <option value={100}>100</option>
                       </select>
-                      <span className="absolute inset-y-0 right-2 flex items-center pointer-events-none text-slate-400">▼</span>
+                      <span>
+                        {filteredProducts.length} kayıttan {filteredProducts.length > 0 ? (currentPage - 1) * pageSize + 1 : 0} ile{" "}
+                        {Math.min(currentPage * pageSize, filteredProducts.length)} arası gösteriliyor
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                        className="px-3 py-1.5 bg-white border border-zinc-200 rounded hover:bg-zinc-50 text-zinc-600 font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                      >
+                        &lt; Önceki
+                      </button>
+                      <span className="px-3 py-1.5 bg-blue-50 text-[#1a73e8] border border-blue-200 rounded font-bold">
+                        {currentPage} / {totalPages || 1}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                        disabled={currentPage >= totalPages || totalPages === 0}
+                        className="px-3 py-1.5 bg-white border border-zinc-200 rounded hover:bg-zinc-50 text-zinc-600 font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                      >
+                        Sonraki &gt;
+                      </button>
                     </div>
                   </div>
-                  <div>
-                    {filteredProducts.length > 0 ? (currentPage - 1) * pageSize + 1 : 0} - {Math.min(currentPage * pageSize, filteredProducts.length)} / {filteredProducts.length} Ürün
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-1.5">
-                  <button 
-                    type="button" 
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
-                    className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                    &lt; Önceki
-                  </button>
-                  <span className="px-3 py-1.5 bg-violet-50 text-violet-700 border border-violet-200 rounded-lg font-bold">
-                    {currentPage} / {totalPages || 1}
-                  </span>
-                  <button 
-                    type="button" 
-                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                    disabled={currentPage >= totalPages || totalPages === 0}
-                    className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                    Sonraki &gt;
-                  </button>
-                </div>
-              </div>
 
-              {/* Floating Bottom Bulk Action Bar */}
-              {selectedProductIds.length > 0 && (
-                <div className="fixed bottom-0 left-0 lg:left-64 right-0 bg-[#2b3548] p-4 flex items-center justify-center gap-3 z-40 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.3)] border-t border-slate-700">
-                  <button
-                    type="button"
-                    onClick={() => setIsBulkModalOpen(true)}
-                    className="bg-[#3b82f6] hover:bg-blue-600 text-white font-bold text-sm px-6 py-2.5 rounded transition-colors"
-                  >
-                    İşlemler ({selectedProductIds.length})
-                  </button>
-                  <button
-                    type="button"
-                    className="bg-[#a855f7] hover:bg-purple-600 text-white font-bold text-sm px-6 py-2.5 rounded transition-colors flex items-center gap-1.5"
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                    Durum ({selectedProductIds.length})
-                  </button>
-                  <button
-                    type="button"
-                    className="bg-[#f59e0b] hover:bg-amber-600 text-white font-bold text-sm px-6 py-2.5 rounded transition-colors flex items-center gap-1.5"
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
-                    Yazdır ({selectedProductIds.length})
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleBulkDelete}
-                    className="bg-[#ef4444] hover:bg-red-600 text-white font-bold text-sm px-6 py-2.5 rounded transition-colors flex items-center gap-1.5"
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                    Seçilenleri Sil ({selectedProductIds.length})
-                  </button>
+                  {/* Floating Bottom Bulk Action Bar */}
+                  {selectedProductIds.length > 0 && (
+                    <div className="fixed bottom-0 left-0 right-0 bg-[#2b3548] p-3.5 flex items-center justify-center gap-3 z-40 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.3)] border-t border-slate-700">
+                      <button
+                        type="button"
+                        onClick={() => setIsBulkModalOpen(true)}
+                        className="bg-[#3b82f6] hover:bg-blue-600 text-white font-bold text-xs px-5 py-2 rounded transition-colors cursor-pointer"
+                      >
+                        İşlemler ({selectedProductIds.length})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleBulkDelete}
+                        className="bg-[#ef4444] hover:bg-red-600 text-white font-bold text-xs px-5 py-2 rounded transition-colors flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <span>Seçilenleri Sil ({selectedProductIds.length})</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
           )}
-            </>
-          )}
+        </div>
+      )}
+
+      {/* KATEGORİ EKLE / DÜZENLE MODALI (GÖRSEL 3) */}
+      {showCategoryModal && (
+        <div style={{ zIndex: 100025 }} className="fixed inset-0 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-zinc-900/50 backdrop-blur-[1px]" onClick={() => setShowCategoryModal(false)} />
+          <div className="bg-white rounded-lg shadow-2xl w-full max-w-[600px] flex flex-col relative z-10 overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200">
+              <h3 className="text-sm font-bold text-zinc-800">
+                {editingCategory.id ? "Kategori Düzenle" : "Yeni Kategori Ekle"}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowCategoryModal(false)}
+                className="text-zinc-400 hover:text-zinc-700 text-lg font-bold cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="p-6 flex flex-col gap-4 text-xs">
+              <div>
+                <label className="block font-bold text-zinc-700 mb-1.5">Kategori Adı *</label>
+                <input
+                  type="text"
+                  value={editingCategory.name}
+                  onChange={(e) =>
+                    setEditingCategory({
+                      ...editingCategory,
+                      name: e.target.value,
+                      handle: editingCategory.id ? editingCategory.handle : slugify(e.target.value),
+                    })
+                  }
+                  placeholder="Örn: Ön Tampon Ekleri"
+                  className="w-full border border-zinc-200 rounded-md px-3 py-2 text-zinc-800 focus:outline-none focus:border-[#3b82f6]"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-bold text-zinc-700 mb-1.5">Üst Kategori</label>
+                  <select
+                    value={editingCategory.parent_category_id}
+                    onChange={(e) => setEditingCategory({ ...editingCategory, parent_category_id: e.target.value })}
+                    className="w-full border border-zinc-200 rounded-md px-3 py-2 text-zinc-800 bg-white focus:outline-none focus:border-[#3b82f6]"
+                  >
+                    <option value="">Ana Kategori</option>
+                    {categories
+                      .filter((c: any) => c.id !== editingCategory.id)
+                      .map((c: any) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-zinc-700 mb-1.5">Sıra</label>
+                  <input
+                    type="number"
+                    value={editingCategory.rank}
+                    onChange={(e) => setEditingCategory({ ...editingCategory, rank: Number(e.target.value) || 0 })}
+                    className="w-full border border-zinc-200 rounded-md px-3 py-2 text-zinc-800 focus:outline-none focus:border-[#3b82f6]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-bold text-zinc-700 mb-1.5">SEO Adresi (Slug)</label>
+                  <input
+                    type="text"
+                    value={editingCategory.handle}
+                    onChange={(e) => setEditingCategory({ ...editingCategory, handle: e.target.value })}
+                    className="w-full border border-zinc-200 rounded-md px-3 py-2 text-zinc-800 focus:outline-none focus:border-[#3b82f6]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-zinc-700 mb-1.5">Durum</label>
+                  <select
+                    value={editingCategory.is_active ? "active" : "inactive"}
+                    onChange={(e) => setEditingCategory({ ...editingCategory, is_active: e.target.value === "active" })}
+                    className="w-full border border-zinc-200 rounded-md px-3 py-2 text-zinc-800 bg-white focus:outline-none focus:border-[#3b82f6]"
+                  >
+                    <option value="active">Aktif</option>
+                    <option value="inactive">Pasif</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-zinc-700 mb-1.5">Açıklama</label>
+                <textarea
+                  rows={3}
+                  value={editingCategory.description}
+                  onChange={(e) => setEditingCategory({ ...editingCategory, description: e.target.value })}
+                  className="w-full border border-zinc-200 rounded-md px-3 py-2 text-zinc-800 focus:outline-none focus:border-[#3b82f6]"
+                />
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-2 px-6 py-4 bg-zinc-50 border-t border-zinc-200">
+              <button
+                type="button"
+                onClick={() => setShowCategoryModal(false)}
+                className="px-4 py-2 rounded border border-zinc-300 bg-white text-zinc-700 text-xs font-semibold hover:bg-zinc-50 cursor-pointer"
+              >
+                İptal
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveCategory}
+                style={{ backgroundColor: "#00b259", color: "#ffffff" }}
+                className="px-5 py-2 rounded text-white text-xs font-bold hover:opacity-95 cursor-pointer"
+              >
+                Kaydet
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* KATEGORİ AĞACI MODALI */}
+      {showCategoryTreeModal && (
+        <div style={{ zIndex: 100025 }} className="fixed inset-0 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-zinc-900/50 backdrop-blur-[1px]" onClick={() => setShowCategoryTreeModal(false)} />
+          <div className="bg-white rounded-lg shadow-2xl w-full max-w-[620px] max-h-[80vh] flex flex-col relative z-10 overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200">
+              <h3 className="text-sm font-bold text-zinc-800">Kategori Ağacı</h3>
+              <button
+                type="button"
+                onClick={() => setShowCategoryTreeModal(false)}
+                className="text-zinc-400 hover:text-zinc-700 text-lg font-bold cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto flex-1 text-xs space-y-2">
+              {categories
+                .filter((c: any) => !c.parent_category_id)
+                .map((rootCat: any) => {
+                  const children = categories.filter((c: any) => c.parent_category_id === rootCat.id)
+                  return (
+                    <div key={rootCat.id} className="border border-zinc-200 rounded-md p-3 bg-zinc-50/40">
+                      <div className="font-bold text-zinc-800 flex items-center justify-between">
+                        <span>📁 {rootCat.name}</span>
+                        <span className="text-[11px] text-zinc-500">{children.length} Alt Kategori</span>
+                      </div>
+                      {children.length > 0 && (
+                        <div className="pl-5 mt-2 space-y-1 border-l-2 border-zinc-200">
+                          {children.map((ch: any) => (
+                            <div key={ch.id} className="text-zinc-700 py-0.5 flex items-center justify-between">
+                              <span>↳ {ch.name}</span>
+                              <span className="text-[10px] text-emerald-600 font-semibold">
+                                {ch.is_active !== false ? "Aktif" : "Pasif"}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PAZARYERİ EŞLEŞTİRMELERİ MODALI */}
+      {showCategoryMarketplaceModal && (
+        <div style={{ zIndex: 100025 }} className="fixed inset-0 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-zinc-900/50 backdrop-blur-[1px]" onClick={() => setShowCategoryMarketplaceModal(false)} />
+          <div className="bg-white rounded-lg shadow-2xl w-full max-w-[640px] flex flex-col relative z-10 overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200">
+              <h3 className="text-sm font-bold text-zinc-800">Pazaryeri Kategori Eşleştirmeleri</h3>
+              <button
+                type="button"
+                onClick={() => setShowCategoryMarketplaceModal(false)}
+                className="text-zinc-400 hover:text-zinc-700 text-lg font-bold cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="p-6 text-xs space-y-3 max-h-[70vh] overflow-y-auto">
+              {["Trendyol", "Hepsiburada", "N11", "ÇiçekSepeti", "PttAVM", "Amazon", "Pazarama", "İdefix"].map((mp) => (
+                <div key={mp} className="flex items-center justify-between gap-4 border border-zinc-200 rounded-md p-3">
+                  <span className="font-bold text-zinc-800 w-36">{mp}</span>
+                  <input
+                    type="text"
+                    placeholder={`${mp} kategori kodu veya adı ara...`}
+                    className="flex-1 border border-zinc-200 rounded px-3 py-1.5 text-xs focus:outline-none focus:border-[#3b82f6]"
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center justify-end gap-2 px-6 py-4 bg-zinc-50 border-t border-zinc-200">
+              <button
+                type="button"
+                onClick={() => setShowCategoryMarketplaceModal(false)}
+                style={{ backgroundColor: "#1a73e8", color: "#ffffff" }}
+                className="px-5 py-2 rounded text-white text-xs font-bold hover:opacity-95 cursor-pointer"
+              >
+                Kaydet ve Kapat
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

@@ -330,7 +330,7 @@ export const getTopNavCategories = (prepOrdersBadge: number): TopNavCategory[] =
         bulletStyle: "solid",
         items: [
           { label: "Ürünler", path: "/product-management" },
-          { label: "Kategoriler", path: "/categories" },
+          { label: "Kategoriler", path: "/product-management?tab=kategoriler" },
           { label: "Koleksiyonlar", path: "/collections" },
           { label: "Markalar", path: "/product-management?tab=markalar" },
           { label: "Etiketler", path: "/product-management?tab=etiketler" },
