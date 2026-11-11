@@ -5,112 +5,164 @@ import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { CARGO_ITEMS_META, CARGO_LOGO_SVGS } from "../payment-settings/pos-cargo-logos"
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Types matching /admin/shipping-settings/route.ts ─────────────────────────
 
-interface DeliveryRegion {
+interface ShippingRegion {
   id: string
+  countryCode: string
+  countryName: string
   name: string
-  continent: string
-  country_code: string
-  flag_emoji: string
-  active_cities_count: number
   cities: string[]
-  active: boolean
 }
 
-interface CarrierCompany {
-  id: string
-  code: string
+interface CarrierGeneralInfo {
   name: string
-  logo_text: string
-  logo_bg: string
-  logo_color: string
   active: boolean
-  sort_order: number
-  tracking_url_template: string
-  api_provider: "yurtici" | "aras" | "kargoist" | "ptt" | "mng" | "surat" | "ups" | "dhl" | "custom"
-  api_username?: string
-  api_password?: string
-  api_customer_code?: string
-  free_shipping_override?: boolean
-  fixed_price_override?: number | null
-  short_description?: string
-  tax_number?: string
-  customer_type?: "all" | "individual" | "corporate"
-  company_code?: string
-  use_custom_logo?: boolean
-  dealer_custom_delivery_time?: boolean
-  limit_cart_totals?: boolean
-  delivery_hours?: string
+  description: string
+  sortOrder: number
+  taxNumber: string
+  customerType: string
+  companyCode: string
+  logoUrl?: string
+  customDeliveryTime: boolean
+  limitCartTotal: boolean
+  limitVolumetricWeight: boolean
+  limitProductQuantity: boolean
 }
 
-interface GeneralShippingRule {
+interface CarrierApiSettings {
+  apiActive: boolean
+  autoGenerateBarcode: boolean
+  generateBarcodeForNonCarrier: boolean
+  markAsShippedOnBranchReceive: boolean
+  barcodeGenerationStage: string
+  sendFixedVolumetricWeight: boolean
+  apiAuthorization: string
+  apiFrom: string
+  branchName: string
+}
+
+interface CarrierItem {
+  id: string
+  key: string
+  general: CarrierGeneralInfo
+  api: CarrierApiSettings
+  regions: {
+    deliveryType: "all" | "selected"
+    countries: Array<{
+      countryCode: string
+      countryName: string
+      regions: string[]
+    }>
+  }
+}
+
+interface GeneralShippingFeeItem {
   id: string
   name: string
-  region_id: string
-  carrier_id: string
-  calculation_type: "fixed" | "desi" | "price_tier"
   min_order_total: number
   max_order_total: number
-  min_desi: number
-  max_desi: number
   price: number
-  currency: "TL" | "USD" | "EUR"
-  active: boolean
+  currency: string
 }
 
-interface ProductShippingFeeRule {
+interface ProductSpecificFeeItem {
   id: string
   title: string
   sku_or_category: string
-  match_type: "sku" | "category" | "oversize_bodykit"
   extra_fee: number
-  currency: "TL" | "USD" | "EUR"
-  free_shipping_exempt: boolean
-  carrier_id: string
-  active: boolean
+  currency: string
 }
 
-interface ShippingSettingsPayload {
-  system_mode: "advanced" | "simple"
-  standard_fee_enabled: boolean
-  standard_fee_amount: number
-  standard_fee_currency: "TL" | "USD" | "EUR"
-  standard_fee_cart_type: "all_carts" | "only_without_shipping"
-  free_shipping_enabled: boolean
-  free_shipping_threshold: number
-  free_shipping_currency: "TL" | "USD" | "EUR"
-  default_preparation_days: number
-  same_day_shipping_cutoff: string
-  weekend_shipping_active: boolean
-  regions: DeliveryRegion[]
-  carriers: CarrierCompany[]
-  general_rules: GeneralShippingRule[]
-  product_rules: ProductShippingFeeRule[]
+interface ShippingConfig {
+  systemType: "advanced" | "simple"
+  standardShippingEnabled: boolean
+  standardShippingFee: number
+  standardShippingCurrency: string
+  standardShippingCartType: string
+  freeShippingEnabled: boolean
+  freeShippingThreshold: number
+  freeShippingCurrency: string
+  regions: ShippingRegion[]
+  carriers: CarrierItem[]
+  generalShippingFees: GeneralShippingFeeItem[]
+  productSpecificFees: ProductSpecificFeeItem[]
 }
 
-const DEFAULT_CARGO_ROWS: Array<{
-  key: string
-  id: string
-  name: string
-  active: boolean
-  code: string
-  sort_order: number
-}> = [
-  { key: "yurtici", id: "9", name: "Yurtiçi Kargo", active: true, code: "1191", sort_order: 0 },
-  { key: "aras", id: "10", name: "ARAS KARGO", active: false, code: "1192", sort_order: 0 },
-  { key: "kargoist", id: "11", name: "KARGOİST", active: false, code: "1193", sort_order: 0 },
-  { key: "ptt", id: "12", name: "PTT Kargo", active: false, code: "1194", sort_order: 0 },
-  { key: "mng", id: "13", name: "MNG Kargo", active: false, code: "1195", sort_order: 0 },
-  { key: "surat", id: "14", name: "Sürat Kargo", active: false, code: "1196", sort_order: 0 },
+const DEFAULT_CARGO_ROWS = [
+  { key: "yurtici", id: "9", name: "Yurtiçi Kargo", active: true, code: "1191", sortOrder: 0 },
+  { key: "aras", id: "8", name: "ARAS KARGO", active: false, code: "1192", sortOrder: 0 },
+  { key: "kargoist", id: "7", name: "KARGOİST", active: false, code: "1193", sortOrder: 0 },
+  { key: "ptt", id: "6", name: "PTT Kargo", active: false, code: "1194", sortOrder: 0 },
+  { key: "mng", id: "5", name: "MNG Kargo", active: false, code: "1195", sortOrder: 0 },
+  { key: "surat", id: "4", name: "Sürat Kargo", active: false, code: "1196", sortOrder: 0 },
 ]
+
+function buildDefaultCarriers(): CarrierItem[] {
+  return DEFAULT_CARGO_ROWS.map((row) => ({
+    id: `carrier_${row.key}`,
+    key: row.key,
+    general: {
+      name: row.name,
+      active: row.active,
+      description: "",
+      sortOrder: row.sortOrder,
+      taxNumber: "",
+      customerType: "Hepsi",
+      companyCode: row.code,
+      logoUrl: "",
+      customDeliveryTime: false,
+      limitCartTotal: false,
+      limitVolumetricWeight: false,
+      limitProductQuantity: false,
+    },
+    api: {
+      apiActive: false,
+      autoGenerateBarcode: true,
+      generateBarcodeForNonCarrier: false,
+      markAsShippedOnBranchReceive: true,
+      barcodeGenerationStage: "Yeni Sipariş",
+      sendFixedVolumetricWeight: false,
+      apiAuthorization: "",
+      apiFrom: "",
+      branchName: "",
+    },
+    regions: {
+      deliveryType: "all",
+      countries: [],
+    },
+  }))
+}
+
+const DEFAULT_SHIPPING_CONFIG: ShippingConfig = {
+  systemType: "advanced",
+  standardShippingEnabled: true,
+  standardShippingFee: 100,
+  standardShippingCurrency: "TL",
+  standardShippingCartType: "Tüm sepetlere ekle",
+  freeShippingEnabled: true,
+  freeShippingThreshold: 1000,
+  freeShippingCurrency: "TL",
+  regions: [
+    {
+      id: "reg_tr",
+      countryCode: "tr",
+      countryName: "Türkiye",
+      name: "Asya",
+      cities: ["İstanbul", "Ankara", "İzmir", "Bursa", "Antalya"],
+    },
+  ],
+  carriers: buildDefaultCarriers(),
+  generalShippingFees: [],
+  productSpecificFees: [],
+}
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 const ShippingSettingsPage = () => {
   const navigate = useNavigate()
 
-  const [config, setConfig] = useState<ShippingSettingsPayload | null>(null)
+  const [config, setConfig] = useState<ShippingConfig>(DEFAULT_SHIPPING_CONFIG)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
@@ -125,50 +177,50 @@ const ShippingSettingsPage = () => {
     key: string
     name: string
     active: boolean
-    short_description: string
-    sort_order: number
-    tax_number: string
-    customer_type: "all" | "individual" | "corporate"
-    company_code: string
-    use_custom_logo: boolean
-    dealer_custom_delivery_time: boolean
-    limit_cart_totals: boolean
-    api_username: string
-    api_password: string
-    api_customer_code: string
-    tracking_url_template: string
-    delivery_hours: string
+    description: string
+    sortOrder: number
+    taxNumber: string
+    customerType: string
+    companyCode: string
+    useCustomLogo: boolean
+    customDeliveryTime: boolean
+    limitCartTotal: boolean
+    apiAuthorization: string
+    apiFrom: string
+    branchName: string
+    deliveryHours: string
   }>({
     id: "9",
     key: "yurtici",
     name: "Yurtiçi Kargo",
     active: true,
-    short_description: "",
-    sort_order: 0,
-    tax_number: "",
-    customer_type: "all",
-    company_code: "1191",
-    use_custom_logo: true,
-    dealer_custom_delivery_time: false,
-    limit_cart_totals: false,
-    api_username: "",
-    api_password: "",
-    api_customer_code: "",
-    tracking_url_template: "https://www.yurticikargo.com/tr/online-servisler/gonderi-sorgula?code={code}",
-    delivery_hours: "09:00 - 18:00",
+    description: "",
+    sortOrder: 0,
+    taxNumber: "",
+    customerType: "Hepsi",
+    companyCode: "1191",
+    useCustomLogo: true,
+    customDeliveryTime: false,
+    limitCartTotal: false,
+    apiAuthorization: "",
+    apiFrom: "",
+    branchName: "",
+    deliveryHours: "09:00 - 18:00",
   })
 
   // Region & Cities Modals
   const [regionModalOpen, setRegionModalOpen] = useState(false)
-  const [editingRegion, setEditingRegion] = useState<DeliveryRegion | null>(null)
-  const [citiesModalRegion, setCitiesModalRegion] = useState<DeliveryRegion | null>(null)
+  const [editingRegion, setEditingRegion] = useState<ShippingRegion | null>(null)
+  const [citiesModalRegion, setCitiesModalRegion] = useState<ShippingRegion | null>(null)
   const [citySearch, setCitySearch] = useState("")
 
   // General Rule & Product Rule Modals
   const [generalRuleModalOpen, setGeneralRuleModalOpen] = useState(false)
-  const [editingGeneralRule, setEditingGeneralRule] = useState<GeneralShippingRule | null>(null)
+  const [editingGeneralRule, setEditingGeneralRule] =
+    useState<GeneralShippingFeeItem | null>(null)
   const [productRuleModalOpen, setProductRuleModalOpen] = useState(false)
-  const [editingProductRule, setEditingProductRule] = useState<ProductShippingFeeRule | null>(null)
+  const [editingProductRule, setEditingProductRule] =
+    useState<ProductSpecificFeeItem | null>(null)
 
   const fetchSettings = async () => {
     setLoading(true)
@@ -176,40 +228,128 @@ const ShippingSettingsPage = () => {
       const res = await fetch("/admin/shipping-settings", { credentials: "include" })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const data = await res.json()
-      const loaded: ShippingSettingsPayload = data.config
+      const raw = data?.config || {}
 
-      // Ensure all 6 preview carriers exist in loaded.carriers
-      const existingByCode = new Map(
-        (loaded.carriers || []).map((c) => [c.code.toLowerCase(), c])
-      )
-      const mergedCarriers: CarrierCompany[] = DEFAULT_CARGO_ROWS.map((row) => {
-        const found = existingByCode.get(row.key)
+      const existingMap = new Map<string, CarrierItem>()
+      if (Array.isArray(raw.carriers)) {
+        for (const c of raw.carriers) {
+          const k = String(c.key || c.code || "").toLowerCase()
+          if (k) {
+            existingMap.set(k, {
+              id: c.id || `carrier_${k}`,
+              key: k,
+              general: {
+                name: c.general?.name || c.name || k.toUpperCase(),
+                active: c.general?.active ?? c.active ?? false,
+                description: c.general?.description || c.short_description || "",
+                sortOrder: c.general?.sortOrder ?? c.sort_order ?? 0,
+                taxNumber: c.general?.taxNumber || c.tax_number || "",
+                customerType: c.general?.customerType || "Hepsi",
+                companyCode: c.general?.companyCode || c.company_code || "",
+                logoUrl: c.general?.logoUrl || "",
+                customDeliveryTime: Boolean(c.general?.customDeliveryTime),
+                limitCartTotal: Boolean(c.general?.limitCartTotal),
+                limitVolumetricWeight: Boolean(c.general?.limitVolumetricWeight),
+                limitProductQuantity: Boolean(c.general?.limitProductQuantity),
+              },
+              api: {
+                apiActive: Boolean(c.api?.apiActive),
+                autoGenerateBarcode: c.api?.autoGenerateBarcode ?? true,
+                generateBarcodeForNonCarrier: Boolean(c.api?.generateBarcodeForNonCarrier),
+                markAsShippedOnBranchReceive: c.api?.markAsShippedOnBranchReceive ?? true,
+                barcodeGenerationStage: c.api?.barcodeGenerationStage || "Yeni Sipariş",
+                sendFixedVolumetricWeight: Boolean(c.api?.sendFixedVolumetricWeight),
+                apiAuthorization: c.api?.apiAuthorization || "",
+                apiFrom: c.api?.apiFrom || "",
+                branchName: c.api?.branchName || "",
+              },
+              regions: c.regions || { deliveryType: "all", countries: [] },
+            })
+          }
+        }
+      }
+
+      const mergedCarriers: CarrierItem[] = DEFAULT_CARGO_ROWS.map((row) => {
+        const found = existingMap.get(row.key)
         if (found) {
           return {
             ...found,
-            code: row.key,
-            company_code: found.company_code || row.code,
+            general: {
+              ...found.general,
+              name: row.name,
+              companyCode: found.general.companyCode || row.code,
+            },
           }
         }
         return {
           id: `carrier_${row.key}`,
-          code: row.key,
-          name: row.name,
-          logo_text: row.name,
-          logo_bg: "#ffffff",
-          logo_color: "#1e293b",
-          active: row.active,
-          sort_order: row.sort_order,
-          tracking_url_template: "",
-          api_provider: row.key as any,
-          company_code: row.code,
-          use_custom_logo: true,
+          key: row.key,
+          general: {
+            name: row.name,
+            active: row.active,
+            description: "",
+            sortOrder: row.sortOrder,
+            taxNumber: "",
+            customerType: "Hepsi",
+            companyCode: row.code,
+            logoUrl: "",
+            customDeliveryTime: false,
+            limitCartTotal: false,
+            limitVolumetricWeight: false,
+            limitProductQuantity: false,
+          },
+          api: {
+            apiActive: false,
+            autoGenerateBarcode: true,
+            generateBarcodeForNonCarrier: false,
+            markAsShippedOnBranchReceive: true,
+            barcodeGenerationStage: "Yeni Sipariş",
+            sendFixedVolumetricWeight: false,
+            apiAuthorization: "",
+            apiFrom: "",
+            branchName: "",
+          },
+          regions: { deliveryType: "all", countries: [] },
         }
       })
 
+      const normalizedRegions: ShippingRegion[] =
+        Array.isArray(raw.regions) && raw.regions.length > 0
+          ? raw.regions.map((r: any) => ({
+              id: r.id || "reg_tr",
+              countryCode: String(r.countryCode || r.country_code || "tr").toLowerCase(),
+              countryName: r.countryName || r.name || "Türkiye",
+              name: r.name || r.continent || "Asya",
+              cities: Array.isArray(r.cities)
+                ? r.cities
+                : ["İstanbul", "Ankara", "İzmir", "Bursa", "Antalya"],
+            }))
+          : DEFAULT_SHIPPING_CONFIG.regions
+
       setConfig({
-        ...loaded,
+        systemType: raw.systemType || raw.system_mode || "advanced",
+        standardShippingEnabled:
+          raw.standardShippingEnabled ?? raw.standard_fee_enabled ?? true,
+        standardShippingFee: Number(
+          raw.standardShippingFee ?? raw.standard_fee_amount ?? 100
+        ),
+        standardShippingCurrency: "TL",
+        standardShippingCartType:
+          raw.standardShippingCartType || "Tüm sepetlere ekle",
+        freeShippingEnabled:
+          raw.freeShippingEnabled ?? raw.free_shipping_enabled ?? true,
+        freeShippingThreshold: Number(
+          raw.freeShippingThreshold ?? raw.free_shipping_threshold ?? 1000
+        ),
+        freeShippingCurrency: "TL",
+        regions: normalizedRegions,
         carriers: mergedCarriers,
+        generalShippingFees: Array.isArray(raw.generalShippingFees)
+          ? raw.generalShippingFees
+          : [],
+        productSpecificFees: Array.isArray(raw.productSpecificFees)
+          ? raw.productSpecificFees
+          : [],
       })
     } catch (err: any) {
       toast.error("Kargo ayarları yüklenemedi: " + (err?.message || "Bilinmeyen hata"))
@@ -223,20 +363,27 @@ const ShippingSettingsPage = () => {
   }, [])
 
   const saveConfigToServer = async (
-    nextConfig: ShippingSettingsPayload,
+    nextConfig: ShippingConfig,
     successMsg = "Kargo ve teslimat ayarları kaydedildi"
   ) => {
+    const payloadToSave: ShippingConfig = {
+      ...nextConfig,
+      standardShippingCurrency: "TL",
+      standardShippingFee: Math.max(0, Number(nextConfig.standardShippingFee) || 0),
+    }
+
     setSaving(true)
     try {
       const res = await fetch("/admin/shipping-settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ config: nextConfig }),
+        body: JSON.stringify(payloadToSave),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`)
-      setConfig(data.config)
+      if (!res.ok || data.success === false) {
+        throw new Error(data.message || `HTTP ${res.status}`)
+      }
       toast.success(successMsg)
     } catch (err: any) {
       toast.error("Kaydetme hatası: " + (err?.message || "Bilinmeyen hata"))
@@ -254,8 +401,8 @@ const ShippingSettingsPage = () => {
       count: 0,
       code: "1191",
     }
-    const carrier = config?.carriers.find(
-      (c) => c.code.toLowerCase() === cargoKey.toLowerCase()
+    const carrier = config.carriers.find(
+      (c) => c.key.toLowerCase() === cargoKey.toLowerCase()
     )
 
     setEditingCargoKey(cargoKey)
@@ -263,77 +410,85 @@ const ShippingSettingsPage = () => {
     setCargoModalForm({
       id: String(meta.id),
       key: cargoKey,
-      name: carrier?.name || meta.name,
-      active: carrier ? carrier.active : meta.active,
-      short_description: carrier?.short_description || "",
-      sort_order: carrier?.sort_order ?? 0,
-      tax_number: carrier?.tax_number || "",
-      customer_type: carrier?.customer_type || "all",
-      company_code: carrier?.company_code || meta.code,
-      use_custom_logo: carrier?.use_custom_logo ?? true,
-      dealer_custom_delivery_time: Boolean(carrier?.dealer_custom_delivery_time),
-      limit_cart_totals: Boolean(carrier?.limit_cart_totals),
-      api_username: carrier?.api_username || "",
-      api_password: carrier?.api_password || "",
-      api_customer_code: carrier?.api_customer_code || "",
-      tracking_url_template: carrier?.tracking_url_template || "",
-      delivery_hours: carrier?.delivery_hours || "09:00 - 18:00",
+      name: carrier?.general.name || meta.name,
+      active: carrier ? carrier.general.active : meta.active,
+      description: carrier?.general.description || "",
+      sortOrder: carrier?.general.sortOrder ?? 0,
+      taxNumber: carrier?.general.taxNumber || "",
+      customerType: carrier?.general.customerType || "Hepsi",
+      companyCode: carrier?.general.companyCode || meta.code,
+      useCustomLogo: true,
+      customDeliveryTime: Boolean(carrier?.general.customDeliveryTime),
+      limitCartTotal: Boolean(carrier?.general.limitCartTotal),
+      apiAuthorization: carrier?.api.apiAuthorization || "",
+      apiFrom: carrier?.api.apiFrom || "",
+      branchName: carrier?.api.branchName || "",
+      deliveryHours: "09:00 - 18:00",
     })
     setCargoModalOpen(true)
   }
 
   const handleSaveCargoModal = async () => {
-    if (!config) return
     const exists = config.carriers.some(
-      (c) => c.code.toLowerCase() === editingCargoKey.toLowerCase()
+      (c) => c.key.toLowerCase() === editingCargoKey.toLowerCase()
     )
-    const updatedCarriers: CarrierCompany[] = exists
+    const updatedCarriers: CarrierItem[] = exists
       ? config.carriers.map((c) =>
-          c.code.toLowerCase() !== editingCargoKey.toLowerCase()
+          c.key.toLowerCase() !== editingCargoKey.toLowerCase()
             ? c
             : {
                 ...c,
-                name: cargoModalForm.name,
-                active: cargoModalForm.active,
-                short_description: cargoModalForm.short_description,
-                sort_order: Number(cargoModalForm.sort_order) || 0,
-                tax_number: cargoModalForm.tax_number,
-                customer_type: cargoModalForm.customer_type,
-                company_code: cargoModalForm.company_code,
-                use_custom_logo: cargoModalForm.use_custom_logo,
-                dealer_custom_delivery_time: cargoModalForm.dealer_custom_delivery_time,
-                limit_cart_totals: cargoModalForm.limit_cart_totals,
-                api_username: cargoModalForm.api_username,
-                api_password: cargoModalForm.api_password,
-                api_customer_code: cargoModalForm.api_customer_code,
-                tracking_url_template: cargoModalForm.tracking_url_template,
-                delivery_hours: cargoModalForm.delivery_hours,
+                general: {
+                  ...c.general,
+                  name: cargoModalForm.name,
+                  active: cargoModalForm.active,
+                  description: cargoModalForm.description,
+                  sortOrder: Number(cargoModalForm.sortOrder) || 0,
+                  taxNumber: cargoModalForm.taxNumber,
+                  customerType: cargoModalForm.customerType,
+                  companyCode: cargoModalForm.companyCode,
+                  customDeliveryTime: cargoModalForm.customDeliveryTime,
+                  limitCartTotal: cargoModalForm.limitCartTotal,
+                },
+                api: {
+                  ...c.api,
+                  apiAuthorization: cargoModalForm.apiAuthorization,
+                  apiFrom: cargoModalForm.apiFrom,
+                  branchName: cargoModalForm.branchName,
+                },
               }
         )
       : [
           ...config.carriers,
           {
             id: `carrier_${Date.now()}`,
-            code: editingCargoKey,
-            name: cargoModalForm.name,
-            logo_text: cargoModalForm.name,
-            logo_bg: "#ffffff",
-            logo_color: "#1e293b",
-            active: cargoModalForm.active,
-            sort_order: Number(cargoModalForm.sort_order) || 0,
-            tracking_url_template: cargoModalForm.tracking_url_template,
-            api_provider: "custom",
-            short_description: cargoModalForm.short_description,
-            tax_number: cargoModalForm.tax_number,
-            customer_type: cargoModalForm.customer_type,
-            company_code: cargoModalForm.company_code,
-            use_custom_logo: cargoModalForm.use_custom_logo,
-            dealer_custom_delivery_time: cargoModalForm.dealer_custom_delivery_time,
-            limit_cart_totals: cargoModalForm.limit_cart_totals,
-            api_username: cargoModalForm.api_username,
-            api_password: cargoModalForm.api_password,
-            api_customer_code: cargoModalForm.api_customer_code,
-            delivery_hours: cargoModalForm.delivery_hours,
+            key: editingCargoKey,
+            general: {
+              name: cargoModalForm.name,
+              active: cargoModalForm.active,
+              description: cargoModalForm.description,
+              sortOrder: Number(cargoModalForm.sortOrder) || 0,
+              taxNumber: cargoModalForm.taxNumber,
+              customerType: cargoModalForm.customerType,
+              companyCode: cargoModalForm.companyCode,
+              logoUrl: "",
+              customDeliveryTime: cargoModalForm.customDeliveryTime,
+              limitCartTotal: cargoModalForm.limitCartTotal,
+              limitVolumetricWeight: false,
+              limitProductQuantity: false,
+            },
+            api: {
+              apiActive: false,
+              autoGenerateBarcode: true,
+              generateBarcodeForNonCarrier: false,
+              markAsShippedOnBranchReceive: true,
+              barcodeGenerationStage: "Yeni Sipariş",
+              sendFixedVolumetricWeight: false,
+              apiAuthorization: cargoModalForm.apiAuthorization,
+              apiFrom: cargoModalForm.apiFrom,
+              branchName: cargoModalForm.branchName,
+            },
+            regions: { deliveryType: "all", countries: [] },
           },
         ]
 
@@ -350,41 +505,39 @@ const ShippingSettingsPage = () => {
   }
 
   const handleToggleCarrierQuick = async (cargoKey: string) => {
-    if (!config) return
     const nextCarriers = config.carriers.map((c) =>
-      c.code.toLowerCase() === cargoKey.toLowerCase()
-        ? { ...c, active: !c.active }
+      c.key.toLowerCase() === cargoKey.toLowerCase()
+        ? { ...c, general: { ...c.general, active: !c.general.active } }
         : c
     )
     const target = nextCarriers.find(
-      (c) => c.code.toLowerCase() === cargoKey.toLowerCase()
+      (c) => c.key.toLowerCase() === cargoKey.toLowerCase()
     )
     const nextConfig = { ...config, carriers: nextCarriers }
     setConfig(nextConfig)
     await saveConfigToServer(
       nextConfig,
-      `${target?.name || "Kargo firması"} durumu ${target?.active ? "Aktif" : "Pasif"} olarak güncellendi`
+      `${target?.general.name || "Kargo firması"} durumu ${
+        target?.general.active ? "Aktif" : "Pasif"
+      } olarak güncellendi`
     )
   }
 
   const openAddRegionModal = () => {
     setEditingRegion({
       id: `reg_${Date.now()}`,
-      name: "",
-      continent: "Avrupa",
-      country_code: "EU",
-      flag_emoji: "🇪🇺",
-      active_cities_count: 1,
+      countryCode: "eu",
+      countryName: "",
+      name: "Avrupa",
       cities: ["Merkez"],
-      active: true,
     })
     setRegionModalOpen(true)
   }
 
   const saveRegionModal = async () => {
-    if (!config || !editingRegion) return
-    if (!editingRegion.name.trim()) {
-      toast.error("Bölge adı zorunludur")
+    if (!editingRegion) return
+    if (!editingRegion.countryName.trim()) {
+      toast.error("Ülke / Bölge adı zorunludur")
       return
     }
     const exists = config.regions.some((r) => r.id === editingRegion.id)
@@ -401,34 +554,29 @@ const ShippingSettingsPage = () => {
   }
 
   const openAddGeneralRule = () => {
-    if (!config) return
     setEditingGeneralRule({
       id: `grule_${Date.now()}`,
       name: "Standart Kargo Ücreti",
-      region_id: config.regions[0]?.id || "reg_tr",
-      carrier_id: config.carriers[0]?.id || "carrier_yurtici",
-      calculation_type: "fixed",
       min_order_total: 0,
       max_order_total: 1000,
-      min_desi: 0,
-      max_desi: 30,
       price: 100,
       currency: "TL",
-      active: true,
     })
     setGeneralRuleModalOpen(true)
   }
 
   const saveGeneralRuleModal = async () => {
-    if (!config || !editingGeneralRule) return
-    const exists = config.general_rules.some((r) => r.id === editingGeneralRule.id)
+    if (!editingGeneralRule) return
+    const exists = config.generalShippingFees.some(
+      (r) => r.id === editingGeneralRule.id
+    )
     const nextConfig = {
       ...config,
-      general_rules: exists
-        ? config.general_rules.map((r) =>
+      generalShippingFees: exists
+        ? config.generalShippingFees.map((r) =>
             r.id === editingGeneralRule.id ? editingGeneralRule : r
           )
-        : [...config.general_rules, editingGeneralRule],
+        : [...config.generalShippingFees, editingGeneralRule],
     }
     setConfig(nextConfig)
     setGeneralRuleModalOpen(false)
@@ -437,31 +585,28 @@ const ShippingSettingsPage = () => {
   }
 
   const openAddProductRule = () => {
-    if (!config) return
     setEditingProductRule({
       id: `prule_${Date.now()}`,
       title: "Ağır / Hacimli Bodykit Ek Kargo Ücreti",
       sku_or_category: "Tampon / Bodykit Setleri",
-      match_type: "oversize_bodykit",
       extra_fee: 250,
       currency: "TL",
-      free_shipping_exempt: true,
-      carrier_id: config.carriers[0]?.id || "carrier_yurtici",
-      active: true,
     })
     setProductRuleModalOpen(true)
   }
 
   const saveProductRuleModal = async () => {
-    if (!config || !editingProductRule) return
-    const exists = config.product_rules.some((r) => r.id === editingProductRule.id)
+    if (!editingProductRule) return
+    const exists = config.productSpecificFees.some(
+      (r) => r.id === editingProductRule.id
+    )
     const nextConfig = {
       ...config,
-      product_rules: exists
-        ? config.product_rules.map((r) =>
+      productSpecificFees: exists
+        ? config.productSpecificFees.map((r) =>
             r.id === editingProductRule.id ? editingProductRule : r
           )
-        : [...config.product_rules, editingProductRule],
+        : [...config.productSpecificFees, editingProductRule],
     }
     setConfig(nextConfig)
     setProductRuleModalOpen(false)
@@ -469,7 +614,7 @@ const ShippingSettingsPage = () => {
     await saveConfigToServer(nextConfig, "Ürünlere özel kargo ücreti kaydedildi")
   }
 
-  if (loading || !config) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-[#f1f3f6] flex items-center justify-center p-12 text-[13px] text-[#64748b]">
         Kargo ve teslimat ayarları yükleniyor...
@@ -554,7 +699,7 @@ const ShippingSettingsPage = () => {
                 >
                   <div className="flex items-center gap-3">
                     {/* Turkish Flag SVG for TR, or badge for others */}
-                    {region.country_code === "TR" ? (
+                    {region.countryCode?.toLowerCase() === "tr" ? (
                       <div
                         style={{
                           width: "34px",
@@ -581,20 +726,18 @@ const ShippingSettingsPage = () => {
                         </svg>
                       </div>
                     ) : (
-                      <div className="w-[34px] h-[23px] rounded-[3px] bg-gray-100 border border-gray-200 flex items-center justify-center text-[13px]">
-                        {region.flag_emoji || "🌍"}
+                      <div className="w-[34px] h-[23px] rounded-[3px] bg-gray-100 border border-gray-200 flex items-center justify-center text-[11px] font-bold text-[#475569]">
+                        {region.countryCode?.toUpperCase() || "TR"}
                       </div>
                     )}
                     <div>
                       <div className="text-[12.5px] font-bold text-[#1e293b]">
-                        {region.name}
+                        {region.countryName || "Türkiye"}
                       </div>
                       <div className="flex items-center gap-1.5 text-[11px] text-[#64748b]">
-                        <span>{region.continent}</span>
+                        <span>{region.name || "Asya"}</span>
                         <span className="px-1.5 py-0.2 bg-gray-100 rounded text-[10px] font-bold text-[#475569]">
-                          {region.country_code === "TR"
-                            ? 1
-                            : region.active_cities_count}
+                          1
                         </span>
                       </div>
                     </div>
@@ -634,7 +777,7 @@ const ShippingSettingsPage = () => {
               </h3>
               <button
                 type="button"
-                onClick={() => openCargoCompanyModal("custom")}
+                onClick={() => openCargoCompanyModal("yurtici")}
                 className="h-[28px] px-3 rounded-[4px] bg-[#10b981] hover:bg-[#059669] text-white text-[11.5px] font-bold flex items-center gap-1 shadow-2xs transition-colors"
               >
                 <span>+</span> Ekle
@@ -643,7 +786,7 @@ const ShippingSettingsPage = () => {
 
             <div className="divide-y divide-gray-100">
               {config.carriers.map((carrier) => {
-                const cargoKey = carrier.code.toLowerCase()
+                const cargoKey = carrier.key.toLowerCase()
                 const logoHtml =
                   CARGO_LOGO_SVGS[cargoKey] || CARGO_LOGO_SVGS.yurtici
 
@@ -659,7 +802,7 @@ const ShippingSettingsPage = () => {
                       />
                       <div>
                         <div className="text-[12.5px] font-bold text-[#1e293b]">
-                          {carrier.name}
+                          {carrier.general.name}
                         </div>
                         <div className="flex items-center gap-1.5 mt-1">
                           <button
@@ -667,15 +810,15 @@ const ShippingSettingsPage = () => {
                             onClick={() => handleToggleCarrierQuick(cargoKey)}
                             title="Durumu Değiştir"
                             className={`px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-0.5 cursor-pointer transition-opacity hover:opacity-85 ${
-                              carrier.active
+                              carrier.general.active
                                 ? "bg-[#d1fae5] text-[#059669]"
                                 : "bg-gray-100 text-[#64748b]"
                             }`}
                           >
-                            {carrier.active ? "✓ Aktif" : "Pasif"}
+                            {carrier.general.active ? "✓ Aktif" : "Pasif"}
                           </button>
                           <span className="px-1.5 py-0.5 rounded bg-gray-100 text-[#64748b] text-[10px] font-bold">
-                            {carrier.sort_order ?? 0}
+                            {carrier.general.sortOrder ?? 0}
                           </span>
                         </div>
                       </div>
@@ -705,9 +848,9 @@ const ShippingSettingsPage = () => {
               <input
                 type="radio"
                 name="kargo_sistem"
-                checked={config.system_mode === "advanced"}
+                checked={config.systemType === "advanced"}
                 onChange={() => {
-                  const next = { ...config, system_mode: "advanced" as const }
+                  const next = { ...config, systemType: "advanced" as const }
                   setConfig(next)
                   saveConfigToServer(next, "Kargo sistemi Gelişmiş olarak güncellendi")
                 }}
@@ -719,9 +862,9 @@ const ShippingSettingsPage = () => {
               <input
                 type="radio"
                 name="kargo_sistem"
-                checked={config.system_mode === "simple"}
+                checked={config.systemType === "simple"}
                 onChange={() => {
-                  const next = { ...config, system_mode: "simple" as const }
+                  const next = { ...config, systemType: "simple" as const }
                   setConfig(next)
                   saveConfigToServer(next, "Kargo sistemi Basit olarak güncellendi")
                 }}
@@ -737,11 +880,11 @@ const ShippingSettingsPage = () => {
               <label className="flex items-center gap-2 cursor-pointer text-[12px] font-medium text-[#334155] mb-3">
                 <input
                   type="checkbox"
-                  checked={config.standard_fee_enabled}
+                  checked={config.standardShippingEnabled}
                   onChange={(e) => {
                     const next = {
                       ...config,
-                      standard_fee_enabled: e.target.checked,
+                      standardShippingEnabled: e.target.checked,
                     }
                     setConfig(next)
                     saveConfigToServer(next)
@@ -758,22 +901,22 @@ const ShippingSettingsPage = () => {
                   <div className="flex items-center">
                     <input
                       type="text"
-                      value={config.standard_fee_amount}
+                      value={config.standardShippingFee}
                       onChange={(e) =>
                         setConfig({
                           ...config,
-                          standard_fee_amount: Number(e.target.value) || 0,
+                          standardShippingFee: Number(e.target.value) || 0,
                         })
                       }
                       onBlur={() => saveConfigToServer(config)}
                       className="flex-1 h-[32px] px-3 rounded-l-[4px] border border-gray-300 text-[12px] text-[#1e293b] focus:outline-none focus:border-[#0284c7]"
                     />
                     <select
-                      value={config.standard_fee_currency}
+                      value={config.standardShippingCurrency}
                       onChange={(e) => {
                         const next = {
                           ...config,
-                          standard_fee_currency: e.target.value as "TL" | "USD" | "EUR",
+                          standardShippingCurrency: e.target.value,
                         }
                         setConfig(next)
                         saveConfigToServer(next)
@@ -791,21 +934,19 @@ const ShippingSettingsPage = () => {
                     Sepet Tipi
                   </label>
                   <select
-                    value={config.standard_fee_cart_type}
+                    value={config.standardShippingCartType}
                     onChange={(e) => {
                       const next = {
                         ...config,
-                        standard_fee_cart_type: e.target.value as
-                          | "all_carts"
-                          | "only_without_shipping",
+                        standardShippingCartType: e.target.value,
                       }
                       setConfig(next)
                       saveConfigToServer(next)
                     }}
                     className="w-full h-[32px] px-3 rounded-[4px] border border-gray-300 bg-white text-[12px] text-[#1e293b] focus:outline-none focus:border-[#0284c7]"
                   >
-                    <option value="all_carts">Tüm sepetlere ekle</option>
-                    <option value="only_without_shipping">
+                    <option value="Tüm sepetlere ekle">Tüm sepetlere ekle</option>
+                    <option value="Sadece kargo ücreti olmayanlara ekle">
                       Sadece kargo ücreti olmayanlara ekle
                     </option>
                   </select>
@@ -818,11 +959,11 @@ const ShippingSettingsPage = () => {
               <label className="flex items-center gap-2 cursor-pointer text-[12px] font-medium text-[#334155] mb-3">
                 <input
                   type="checkbox"
-                  checked={config.free_shipping_enabled}
+                  checked={config.freeShippingEnabled}
                   onChange={(e) => {
                     const next = {
                       ...config,
-                      free_shipping_enabled: e.target.checked,
+                      freeShippingEnabled: e.target.checked,
                     }
                     setConfig(next)
                     saveConfigToServer(next)
@@ -838,22 +979,22 @@ const ShippingSettingsPage = () => {
                 <div className="flex items-center">
                   <input
                     type="text"
-                    value={config.free_shipping_threshold}
+                    value={config.freeShippingThreshold}
                     onChange={(e) =>
                       setConfig({
                         ...config,
-                        free_shipping_threshold: Number(e.target.value) || 0,
+                        freeShippingThreshold: Number(e.target.value) || 0,
                       })
                     }
                     onBlur={() => saveConfigToServer(config)}
                     className="flex-1 h-[32px] px-3 rounded-l-[4px] border border-gray-300 text-[12px] text-[#1e293b] focus:outline-none focus:border-[#0284c7]"
                   />
                   <select
-                    value={config.free_shipping_currency}
+                    value={config.freeShippingCurrency}
                     onChange={(e) => {
                       const next = {
                         ...config,
-                        free_shipping_currency: e.target.value as "TL" | "USD" | "EUR",
+                        freeShippingCurrency: e.target.value,
                       }
                       setConfig(next)
                       saveConfigToServer(next)
@@ -888,58 +1029,56 @@ const ShippingSettingsPage = () => {
                 butonuna tıklayınız.
               </p>
 
-              {config.general_rules.length === 0 ? (
+              {config.generalShippingFees.length === 0 ? (
                 <div className="bg-[#f8fafc] border border-gray-200/80 rounded-[4px] py-3 px-4 text-center text-[11.5px] text-[#64748b]">
                   Genel kargo ücreti bulunmamaktadır.
                 </div>
               ) : (
-                <div className="space-y-2">
-                  <div className="bg-[#f8fafc] border border-gray-200/80 rounded-[4px] divide-y divide-gray-200/60">
-                    {config.general_rules.map((rule) => (
-                      <div
-                        key={rule.id}
-                        className="py-2.5 px-4 flex items-center justify-between text-[12px]"
-                      >
-                        <div>
-                          <span className="font-bold text-[#1e293b]">
-                            {rule.name}
-                          </span>
-                          <span className="text-[#64748b] ml-2 text-[11px]">
-                            ({rule.min_order_total} - {rule.max_order_total} TL •{" "}
-                            {rule.price} {rule.currency})
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEditingGeneralRule({ ...rule })
-                              setGeneralRuleModalOpen(true)
-                            }}
-                            className="w-[24px] h-[24px] rounded-[4px] border border-gray-200 bg-white hover:bg-gray-50 text-[#475569] flex items-center justify-center text-[11px]"
-                          >
-                            ✎
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const next = {
-                                ...config,
-                                general_rules: config.general_rules.filter(
-                                  (r) => r.id !== rule.id
-                                ),
-                              }
-                              setConfig(next)
-                              saveConfigToServer(next, "Kargo ücreti silindi")
-                            }}
-                            className="w-[24px] h-[24px] rounded-[4px] border border-gray-200 bg-white hover:bg-red-50 text-[#ef4444] flex items-center justify-center text-[11px]"
-                          >
-                            🗑
-                          </button>
-                        </div>
+                <div className="bg-[#f8fafc] border border-gray-200/80 rounded-[4px] divide-y divide-gray-200/60">
+                  {config.generalShippingFees.map((rule) => (
+                    <div
+                      key={rule.id}
+                      className="py-2.5 px-4 flex items-center justify-between text-[12px]"
+                    >
+                      <div>
+                        <span className="font-bold text-[#1e293b]">
+                          {rule.name}
+                        </span>
+                        <span className="text-[#64748b] ml-2 text-[11px]">
+                          ({rule.min_order_total} - {rule.max_order_total} TL •{" "}
+                          {rule.price} {rule.currency})
+                        </span>
                       </div>
-                    ))}
-                  </div>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingGeneralRule({ ...rule })
+                            setGeneralRuleModalOpen(true)
+                          }}
+                          className="w-[24px] h-[24px] rounded-[4px] border border-gray-200 bg-white hover:bg-gray-50 text-[#475569] flex items-center justify-center text-[11px]"
+                        >
+                          ✎
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const next = {
+                              ...config,
+                              generalShippingFees: config.generalShippingFees.filter(
+                                (r) => r.id !== rule.id
+                              ),
+                            }
+                            setConfig(next)
+                            saveConfigToServer(next, "Kargo ücreti silindi")
+                          }}
+                          className="w-[24px] h-[24px] rounded-[4px] border border-gray-200 bg-white hover:bg-red-50 text-[#ef4444] flex items-center justify-center text-[11px]"
+                        >
+                          🗑
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
@@ -964,13 +1103,13 @@ const ShippingSettingsPage = () => {
                 butonuna tıklayınız.
               </p>
 
-              {config.product_rules.length === 0 ? (
+              {config.productSpecificFees.length === 0 ? (
                 <div className="bg-[#f8fafc] border border-gray-200/80 rounded-[4px] py-3 px-4 text-center text-[11.5px] text-[#64748b]">
                   Ürünlere özel kargo ücreti bulunmamaktadır.
                 </div>
               ) : (
                 <div className="bg-[#f8fafc] border border-gray-200/80 rounded-[4px] divide-y divide-gray-200/60">
-                  {config.product_rules.map((prule) => (
+                  {config.productSpecificFees.map((prule) => (
                     <div
                       key={prule.id}
                       className="py-2.5 px-4 flex items-center justify-between text-[12px]"
@@ -1000,7 +1139,7 @@ const ShippingSettingsPage = () => {
                           onClick={() => {
                             const next = {
                               ...config,
-                              product_rules: config.product_rules.filter(
+                              productSpecificFees: config.productSpecificFees.filter(
                                 (r) => r.id !== prule.id
                               ),
                             }
@@ -1157,11 +1296,11 @@ const ShippingSettingsPage = () => {
                       </label>
                       <input
                         type="text"
-                        value={cargoModalForm.short_description}
+                        value={cargoModalForm.description}
                         onChange={(e) =>
                           setCargoModalForm({
                             ...cargoModalForm,
-                            short_description: e.target.value,
+                            description: e.target.value,
                           })
                         }
                         className="w-full h-[32px] px-3 rounded-[4px] border border-gray-300 text-[12px] text-[#1e293b] focus:outline-none focus:border-[#0b5ed7]"
@@ -1173,11 +1312,11 @@ const ShippingSettingsPage = () => {
                       </label>
                       <input
                         type="number"
-                        value={cargoModalForm.sort_order}
+                        value={cargoModalForm.sortOrder}
                         onChange={(e) =>
                           setCargoModalForm({
                             ...cargoModalForm,
-                            sort_order: Number(e.target.value) || 0,
+                            sortOrder: Number(e.target.value) || 0,
                           })
                         }
                         className="w-full h-[32px] px-3 rounded-[4px] border border-gray-300 text-[12px] text-[#1e293b] focus:outline-none focus:border-[#0b5ed7]"
@@ -1192,11 +1331,11 @@ const ShippingSettingsPage = () => {
                       </label>
                       <input
                         type="text"
-                        value={cargoModalForm.tax_number}
+                        value={cargoModalForm.taxNumber}
                         onChange={(e) =>
                           setCargoModalForm({
                             ...cargoModalForm,
-                            tax_number: e.target.value,
+                            taxNumber: e.target.value,
                           })
                         }
                         className="w-full h-[32px] px-3 rounded-[4px] border border-gray-300 text-[12px] text-[#1e293b] focus:outline-none focus:border-[#0b5ed7]"
@@ -1207,21 +1346,18 @@ const ShippingSettingsPage = () => {
                         Müşteri Tipi
                       </label>
                       <select
-                        value={cargoModalForm.customer_type}
+                        value={cargoModalForm.customerType}
                         onChange={(e) =>
                           setCargoModalForm({
                             ...cargoModalForm,
-                            customer_type: e.target.value as
-                              | "all"
-                              | "individual"
-                              | "corporate",
+                            customerType: e.target.value,
                           })
                         }
                         className="w-full h-[32px] px-2.5 rounded-[4px] border border-gray-300 bg-white text-[12px] text-[#1e293b] focus:outline-none focus:border-[#0b5ed7]"
                       >
-                        <option value="all">Hepsi</option>
-                        <option value="individual">Bireysel</option>
-                        <option value="corporate">Kurumsal</option>
+                        <option value="Hepsi">Hepsi</option>
+                        <option value="Bireysel">Bireysel</option>
+                        <option value="Kurumsal">Kurumsal</option>
                       </select>
                     </div>
                   </div>
@@ -1236,11 +1372,11 @@ const ShippingSettingsPage = () => {
                       </label>
                       <input
                         type="text"
-                        value={cargoModalForm.company_code}
+                        value={cargoModalForm.companyCode}
                         onChange={(e) =>
                           setCargoModalForm({
                             ...cargoModalForm,
-                            company_code: e.target.value,
+                            companyCode: e.target.value,
                           })
                         }
                         className="w-full h-[32px] px-3 rounded-[4px] border border-gray-300 bg-gray-50 text-[12px] text-[#475569] focus:outline-none"
@@ -1253,11 +1389,11 @@ const ShippingSettingsPage = () => {
                     <label className="flex items-center gap-2 cursor-pointer text-[12px] text-[#334155]">
                       <input
                         type="checkbox"
-                        checked={cargoModalForm.use_custom_logo}
+                        checked={cargoModalForm.useCustomLogo}
                         onChange={(e) =>
                           setCargoModalForm({
                             ...cargoModalForm,
-                            use_custom_logo: e.target.checked,
+                            useCustomLogo: e.target.checked,
                           })
                         }
                         className="w-4 h-4 rounded border-gray-300 text-[#0284c7] accent-[#0284c7]"
@@ -1288,7 +1424,7 @@ const ShippingSettingsPage = () => {
                           onClick={() =>
                             setCargoModalForm({
                               ...cargoModalForm,
-                              use_custom_logo: false,
+                              useCustomLogo: false,
                             })
                           }
                           className="w-[24px] h-[24px] rounded-[3px] border border-gray-200 bg-white hover:bg-red-50 text-[#ef4444] text-[11px] flex items-center justify-center"
@@ -1303,11 +1439,11 @@ const ShippingSettingsPage = () => {
                     <label className="flex items-center gap-2 cursor-pointer text-[12px] text-[#334155]">
                       <input
                         type="checkbox"
-                        checked={cargoModalForm.dealer_custom_delivery_time}
+                        checked={cargoModalForm.customDeliveryTime}
                         onChange={(e) =>
                           setCargoModalForm({
                             ...cargoModalForm,
-                            dealer_custom_delivery_time: e.target.checked,
+                            customDeliveryTime: e.target.checked,
                           })
                         }
                         className="w-4 h-4 rounded border-gray-300 text-[#0284c7] accent-[#0284c7]"
@@ -1317,11 +1453,11 @@ const ShippingSettingsPage = () => {
                     <label className="flex items-center gap-2 cursor-pointer text-[12px] text-[#334155]">
                       <input
                         type="checkbox"
-                        checked={cargoModalForm.limit_cart_totals}
+                        checked={cargoModalForm.limitCartTotal}
                         onChange={(e) =>
                           setCargoModalForm({
                             ...cargoModalForm,
-                            limit_cart_totals: e.target.checked,
+                            limitCartTotal: e.target.checked,
                           })
                         }
                         className="w-4 h-4 rounded border-gray-300 text-[#0284c7] accent-[#0284c7]"
@@ -1336,69 +1472,52 @@ const ShippingSettingsPage = () => {
                 <div className="space-y-4">
                   <div>
                     <label className="block text-[11.5px] font-bold text-[#334155] mb-1">
-                      Web Servis Kullanıcı Adı
+                      API Yetki Anahtarı (Authorization / Key)
                     </label>
                     <input
                       type="text"
-                      value={cargoModalForm.api_username}
+                      value={cargoModalForm.apiAuthorization}
                       onChange={(e) =>
                         setCargoModalForm({
                           ...cargoModalForm,
-                          api_username: e.target.value,
+                          apiAuthorization: e.target.value,
                         })
                       }
-                      placeholder="API Kullanıcı Adı"
+                      placeholder="API Anahtarı"
                       className="w-full h-[32px] px-3 rounded-[4px] border border-gray-300 text-[12px]"
                     />
                   </div>
                   <div>
                     <label className="block text-[11.5px] font-bold text-[#334155] mb-1">
-                      Web Servis Şifresi
+                      Gönderici Hesap / E-Posta
                     </label>
                     <input
-                      type="password"
-                      value={cargoModalForm.api_password}
+                      type="text"
+                      value={cargoModalForm.apiFrom}
                       onChange={(e) =>
                         setCargoModalForm({
                           ...cargoModalForm,
-                          api_password: e.target.value,
+                          apiFrom: e.target.value,
                         })
                       }
-                      placeholder="••••••••••••"
+                      placeholder="Örn: info@bodykitmerkezi.com"
                       className="w-full h-[32px] px-3 rounded-[4px] border border-gray-300 text-[12px]"
                     />
                   </div>
                   <div>
                     <label className="block text-[11.5px] font-bold text-[#334155] mb-1">
-                      Müşteri / Sözleşme Kodu
+                      Şube Kodu / Adı
                     </label>
                     <input
                       type="text"
-                      value={cargoModalForm.api_customer_code}
+                      value={cargoModalForm.branchName}
                       onChange={(e) =>
                         setCargoModalForm({
                           ...cargoModalForm,
-                          api_customer_code: e.target.value,
+                          branchName: e.target.value,
                         })
                       }
-                      placeholder="Örn: 204981920"
-                      className="w-full h-[32px] px-3 rounded-[4px] border border-gray-300 text-[12px]"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11.5px] font-bold text-[#334155] mb-1">
-                      Kargo Takip URL Şablonu
-                    </label>
-                    <input
-                      type="text"
-                      value={cargoModalForm.tracking_url_template}
-                      onChange={(e) =>
-                        setCargoModalForm({
-                          ...cargoModalForm,
-                          tracking_url_template: e.target.value,
-                        })
-                      }
-                      placeholder="https://.../?code={code}"
+                      placeholder="Örn: MERKEZ"
                       className="w-full h-[32px] px-3 rounded-[4px] border border-gray-300 text-[12px]"
                     />
                   </div>
@@ -1418,7 +1537,7 @@ const ShippingSettingsPage = () => {
                         className="flex items-center justify-between px-4 py-2.5 text-[12px] cursor-pointer hover:bg-gray-50"
                       >
                         <span className="font-semibold text-[#1e293b]">
-                          {r.name} ({r.continent})
+                          {r.countryName} ({r.name})
                         </span>
                         <input
                           type="checkbox"
@@ -1438,11 +1557,11 @@ const ShippingSettingsPage = () => {
                   </label>
                   <input
                     type="text"
-                    value={cargoModalForm.delivery_hours}
+                    value={cargoModalForm.deliveryHours}
                     onChange={(e) =>
                       setCargoModalForm({
                         ...cargoModalForm,
-                        delivery_hours: e.target.value,
+                        deliveryHours: e.target.value,
                       })
                     }
                     className="w-full h-[32px] px-3 rounded-[4px] border border-gray-300 text-[12px]"
@@ -1513,13 +1632,16 @@ const ShippingSettingsPage = () => {
             <div className="p-6 space-y-4">
               <div>
                 <label className="block text-[11.5px] font-bold text-[#334155] mb-1">
-                  Bölge / Ülke Adı *
+                  Ülke Adı *
                 </label>
                 <input
                   type="text"
-                  value={editingRegion.name}
+                  value={editingRegion.countryName}
                   onChange={(e) =>
-                    setEditingRegion({ ...editingRegion, name: e.target.value })
+                    setEditingRegion({
+                      ...editingRegion,
+                      countryName: e.target.value,
+                    })
                   }
                   placeholder="Örn: Türkiye, KKTC, Almanya"
                   className="w-full h-[32px] px-3 rounded-[4px] border border-gray-300 text-[12px]"
@@ -1528,15 +1650,15 @@ const ShippingSettingsPage = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[11.5px] font-bold text-[#334155] mb-1">
-                    Kıta / Grup
+                    Bölge / Kıta Adı
                   </label>
                   <input
                     type="text"
-                    value={editingRegion.continent}
+                    value={editingRegion.name}
                     onChange={(e) =>
                       setEditingRegion({
                         ...editingRegion,
-                        continent: e.target.value,
+                        name: e.target.value,
                       })
                     }
                     className="w-full h-[32px] px-3 rounded-[4px] border border-gray-300 text-[12px]"
@@ -1548,11 +1670,11 @@ const ShippingSettingsPage = () => {
                   </label>
                   <input
                     type="text"
-                    value={editingRegion.country_code}
+                    value={editingRegion.countryCode}
                     onChange={(e) =>
                       setEditingRegion({
                         ...editingRegion,
-                        country_code: e.target.value.toUpperCase(),
+                        countryCode: e.target.value.toLowerCase(),
                       })
                     }
                     className="w-full h-[32px] px-3 rounded-[4px] border border-gray-300 text-[12px]"
@@ -1596,7 +1718,8 @@ const ShippingSettingsPage = () => {
                   Teslimat Bölgeleri
                 </div>
                 <div className="text-[17px] font-bold tracking-tight">
-                  {citiesModalRegion.name} — İller ({citiesModalRegion.cities.length})
+                  {citiesModalRegion.countryName} — İller (
+                  {citiesModalRegion.cities.length})
                 </div>
               </div>
               <button
@@ -1619,7 +1742,9 @@ const ShippingSettingsPage = () => {
             <div className="p-5 overflow-y-auto grid grid-cols-2 sm:grid-cols-4 gap-2">
               {citiesModalRegion.cities
                 .filter((c) =>
-                  c.toLocaleLowerCase("tr-TR").includes(citySearch.toLocaleLowerCase("tr-TR"))
+                  c
+                    .toLocaleLowerCase("tr-TR")
+                    .includes(citySearch.toLocaleLowerCase("tr-TR"))
                 )
                 .map((city) => (
                   <div

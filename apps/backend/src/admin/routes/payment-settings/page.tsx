@@ -5,37 +5,12 @@ import { useEffect, useState } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
 import { POS_LOGO_SVGS } from "./pos-cargo-logos"
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Types matching /admin/payment-settings/route.ts ──────────────────────────
 
-interface InstallmentRate {
-  count: number
-  rate: number
+interface Installment {
+  taksit: string
+  oran: number
   active: boolean
-}
-
-interface BankInstallmentConfig {
-  bank_code: string
-  bank_name: string
-  card_program: string
-  color: string
-  active: boolean
-  rates: InstallmentRate[]
-}
-
-interface PaymentMethodRule {
-  id: string
-  name: string
-  list_name: string
-  sort_order: number
-  active: boolean
-  currency: string
-  surcharge_type: "none" | "fixed" | "percentage"
-  surcharge_amount: number
-  surcharge_tax_rate: number
-  min_order_total: number
-  max_order_total: number
-  instructions?: string
-  customer_groups: "all" | "registered" | "vip" | "b2b"
 }
 
 interface PosProviderSetting {
@@ -45,36 +20,107 @@ interface PosProviderSetting {
   merchant_id: string
   merchant_key: string
   merchant_salt: string
-  test_mode: boolean
+  test_mode: string
   max_installment: number
 }
 
-interface PaymentSettingsPayload {
+interface MethodRuleConfig {
+  active: boolean
+  name: string
+  list_name?: string
+  sort_order?: number
+  adjustment_type: string
+  adjustment_value: number
+  instructions: string
+  min_total: number
+  max_total: number
+}
+
+interface PaymentConfig {
+  free_shipping_threshold: number
   paytr: {
     active: boolean
-    list_name: string
-    sort_order: number
-    test_mode: boolean
+    list_name?: string
+    sort_order?: number
+    min_total: number
+    max_total: number
     merchant_id: string
     merchant_key: string
     merchant_salt: string
-    max_installment: number
-    no_installment: boolean
-    timeout_limit: number
-    debug_on: boolean
-    currency: "TL" | "EUR" | "USD"
-    min_order_total: number
-    max_order_total: number
+    test_mode: string
     disable_3d_secure_intl: boolean
+    installments: Installment[]
     pos_providers?: Record<string, PosProviderSetting>
   }
-  installment_banks: BankInstallmentConfig[]
-  bank_transfer: PaymentMethodRule
-  cash_on_delivery: PaymentMethodRule
-  card_on_delivery: PaymentMethodRule
-  mail_order: PaymentMethodRule
-  shopping_credit: PaymentMethodRule
-  custom_methods: PaymentMethodRule[]
+  bank_transfer: MethodRuleConfig
+  cash_on_delivery: MethodRuleConfig
+  card_on_delivery: MethodRuleConfig
+}
+
+const DEFAULT_INSTALLMENTS: Installment[] = [
+  { taksit: "Tek Çekim", oran: 0, active: true },
+  { taksit: "2 Taksit", oran: 7.31, active: true },
+  { taksit: "3 Taksit", oran: 9.35, active: true },
+  { taksit: "4 Taksit", oran: 11.38, active: true },
+  { taksit: "5 Taksit", oran: 13.43, active: true },
+  { taksit: "6 Taksit", oran: 15.46, active: true },
+  { taksit: "7 Taksit", oran: 17.49, active: true },
+  { taksit: "8 Taksit", oran: 18.53, active: true },
+  { taksit: "9 Taksit", oran: 21.58, active: true },
+  { taksit: "10 Taksit", oran: 23.8, active: true },
+  { taksit: "11 Taksit", oran: 25.84, active: true },
+  { taksit: "12 Taksit", oran: 27.68, active: true },
+]
+
+const DEFAULT_PAYMENT_CONFIG: PaymentConfig = {
+  free_shipping_threshold: 3000,
+  paytr: {
+    active: true,
+    list_name: "Kredi Kartı",
+    sort_order: 1,
+    min_total: 0,
+    max_total: 100000,
+    merchant_id: "",
+    merchant_key: "",
+    merchant_salt: "",
+    test_mode: "Kapalı",
+    disable_3d_secure_intl: false,
+    installments: DEFAULT_INSTALLMENTS,
+  },
+  bank_transfer: {
+    active: true,
+    name: "Havale / EFT",
+    list_name: "Havale / EFT",
+    sort_order: 2,
+    adjustment_type: "discount_percentage",
+    adjustment_value: 5,
+    instructions: "",
+    min_total: 0,
+    max_total: 100000,
+  },
+  cash_on_delivery: {
+    active: true,
+    name: "Kapıda Nakit Ödeme",
+    list_name: "Kapıda Ödeme",
+    sort_order: 3,
+    adjustment_type: "surcharge_amount",
+    adjustment_value: 40,
+    instructions: "Kapıda nakit ödeme ile teslimat sırasında ödemenizi yapabilirsiniz.",
+    min_total: 0,
+    max_total: 10000,
+  },
+  card_on_delivery: {
+    active: true,
+    name: "Kapıda Kredi Kartı İle Ödeme",
+    list_name: "Kapıda Ödeme",
+    sort_order: 3,
+    adjustment_type: "surcharge_amount",
+    adjustment_value: 40,
+    instructions:
+      "Kapıda kredi kartı ödemesi ile teslimat sırasında kartınızla ödemenizi yapabilirsiniz.",
+    min_total: 0,
+    max_total: 10000,
+  },
 }
 
 const POS_PROVIDER_LIST: Array<{ key: string; name: string; defaultActive?: boolean }> = [
@@ -99,7 +145,7 @@ const PaymentSettingsPage = () => {
   const navigate = useNavigate()
   const location = useLocation()
 
-  const [config, setConfig] = useState<PaymentSettingsPayload | null>(null)
+  const [config, setConfig] = useState<PaymentConfig>(DEFAULT_PAYMENT_CONFIG)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
@@ -121,10 +167,10 @@ const PaymentSettingsPage = () => {
         key: p.key,
         name: p.name,
         active: Boolean(p.defaultActive),
-        merchant_id: p.key === "paytr" ? "498210" : "",
-        merchant_key: p.key === "paytr" ? "••••••••••••" : "",
-        merchant_salt: p.key === "paytr" ? "••••••••••••" : "",
-        test_mode: false,
+        merchant_id: "",
+        merchant_key: "",
+        merchant_salt: "",
+        test_mode: "Kapalı",
         max_installment: 12,
       }
     }
@@ -136,7 +182,6 @@ const PaymentSettingsPage = () => {
 
   // Extra modals for Taksitler, Kredi Kartı Ayarları, Havale/EFT, Kapıda Ödeme
   const [installmentsModalOpen, setInstallmentsModalOpen] = useState(false)
-  const [selectedBankCode, setSelectedBankCode] = useState<string>("bonus")
   const [creditCardSettingsModalOpen, setCreditCardSettingsModalOpen] = useState(false)
   const [ruleModalTarget, setRuleModalTarget] = useState<
     "bank_transfer" | "cash_on_delivery" | "card_on_delivery" | null
@@ -148,33 +193,53 @@ const PaymentSettingsPage = () => {
       const res = await fetch("/admin/payment-settings", { credentials: "include" })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const data = await res.json()
-      const loadedConfig: PaymentSettingsPayload = data.config
-      setConfig(loadedConfig)
+      const raw = data?.config || {}
+
+      const merged: PaymentConfig = {
+        ...DEFAULT_PAYMENT_CONFIG,
+        ...raw,
+        paytr: {
+          ...DEFAULT_PAYMENT_CONFIG.paytr,
+          ...(raw.paytr || {}),
+          installments:
+            Array.isArray(raw.paytr?.installments) && raw.paytr.installments.length > 0
+              ? raw.paytr.installments
+              : DEFAULT_INSTALLMENTS,
+        },
+        bank_transfer: {
+          ...DEFAULT_PAYMENT_CONFIG.bank_transfer,
+          ...(raw.bank_transfer || {}),
+        },
+        cash_on_delivery: {
+          ...DEFAULT_PAYMENT_CONFIG.cash_on_delivery,
+          ...(raw.cash_on_delivery || {}),
+        },
+        card_on_delivery: {
+          ...DEFAULT_PAYMENT_CONFIG.card_on_delivery,
+          ...(raw.card_on_delivery || {}),
+        },
+      }
+
+      setConfig(merged)
 
       setPosProviders((prev) => {
         const next = { ...prev }
-        if (loadedConfig?.paytr?.pos_providers) {
-          for (const [k, v] of Object.entries(loadedConfig.paytr.pos_providers)) {
+        if (merged.paytr?.pos_providers) {
+          for (const [k, v] of Object.entries(merged.paytr.pos_providers)) {
             if (next[k]) next[k] = { ...next[k], ...v }
           }
         }
-        if (loadedConfig?.paytr) {
-          next.paytr = {
-            ...next.paytr,
-            active: loadedConfig.paytr.active ?? true,
-            merchant_id: loadedConfig.paytr.merchant_id || "498210",
-            merchant_key: loadedConfig.paytr.merchant_key || "",
-            merchant_salt: loadedConfig.paytr.merchant_salt || "",
-            test_mode: Boolean(loadedConfig.paytr.test_mode),
-            max_installment: loadedConfig.paytr.max_installment || 12,
-          }
+        next.paytr = {
+          ...next.paytr,
+          active: merged.paytr.active ?? true,
+          merchant_id: merged.paytr.merchant_id || "",
+          merchant_key: merged.paytr.merchant_key || "",
+          merchant_salt: merged.paytr.merchant_salt || "",
+          test_mode: merged.paytr.test_mode || "Kapalı",
+          max_installment: next.paytr.max_installment || 12,
         }
         return next
       })
-
-      if (loadedConfig?.installment_banks?.length) {
-        setSelectedBankCode(loadedConfig.installment_banks[0].bank_code)
-      }
     } catch (err: any) {
       toast.error("Ödeme ayarları yüklenemedi: " + (err?.message || "Bilinmeyen hata"))
     } finally {
@@ -187,12 +252,12 @@ const PaymentSettingsPage = () => {
   }, [])
 
   const saveConfigToServer = async (
-    nextConfig: PaymentSettingsPayload,
+    nextConfig: PaymentConfig,
     nextProviders?: Record<string, PosProviderSetting>,
     successMsg = "Ödeme ayarları kaydedildi"
   ) => {
     const providersToSave = nextProviders || posProviders
-    const payloadToSave: PaymentSettingsPayload = {
+    const payloadToSave: PaymentConfig = {
       ...nextConfig,
       paytr: {
         ...nextConfig.paytr,
@@ -201,7 +266,6 @@ const PaymentSettingsPage = () => {
         merchant_key: providersToSave.paytr?.merchant_key ?? nextConfig.paytr.merchant_key,
         merchant_salt: providersToSave.paytr?.merchant_salt ?? nextConfig.paytr.merchant_salt,
         test_mode: providersToSave.paytr?.test_mode ?? nextConfig.paytr.test_mode,
-        max_installment: providersToSave.paytr?.max_installment ?? nextConfig.paytr.max_installment,
         pos_providers: providersToSave,
       },
     }
@@ -212,11 +276,28 @@ const PaymentSettingsPage = () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ config: payloadToSave }),
+        body: JSON.stringify(payloadToSave),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`)
-      setConfig(data.config)
+      if (!res.ok || data.success === false) {
+        throw new Error(data.message || `HTTP ${res.status}`)
+      }
+      if (data.config) {
+        setConfig((prev) => ({
+          ...prev,
+          ...data.config,
+          paytr: { ...prev.paytr, ...(data.config.paytr || {}) },
+          bank_transfer: { ...prev.bank_transfer, ...(data.config.bank_transfer || {}) },
+          cash_on_delivery: {
+            ...prev.cash_on_delivery,
+            ...(data.config.cash_on_delivery || {}),
+          },
+          card_on_delivery: {
+            ...prev.card_on_delivery,
+            ...(data.config.card_on_delivery || {}),
+          },
+        }))
+      }
       toast.success(successMsg)
     } catch (err: any) {
       toast.error("Kaydetme hatası: " + (err?.message || "Bilinmeyen hata"))
@@ -232,18 +313,16 @@ const PaymentSettingsPage = () => {
     const nextProviders = { ...posProviders, [posKey]: updatedProvider }
     setPosProviders(nextProviders)
 
-    if (config) {
-      const nextConfig =
-        posKey === "paytr"
-          ? { ...config, paytr: { ...config.paytr, active: updatedProvider.active } }
-          : config
-      setConfig(nextConfig)
-      await saveConfigToServer(
-        nextConfig,
-        nextProviders,
-        `${updatedProvider.name} durumu ${updatedProvider.active ? "Aktif" : "Pasif"} olarak güncellendi`
-      )
-    }
+    const nextConfig =
+      posKey === "paytr"
+        ? { ...config, paytr: { ...config.paytr, active: updatedProvider.active } }
+        : config
+    setConfig(nextConfig)
+    await saveConfigToServer(
+      nextConfig,
+      nextProviders,
+      `${updatedProvider.name} durumu ${updatedProvider.active ? "Aktif" : "Pasif"} olarak güncellendi`
+    )
   }
 
   const openPaymentPosModal = (posKey: string, posName: string) => {
@@ -254,7 +333,7 @@ const PaymentSettingsPage = () => {
       merchant_id: "",
       merchant_key: "",
       merchant_salt: "",
-      test_mode: false,
+      test_mode: "Kapalı",
       max_installment: 12,
     }
     setPosModalKey(posKey)
@@ -270,31 +349,29 @@ const PaymentSettingsPage = () => {
     setPosProviders(nextProviders)
     setPosModalKey(null)
 
-    if (config) {
-      const nextConfig =
-        posModalKey === "paytr"
-          ? {
-              ...config,
-              paytr: {
-                ...config.paytr,
-                active: posModalForm.active,
-                merchant_id: posModalForm.merchant_id,
-                merchant_key: posModalForm.merchant_key,
-                merchant_salt: posModalForm.merchant_salt,
-                test_mode: posModalForm.test_mode,
-                max_installment: posModalForm.max_installment,
-              },
-            }
-          : config
-      setConfig(nextConfig)
-      await saveConfigToServer(nextConfig, nextProviders, `${posModalForm.name} ayarları kaydedildi`)
-    } else {
-      toast.success(`${posModalForm.name} ayarları kaydedildi`)
-    }
+    const nextConfig =
+      posModalKey === "paytr"
+        ? {
+            ...config,
+            paytr: {
+              ...config.paytr,
+              active: posModalForm.active,
+              merchant_id: posModalForm.merchant_id,
+              merchant_key: posModalForm.merchant_key,
+              merchant_salt: posModalForm.merchant_salt,
+              test_mode: posModalForm.test_mode,
+            },
+          }
+        : config
+    setConfig(nextConfig)
+    await saveConfigToServer(
+      nextConfig,
+      nextProviders,
+      `${posModalForm.name} ayarları kaydedildi`
+    )
   }
 
   const handleToggleRuleActive = async (key: "cash_on_delivery" | "card_on_delivery") => {
-    if (!config) return
     const nextRule = {
       ...config[key],
       active: !config[key].active,
@@ -311,47 +388,37 @@ const PaymentSettingsPage = () => {
     )
   }
 
-  const updateInstallmentRate = (bankCode: string, count: number, newRate: number) => {
-    if (!config) return
+  const updateInstallmentRate = (idx: number, newRate: number) => {
     setConfig({
       ...config,
-      installment_banks: config.installment_banks.map((b) =>
-        b.bank_code !== bankCode
-          ? b
-          : {
-              ...b,
-              rates: b.rates.map((r) => (r.count === count ? { ...r, rate: newRate } : r)),
-            }
-      ),
+      paytr: {
+        ...config.paytr,
+        installments: config.paytr.installments.map((item, i) =>
+          i === idx ? { ...item, oran: newRate } : item
+        ),
+      },
     })
   }
 
-  const toggleInstallmentCount = (bankCode: string, count: number) => {
-    if (!config) return
+  const toggleInstallmentActive = (idx: number) => {
     setConfig({
       ...config,
-      installment_banks: config.installment_banks.map((b) =>
-        b.bank_code !== bankCode
-          ? b
-          : {
-              ...b,
-              rates: b.rates.map((r) => (r.count === count ? { ...r, active: !r.active } : r)),
-            }
-      ),
+      paytr: {
+        ...config.paytr,
+        installments: config.paytr.installments.map((item, i) =>
+          i === idx ? { ...item, active: !item.active } : item
+        ),
+      },
     })
   }
 
-  if (loading || !config) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-[#f1f3f6] flex items-center justify-center p-12 text-[13px] text-[#64748b]">
         Ödeme yöntemleri yükleniyor...
       </div>
     )
   }
-
-  const currentBank =
-    config.installment_banks.find((b) => b.bank_code === selectedBankCode) ||
-    config.installment_banks[0]
 
   const activeRuleForModal = ruleModalTarget ? config[ruleModalTarget] : null
 
@@ -613,7 +680,9 @@ const PaymentSettingsPage = () => {
                   <div className="text-[11px] text-[#64748b] mt-0.5">
                     Liste Adı:{" "}
                     <span className="text-[#334155]">
-                      {config.bank_transfer.list_name || "Havale / EFT"}
+                      {config.bank_transfer.list_name ||
+                        config.bank_transfer.name ||
+                        "Havale / EFT"}
                     </span>
                   </div>
                   <div className="text-[11px] text-[#64748b]">
@@ -956,13 +1025,13 @@ const PaymentSettingsPage = () => {
       )}
 
       {/* ─── % Taksitler Modal ─────────────────────────────────────────────────── */}
-      {installmentsModalOpen && currentBank && (
+      {installmentsModalOpen && (
         <div
           className="fixed inset-0 z-[120] bg-slate-900/50 backdrop-blur-[1px] flex items-center justify-center p-4"
           onClick={() => setInstallmentsModalOpen(false)}
         >
           <div
-            className="bg-white w-full max-w-[780px] rounded-[6px] shadow-2xl overflow-hidden border border-gray-200 max-h-[90vh] flex flex-col"
+            className="bg-white w-full max-w-[720px] rounded-[6px] shadow-2xl overflow-hidden border border-gray-200 max-h-[90vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="bg-[#0b5ed7] px-6 py-4 text-white flex items-center justify-between shrink-0">
@@ -984,72 +1053,54 @@ const PaymentSettingsPage = () => {
             </div>
 
             <div className="p-6 overflow-y-auto space-y-4">
-              <div className="flex items-center gap-2 flex-wrap">
-                {config.installment_banks.map((bank) => (
-                  <button
-                    key={bank.bank_code}
-                    type="button"
-                    onClick={() => setSelectedBankCode(bank.bank_code)}
-                    className={`h-[30px] px-3 rounded-[4px] text-[11.5px] font-bold border transition-colors ${
-                      selectedBankCode === bank.bank_code
-                        ? "bg-[#0b5ed7] text-white border-[#0b5ed7]"
-                        : "bg-white text-[#334155] border-gray-300 hover:bg-gray-50"
-                    }`}
-                  >
-                    {bank.card_program} ({bank.bank_name})
-                  </button>
-                ))}
-              </div>
-
               <div className="border border-gray-200 rounded-[4px] overflow-hidden">
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-[#f8fafc] border-b border-gray-200 text-[11px] font-bold text-[#475569]">
                       <th className="py-2.5 px-4">Durum</th>
-                      <th className="py-2.5 px-4">Taksit</th>
+                      <th className="py-2.5 px-4">Taksit Seçeneği</th>
                       <th className="py-2.5 px-4">Komisyon Oranı (%)</th>
                       <th className="py-2.5 px-4">Örnek 1.000 TL Sepet</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 text-[12px]">
-                    {currentBank.rates.map((r) => {
-                      const totalFor1000 = 1000 * (1 + r.rate / 100)
-                      return (
-                        <tr key={r.count} className="hover:bg-gray-50/70">
-                          <td className="py-2 px-4">
-                            <input
-                              type="checkbox"
-                              checked={r.active}
-                              onChange={() =>
-                                toggleInstallmentCount(currentBank.bank_code, r.count)
-                              }
-                              className="w-4 h-4 rounded border-gray-300 text-[#10b981] accent-[#10b981] cursor-pointer"
-                            />
-                          </td>
-                          <td className="py-2 px-4 font-semibold text-[#1e293b]">
-                            {r.count} Taksit
-                          </td>
-                          <td className="py-2 px-4">
-                            <input
-                              type="number"
-                              step="0.01"
-                              value={r.rate}
-                              onChange={(e) =>
-                                updateInstallmentRate(
-                                  currentBank.bank_code,
-                                  r.count,
-                                  parseFloat(e.target.value) || 0
-                                )
-                              }
-                              className="w-28 h-[28px] px-2.5 rounded-[4px] border border-gray-300 text-[12px]"
-                            />
-                          </td>
-                          <td className="py-2 px-4 text-[#475569]">
-                            {totalFor1000.toFixed(2)} TL
-                          </td>
-                        </tr>
-                      )
-                    })}
+                    {(config.paytr.installments || DEFAULT_INSTALLMENTS).map(
+                      (r, idx) => {
+                        const totalFor1000 = 1000 * (1 + Number(r.oran || 0) / 100)
+                        return (
+                          <tr key={r.taksit} className="hover:bg-gray-50/70">
+                            <td className="py-2 px-4">
+                              <input
+                                type="checkbox"
+                                checked={r.active}
+                                onChange={() => toggleInstallmentActive(idx)}
+                                className="w-4 h-4 rounded border-gray-300 text-[#10b981] accent-[#10b981] cursor-pointer"
+                              />
+                            </td>
+                            <td className="py-2 px-4 font-semibold text-[#1e293b]">
+                              {r.taksit}
+                            </td>
+                            <td className="py-2 px-4">
+                              <input
+                                type="number"
+                                step="0.01"
+                                value={r.oran}
+                                onChange={(e) =>
+                                  updateInstallmentRate(
+                                    idx,
+                                    parseFloat(e.target.value) || 0
+                                  )
+                                }
+                                className="w-28 h-[28px] px-2.5 rounded-[4px] border border-gray-300 text-[12px]"
+                              />
+                            </td>
+                            <td className="py-2 px-4 text-[#475569]">
+                              {totalFor1000.toFixed(2)} TL
+                            </td>
+                          </tr>
+                        )
+                      }
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -1118,7 +1169,7 @@ const PaymentSettingsPage = () => {
                   </label>
                   <input
                     type="text"
-                    value={config.paytr.list_name}
+                    value={config.paytr.list_name || "Kredi Kartı"}
                     onChange={(e) =>
                       setConfig({
                         ...config,
@@ -1134,7 +1185,7 @@ const PaymentSettingsPage = () => {
                   </label>
                   <input
                     type="number"
-                    value={config.paytr.sort_order}
+                    value={config.paytr.sort_order ?? 1}
                     onChange={(e) =>
                       setConfig({
                         ...config,
@@ -1153,13 +1204,13 @@ const PaymentSettingsPage = () => {
                   </label>
                   <input
                     type="number"
-                    value={config.paytr.min_order_total}
+                    value={config.paytr.min_total}
                     onChange={(e) =>
                       setConfig({
                         ...config,
                         paytr: {
                           ...config.paytr,
-                          min_order_total: Number(e.target.value) || 0,
+                          min_total: Number(e.target.value) || 0,
                         },
                       })
                     }
@@ -1172,13 +1223,13 @@ const PaymentSettingsPage = () => {
                   </label>
                   <input
                     type="number"
-                    value={config.paytr.max_order_total}
+                    value={config.paytr.max_total}
                     onChange={(e) =>
                       setConfig({
                         ...config,
                         paytr: {
                           ...config.paytr,
-                          max_order_total: Number(e.target.value) || 0,
+                          max_total: Number(e.target.value) || 0,
                         },
                       })
                     }
@@ -1295,12 +1346,13 @@ const PaymentSettingsPage = () => {
                   </label>
                   <input
                     type="text"
-                    value={activeRuleForModal.list_name}
+                    value={activeRuleForModal.name}
                     onChange={(e) =>
                       setConfig({
                         ...config,
                         [ruleModalTarget]: {
                           ...activeRuleForModal,
+                          name: e.target.value,
                           list_name: e.target.value,
                         },
                       })
@@ -1310,36 +1362,17 @@ const PaymentSettingsPage = () => {
                 </div>
                 <div>
                   <label className="block text-[11.5px] font-bold text-[#334155] mb-1">
-                    Sıra
+                    Ek Hizmet Bedeli / İndirim Değeri
                   </label>
                   <input
                     type="number"
-                    value={activeRuleForModal.sort_order}
+                    value={activeRuleForModal.adjustment_value}
                     onChange={(e) =>
                       setConfig({
                         ...config,
                         [ruleModalTarget]: {
                           ...activeRuleForModal,
-                          sort_order: Number(e.target.value) || 1,
-                        },
-                      })
-                    }
-                    className="w-full h-[32px] px-3 rounded-[4px] border border-gray-300 text-[12px]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11.5px] font-bold text-[#334155] mb-1">
-                    Ek Hizmet Bedeli / İndirim (TL)
-                  </label>
-                  <input
-                    type="number"
-                    value={activeRuleForModal.surcharge_amount}
-                    onChange={(e) =>
-                      setConfig({
-                        ...config,
-                        [ruleModalTarget]: {
-                          ...activeRuleForModal,
-                          surcharge_amount: Number(e.target.value) || 0,
+                          adjustment_value: Number(e.target.value) || 0,
                         },
                       })
                     }
@@ -1352,13 +1385,32 @@ const PaymentSettingsPage = () => {
                   </label>
                   <input
                     type="number"
-                    value={activeRuleForModal.min_order_total}
+                    value={activeRuleForModal.min_total}
                     onChange={(e) =>
                       setConfig({
                         ...config,
                         [ruleModalTarget]: {
                           ...activeRuleForModal,
-                          min_order_total: Number(e.target.value) || 0,
+                          min_total: Number(e.target.value) || 0,
+                        },
+                      })
+                    }
+                    className="w-full h-[32px] px-3 rounded-[4px] border border-gray-300 text-[12px]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11.5px] font-bold text-[#334155] mb-1">
+                    Maks. Sipariş Tutarı (TL)
+                  </label>
+                  <input
+                    type="number"
+                    value={activeRuleForModal.max_total}
+                    onChange={(e) =>
+                      setConfig({
+                        ...config,
+                        [ruleModalTarget]: {
+                          ...activeRuleForModal,
+                          max_total: Number(e.target.value) || 0,
                         },
                       })
                     }
@@ -1370,7 +1422,7 @@ const PaymentSettingsPage = () => {
                     Banka Hesap Bilgileri / Açıklama Metni
                   </label>
                   <textarea
-                    rows={3}
+                    rows={4}
                     value={activeRuleForModal.instructions || ""}
                     onChange={(e) =>
                       setConfig({
