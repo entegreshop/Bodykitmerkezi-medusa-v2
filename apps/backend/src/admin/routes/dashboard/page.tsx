@@ -489,6 +489,7 @@ export const getTopNavCategories = (prepOrdersBadge: number): TopNavCategory[] =
           { label: "Kargo ve Teslimat", path: "/shipping-settings" },
           { label: "E-Posta, SMS ve WhatsApp", path: "/sms-settings" },
           { label: "Muhasebe / ERP", path: "/e-fatura" },
+          { label: "Eklentiler", path: "/payment-settings?tab=eklentiler" },
         ],
       },
     ],

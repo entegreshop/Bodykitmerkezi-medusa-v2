@@ -1,655 +1,784 @@
-import { useState, useEffect } from "react"
 import { defineRouteConfig } from "@medusajs/admin-sdk"
-import { Plus, Trash, ArrowPath, Sparkles, Map, XMark, Check, Adjustments } from "@medusajs/icons"
+import { Buildings } from "@medusajs/icons"
+import { toast } from "@medusajs/ui"
+import { useEffect, useState } from "react"
+import { useNavigate } from "react-router-dom"
+import { CARGO_ITEMS_META, CARGO_LOGO_SVGS } from "../payment-settings/pos-cargo-logos"
 
-const Truck = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="20"
-    height="20"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    {...props}
-  >
-    <rect x="1" y="3" width="15" height="13" />
-    <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
-    <circle cx="5.5" cy="18.5" r="2.5" />
-    <circle cx="18.5" cy="18.5" r="2.5" />
-  </svg>
-)
+// ─── Types ────────────────────────────────────────────────────────────────────
 
-interface ShippingRegion {
+interface DeliveryRegion {
   id: string
-  countryCode: string
-  countryName: string
   name: string
+  continent: string
+  country_code: string
+  flag_emoji: string
+  active_cities_count: number
   cities: string[]
+  active: boolean
 }
 
-interface CarrierGeneralInfo {
+interface CarrierCompany {
+  id: string
+  code: string
+  name: string
+  logo_text: string
+  logo_bg: string
+  logo_color: string
+  active: boolean
+  sort_order: number
+  tracking_url_template: string
+  api_provider: "yurtici" | "aras" | "kargoist" | "ptt" | "mng" | "surat" | "ups" | "dhl" | "custom"
+  api_username?: string
+  api_password?: string
+  api_customer_code?: string
+  free_shipping_override?: boolean
+  fixed_price_override?: number | null
+  short_description?: string
+  tax_number?: string
+  customer_type?: "all" | "individual" | "corporate"
+  company_code?: string
+  use_custom_logo?: boolean
+  dealer_custom_delivery_time?: boolean
+  limit_cart_totals?: boolean
+  delivery_hours?: string
+}
+
+interface GeneralShippingRule {
+  id: string
+  name: string
+  region_id: string
+  carrier_id: string
+  calculation_type: "fixed" | "desi" | "price_tier"
+  min_order_total: number
+  max_order_total: number
+  min_desi: number
+  max_desi: number
+  price: number
+  currency: "TL" | "USD" | "EUR"
+  active: boolean
+}
+
+interface ProductShippingFeeRule {
+  id: string
+  title: string
+  sku_or_category: string
+  match_type: "sku" | "category" | "oversize_bodykit"
+  extra_fee: number
+  currency: "TL" | "USD" | "EUR"
+  free_shipping_exempt: boolean
+  carrier_id: string
+  active: boolean
+}
+
+interface ShippingSettingsPayload {
+  system_mode: "advanced" | "simple"
+  standard_fee_enabled: boolean
+  standard_fee_amount: number
+  standard_fee_currency: "TL" | "USD" | "EUR"
+  standard_fee_cart_type: "all_carts" | "only_without_shipping"
+  free_shipping_enabled: boolean
+  free_shipping_threshold: number
+  free_shipping_currency: "TL" | "USD" | "EUR"
+  default_preparation_days: number
+  same_day_shipping_cutoff: string
+  weekend_shipping_active: boolean
+  regions: DeliveryRegion[]
+  carriers: CarrierCompany[]
+  general_rules: GeneralShippingRule[]
+  product_rules: ProductShippingFeeRule[]
+}
+
+const DEFAULT_CARGO_ROWS: Array<{
+  key: string
+  id: string
   name: string
   active: boolean
-  description: string
-  sortOrder: number
-  taxNumber: string
-  customerType: string // "Hepsi" | "Bireysel" | "Kurumsal"
-  companyCode: string
-  logoUrl?: string
-  customDeliveryTime: boolean
-  limitCartTotal: boolean
-  limitVolumetricWeight: boolean
-  limitProductQuantity: boolean
-}
-
-interface CarrierApiSettings {
-  apiActive: boolean
-  autoGenerateBarcode: boolean
-  generateBarcodeForNonCarrier: boolean
-  markAsShippedOnBranchReceive: boolean
-  barcodeGenerationStage: string
-  sendFixedVolumetricWeight: boolean
-  apiAuthorization: string
-  apiFrom: string
-  branchName: string
-}
-
-interface CarrierRegions {
-  deliveryType: "all" | "selected"
-  countries: Array<{
-    countryCode: string
-    countryName: string
-    regions: string[]
-  }>
-}
-
-interface Carrier {
-  id: string
-  key: string
-  general: CarrierGeneralInfo
-  api: CarrierApiSettings
-  regions: CarrierRegions
-}
-
-interface ShippingConfig {
-  systemType: "advanced" | "simple"
-  standardShippingEnabled: boolean
-  standardShippingFee: number
-  standardShippingCurrency: string
-  standardShippingCartType: string
-  freeShippingEnabled: boolean
-  freeShippingThreshold: number
-  freeShippingCurrency: string
-  regions: ShippingRegion[]
-  carriers: Carrier[]
-  generalShippingFees: any[]
-  productSpecificFees: any[]
-}
-
-const PREDEFINED_CARRIERS = [
-  { key: "aras", name: "Aras Kargo", logo: "https://aras-resim-logo" },
-  { key: "basit", name: "Basit Kargo", logo: "" },
-  { key: "dhl", name: "DHL", logo: "" },
-  { key: "dhl_ecommerce", name: "DHL eCommerce", logo: "" },
-  { key: "focus", name: "Focus Kargo", logo: "" },
-  { key: "gelal", name: "Gelal Kargo", logo: "" },
-  { key: "geliver", name: "Geliver", logo: "" },
-  { key: "hepsijet", name: "hepsiJET", logo: "" },
-  { key: "hts", name: "HTS Kargo", logo: "" },
-  { key: "interline", name: "Interline Express Kargo", logo: "" },
-  { key: "kargoist", name: "Kargoist", logo: "" },
-  { key: "kargola", name: "Kargola", logo: "" },
-  { key: "kargonova", name: "KargoNOVA", logo: "" },
-  { key: "karpost", name: "Karpost Kargo", logo: "" },
-  { key: "navilungo", name: "Navilungo", logo: "" },
-  { key: "paykargo", name: "Pay Kargo", logo: "" },
-  { key: "pozitif", name: "Pozitif Kargo", logo: "" },
-  { key: "pts", name: "PTS Worldwide Express", logo: "" },
-  { key: "ptt", name: "PTT Kargo", logo: "" },
-  { key: "ptt_global", name: "PTT Kargo Global", logo: "" },
-  { key: "sendeo", name: "Sendeo", logo: "" },
-  { key: "surat", name: "Sürat Kargo", logo: "" },
-  { key: "ucl", name: "UCL Express", logo: "" },
-  { key: "diger", name: "Diğer", logo: "" }
+  code: string
+  sort_order: number
+}> = [
+  { key: "yurtici", id: "9", name: "Yurtiçi Kargo", active: true, code: "1191", sort_order: 0 },
+  { key: "aras", id: "10", name: "ARAS KARGO", active: false, code: "1192", sort_order: 0 },
+  { key: "kargoist", id: "11", name: "KARGOİST", active: false, code: "1193", sort_order: 0 },
+  { key: "ptt", id: "12", name: "PTT Kargo", active: false, code: "1194", sort_order: 0 },
+  { key: "mng", id: "13", name: "MNG Kargo", active: false, code: "1195", sort_order: 0 },
+  { key: "surat", id: "14", name: "Sürat Kargo", active: false, code: "1196", sort_order: 0 },
 ]
 
-const TURKEY_CITIES = [
-  "Adana", "Adıyaman", "Afyonkarahisar", "Ağrı", "Amasya", "Ankara", "Antalya", "Artvin", "Aydın", "Balıkesir",
-  "Bilecik", "Bingöl", "Bitlis", "Bolu", "Burdur", "Bursa", "Çanakkale", "Çankırı", "Çorum", "Denizli",
-  "Diyarbakır", "Edirne", "Elazığ", "Erzincan", "Erzurum", "Eskişehir", "Gaziantep", "Giresun", "Gümüşhane", "Hakkari",
-  "Hatay", "Isparta", "Mersin", "İstanbul", "İzmir", "Kars", "Kastamonu", "Kayseri", "Kırklareli", "Kırşehir",
-  "Kocaeli", "Konya", "Kütahya", "Malatya", "Manisa", "Kahramanmaraş", "Mardin", "Muğla", "Muş", "Nevşehir",
-  "Niğde", "Ordu", "Rize", "Sakarya", "Samsun", "Siirt", "Sinop", "Sivas", "Tekirdağ", "Tokat",
-  "Trabzon", "Tunceli", "Şanlıurfa", "Uşak", "Van", "Yozgat", "Zonguldak", "Aksaray", "Bayburt", "Karaman",
-  "Kırıkkale", "Batman", "Şırnak", "Bartın", "Ardahan", "Iğdır", "Yalova", "Karabük", "Kilis", "Osmaniye", "Düzce"
-].sort((a, b) => a.localeCompare(b, "tr"))
+// ─── Component ────────────────────────────────────────────────────────────────
 
-const CARRIER_LOGOS: Record<string, string> = {
-  aras: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 50'><rect width='160' height='50' fill='%23bf1e2e'/><text x='80' y='32' fill='white' font-size='20' font-family='Arial' font-weight='bold' text-anchor='middle'>aras</text></svg>",
-  interline: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 50'><rect width='160' height='50' fill='%230b4da2'/><text x='80' y='32' fill='white' font-size='16' font-family='Arial' font-weight='bold' text-anchor='middle'>INTERLINE</text></svg>",
-  kargoist: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 50'><rect width='160' height='50' fill='%23ef4136'/><text x='80' y='32' fill='white' font-size='20' font-family='Arial' font-weight='bold' text-anchor='middle'>kargoist</text></svg>",
-  ptt: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 50'><rect width='160' height='50' fill='%23ffcc00'/><text x='80' y='32' fill='black' font-size='24' font-family='Arial' font-weight='bold' text-anchor='middle'>Ptt</text></svg>"
-}
+const ShippingSettingsPage = () => {
+  const navigate = useNavigate()
 
-export default function ShippingSettingsPage() {
-  const [config, setConfig] = useState<ShippingConfig>({
-    systemType: "advanced",
-    standardShippingEnabled: true,
-    standardShippingFee: 100,
-    standardShippingCurrency: "TL",
-    standardShippingCartType: "Tüm sepetlere ekle",
-    freeShippingEnabled: true,
-    freeShippingThreshold: 500,
-    freeShippingCurrency: "TL",
-    regions: [],
-    carriers: [],
-    generalShippingFees: [],
-    productSpecificFees: []
-  })
-
+  const [config, setConfig] = useState<ShippingSettingsPayload | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [toastMessage, setToastMessage] = useState("")
 
-  // Modals & Popups States
-  const [regionModalOpen, setRegionModalOpen] = useState(false)
-  const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null)
-  const [tempRegion, setTempRegion] = useState<Partial<ShippingRegion>>({
-    name: "",
-    countryCode: "tr",
-    countryName: "Türkiye",
-    cities: []
+  // Cargo Company Modal (Matches #cargo-company-modal in preview)
+  const [cargoModalOpen, setCargoModalOpen] = useState(false)
+  const [cargoModalTab, setCargoModalTab] = useState<
+    "genel" | "api" | "bolgeler" | "saatler"
+  >("genel")
+  const [editingCargoKey, setEditingCargoKey] = useState<string>("yurtici")
+  const [cargoModalForm, setCargoModalForm] = useState<{
+    id: string
+    key: string
+    name: string
+    active: boolean
+    short_description: string
+    sort_order: number
+    tax_number: string
+    customer_type: "all" | "individual" | "corporate"
+    company_code: string
+    use_custom_logo: boolean
+    dealer_custom_delivery_time: boolean
+    limit_cart_totals: boolean
+    api_username: string
+    api_password: string
+    api_customer_code: string
+    tracking_url_template: string
+    delivery_hours: string
+  }>({
+    id: "9",
+    key: "yurtici",
+    name: "Yurtiçi Kargo",
+    active: true,
+    short_description: "",
+    sort_order: 0,
+    tax_number: "",
+    customer_type: "all",
+    company_code: "1191",
+    use_custom_logo: true,
+    dealer_custom_delivery_time: false,
+    limit_cart_totals: false,
+    api_username: "",
+    api_password: "",
+    api_customer_code: "",
+    tracking_url_template: "https://www.yurticikargo.com/tr/online-servisler/gonderi-sorgula?code={code}",
+    delivery_hours: "09:00 - 18:00",
   })
 
-  useEffect(() => {
-    const linkId = "plus-jakarta-sans-font";
-    if (!document.getElementById(linkId)) {
-      const link = document.createElement("link");
-      link.id = linkId;
-      link.rel = "stylesheet";
-      link.href = "https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap";
-      document.head.appendChild(link);
-    }
-  }, []);
+  // Region & Cities Modals
+  const [regionModalOpen, setRegionModalOpen] = useState(false)
+  const [editingRegion, setEditingRegion] = useState<DeliveryRegion | null>(null)
+  const [citiesModalRegion, setCitiesModalRegion] = useState<DeliveryRegion | null>(null)
+  const [citySearch, setCitySearch] = useState("")
 
-  // Cities selection modal state
-  const [citiesModalOpen, setCitiesModalOpen] = useState(false)
+  // General Rule & Product Rule Modals
+  const [generalRuleModalOpen, setGeneralRuleModalOpen] = useState(false)
+  const [editingGeneralRule, setEditingGeneralRule] = useState<GeneralShippingRule | null>(null)
+  const [productRuleModalOpen, setProductRuleModalOpen] = useState(false)
+  const [editingProductRule, setEditingProductRule] = useState<ProductShippingFeeRule | null>(null)
 
-  // Carrier Wizards States
-  const [addCarrierModalOpen, setAddCarrierModalOpen] = useState(false)
-  const [selectedCarrierKey, setSelectedCarrierKey] = useState("aras")
-  
-  const [carrierFormModalOpen, setCarrierFormModalOpen] = useState(false)
-  const [activeTab, setActiveTab] = useState<"genel" | "api" | "bolgeler">("genel")
-  const [editingCarrier, setEditingCarrier] = useState<Carrier | null>(null)
-
-  // Sub-modals inside Carrier detail Form
-  const [countryAddModalOpen, setCountryAddModalOpen] = useState(false)
-  const [tempCountry, setTempCountry] = useState({ countryCode: "tr", countryName: "Türkiye", regions: [] as string[] })
-
-  useEffect(() => {
-    fetchConfig()
-  }, [])
-
-  const fetchConfig = async () => {
+  const fetchSettings = async () => {
+    setLoading(true)
     try {
-      const res = await fetch("/admin/shipping-settings")
+      const res = await fetch("/admin/shipping-settings", { credentials: "include" })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const data = await res.json()
-      if (data && data.config) {
-        setConfig(data.config)
-      }
-    } catch (err) {
-      console.error("Failed to load shipping config:", err)
+      const loaded: ShippingSettingsPayload = data.config
+
+      // Ensure all 6 preview carriers exist in loaded.carriers
+      const existingByCode = new Map(
+        (loaded.carriers || []).map((c) => [c.code.toLowerCase(), c])
+      )
+      const mergedCarriers: CarrierCompany[] = DEFAULT_CARGO_ROWS.map((row) => {
+        const found = existingByCode.get(row.key)
+        if (found) {
+          return {
+            ...found,
+            code: row.key,
+            company_code: found.company_code || row.code,
+          }
+        }
+        return {
+          id: `carrier_${row.key}`,
+          code: row.key,
+          name: row.name,
+          logo_text: row.name,
+          logo_bg: "#ffffff",
+          logo_color: "#1e293b",
+          active: row.active,
+          sort_order: row.sort_order,
+          tracking_url_template: "",
+          api_provider: row.key as any,
+          company_code: row.code,
+          use_custom_logo: true,
+        }
+      })
+
+      setConfig({
+        ...loaded,
+        carriers: mergedCarriers,
+      })
+    } catch (err: any) {
+      toast.error("Kargo ayarları yüklenemedi: " + (err?.message || "Bilinmeyen hata"))
     } finally {
       setLoading(false)
     }
   }
 
-  const handleSaveConfig = async (updatedConfig = config) => {
+  useEffect(() => {
+    fetchSettings()
+  }, [])
+
+  const saveConfigToServer = async (
+    nextConfig: ShippingSettingsPayload,
+    successMsg = "Kargo ve teslimat ayarları kaydedildi"
+  ) => {
     setSaving(true)
-    setToastMessage("")
     try {
       const res = await fetch("/admin/shipping-settings", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(updatedConfig),
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ config: nextConfig }),
       })
       const data = await res.json()
-      if (data && data.success) {
-        setToastMessage("Kargo ayarları başarıyla kaydedildi! 🎉")
-        setConfig(data.config)
-        setTimeout(() => setToastMessage(""), 4000)
-      } else {
-        alert(`Kaydedilirken hata oluştu: ${data?.message || "Bilinmeyen hata"}`)
-      }
-    } catch (err) {
-      console.error("Save config error:", err)
-      alert("Sunucu bağlantı hatası.")
+      if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`)
+      setConfig(data.config)
+      toast.success(successMsg)
+    } catch (err: any) {
+      toast.error("Kaydetme hatası: " + (err?.message || "Bilinmeyen hata"))
     } finally {
       setSaving(false)
     }
   }
 
-  // Region Handlers
-  const handleOpenRegionModal = (region: ShippingRegion | null = null) => {
-    if (region) {
-      setSelectedRegionId(region.id)
-      setTempRegion({ ...region })
-    } else {
-      setSelectedRegionId(null)
-      setTempRegion({
-        name: "",
-        countryCode: "tr",
-        countryName: "Türkiye",
-        cities: []
-      })
+  const openCargoCompanyModal = (cargoKey: string) => {
+    const meta = CARGO_ITEMS_META.find((m) => m.key === cargoKey) || {
+      id: 9,
+      key: cargoKey,
+      name: "Yurtiçi Kargo",
+      active: true,
+      count: 0,
+      code: "1191",
     }
+    const carrier = config?.carriers.find(
+      (c) => c.code.toLowerCase() === cargoKey.toLowerCase()
+    )
+
+    setEditingCargoKey(cargoKey)
+    setCargoModalTab("genel")
+    setCargoModalForm({
+      id: String(meta.id),
+      key: cargoKey,
+      name: carrier?.name || meta.name,
+      active: carrier ? carrier.active : meta.active,
+      short_description: carrier?.short_description || "",
+      sort_order: carrier?.sort_order ?? 0,
+      tax_number: carrier?.tax_number || "",
+      customer_type: carrier?.customer_type || "all",
+      company_code: carrier?.company_code || meta.code,
+      use_custom_logo: carrier?.use_custom_logo ?? true,
+      dealer_custom_delivery_time: Boolean(carrier?.dealer_custom_delivery_time),
+      limit_cart_totals: Boolean(carrier?.limit_cart_totals),
+      api_username: carrier?.api_username || "",
+      api_password: carrier?.api_password || "",
+      api_customer_code: carrier?.api_customer_code || "",
+      tracking_url_template: carrier?.tracking_url_template || "",
+      delivery_hours: carrier?.delivery_hours || "09:00 - 18:00",
+    })
+    setCargoModalOpen(true)
+  }
+
+  const handleSaveCargoModal = async () => {
+    if (!config) return
+    const exists = config.carriers.some(
+      (c) => c.code.toLowerCase() === editingCargoKey.toLowerCase()
+    )
+    const updatedCarriers: CarrierCompany[] = exists
+      ? config.carriers.map((c) =>
+          c.code.toLowerCase() !== editingCargoKey.toLowerCase()
+            ? c
+            : {
+                ...c,
+                name: cargoModalForm.name,
+                active: cargoModalForm.active,
+                short_description: cargoModalForm.short_description,
+                sort_order: Number(cargoModalForm.sort_order) || 0,
+                tax_number: cargoModalForm.tax_number,
+                customer_type: cargoModalForm.customer_type,
+                company_code: cargoModalForm.company_code,
+                use_custom_logo: cargoModalForm.use_custom_logo,
+                dealer_custom_delivery_time: cargoModalForm.dealer_custom_delivery_time,
+                limit_cart_totals: cargoModalForm.limit_cart_totals,
+                api_username: cargoModalForm.api_username,
+                api_password: cargoModalForm.api_password,
+                api_customer_code: cargoModalForm.api_customer_code,
+                tracking_url_template: cargoModalForm.tracking_url_template,
+                delivery_hours: cargoModalForm.delivery_hours,
+              }
+        )
+      : [
+          ...config.carriers,
+          {
+            id: `carrier_${Date.now()}`,
+            code: editingCargoKey,
+            name: cargoModalForm.name,
+            logo_text: cargoModalForm.name,
+            logo_bg: "#ffffff",
+            logo_color: "#1e293b",
+            active: cargoModalForm.active,
+            sort_order: Number(cargoModalForm.sort_order) || 0,
+            tracking_url_template: cargoModalForm.tracking_url_template,
+            api_provider: "custom",
+            short_description: cargoModalForm.short_description,
+            tax_number: cargoModalForm.tax_number,
+            customer_type: cargoModalForm.customer_type,
+            company_code: cargoModalForm.company_code,
+            use_custom_logo: cargoModalForm.use_custom_logo,
+            dealer_custom_delivery_time: cargoModalForm.dealer_custom_delivery_time,
+            limit_cart_totals: cargoModalForm.limit_cart_totals,
+            api_username: cargoModalForm.api_username,
+            api_password: cargoModalForm.api_password,
+            api_customer_code: cargoModalForm.api_customer_code,
+            delivery_hours: cargoModalForm.delivery_hours,
+          },
+        ]
+
+    const nextConfig = {
+      ...config,
+      carriers: updatedCarriers,
+    }
+    setConfig(nextConfig)
+    setCargoModalOpen(false)
+    await saveConfigToServer(
+      nextConfig,
+      `${cargoModalForm.name} ayarları kaydedildi`
+    )
+  }
+
+  const handleToggleCarrierQuick = async (cargoKey: string) => {
+    if (!config) return
+    const nextCarriers = config.carriers.map((c) =>
+      c.code.toLowerCase() === cargoKey.toLowerCase()
+        ? { ...c, active: !c.active }
+        : c
+    )
+    const target = nextCarriers.find(
+      (c) => c.code.toLowerCase() === cargoKey.toLowerCase()
+    )
+    const nextConfig = { ...config, carriers: nextCarriers }
+    setConfig(nextConfig)
+    await saveConfigToServer(
+      nextConfig,
+      `${target?.name || "Kargo firması"} durumu ${target?.active ? "Aktif" : "Pasif"} olarak güncellendi`
+    )
+  }
+
+  const openAddRegionModal = () => {
+    setEditingRegion({
+      id: `reg_${Date.now()}`,
+      name: "",
+      continent: "Avrupa",
+      country_code: "EU",
+      flag_emoji: "🇪🇺",
+      active_cities_count: 1,
+      cities: ["Merkez"],
+      active: true,
+    })
     setRegionModalOpen(true)
   }
 
-  const handleSaveRegion = () => {
-    if (!tempRegion.name) {
-      alert("Lütfen bölge adı giriniz.")
+  const saveRegionModal = async () => {
+    if (!config || !editingRegion) return
+    if (!editingRegion.name.trim()) {
+      toast.error("Bölge adı zorunludur")
       return
     }
-
-    let updatedRegions = [...config.regions]
-    if (selectedRegionId) {
-      updatedRegions = updatedRegions.map((r) =>
-        r.id === selectedRegionId ? (tempRegion as ShippingRegion) : r
-      )
-    } else {
-      const newRegion: ShippingRegion = {
-        id: `reg_${Date.now()}`,
-        name: tempRegion.name,
-        countryCode: tempRegion.countryCode || "tr",
-        countryName: tempRegion.countryName || "Türkiye",
-        cities: tempRegion.cities || []
-      }
-      updatedRegions.push(newRegion)
+    const exists = config.regions.some((r) => r.id === editingRegion.id)
+    const nextConfig = {
+      ...config,
+      regions: exists
+        ? config.regions.map((r) => (r.id === editingRegion.id ? editingRegion : r))
+        : [...config.regions, editingRegion],
     }
-
-    const newConfig = { ...config, regions: updatedRegions }
-    setConfig(newConfig)
+    setConfig(nextConfig)
     setRegionModalOpen(false)
-    handleSaveConfig(newConfig)
+    setEditingRegion(null)
+    await saveConfigToServer(nextConfig, "Teslimat bölgesi kaydedildi")
   }
 
-  const handleDeleteRegion = (id: string) => {
-    if (!confirm("Bu bölgeyi silmek istediğinize emin misiniz?")) return
-    const updatedRegions = config.regions.filter((r) => r.id !== id)
-    const newConfig = { ...config, regions: updatedRegions }
-    setConfig(newConfig)
-    handleSaveConfig(newConfig)
-  }
-
-  // Carrier Handlers
-  const handleOpenCarrierForm = (carrier: Carrier | null = null) => {
-    if (carrier) {
-      setEditingCarrier({ ...carrier })
-    } else {
-      const selected = PREDEFINED_CARRIERS.find(c => c.key === selectedCarrierKey)
-      const key = selectedCarrierKey
-      const name = selected ? selected.name : "Yeni Kargo Firması"
-
-      const newCarrier: Carrier = {
-        id: `carrier_${Date.now()}`,
-        key,
-        general: {
-          name: name.toUpperCase(),
-          active: true,
-          description: "",
-          sortOrder: config.carriers.length + 1,
-          taxNumber: "",
-          customerType: "Hepsi",
-          companyCode: "",
-          logoUrl: CARRIER_LOGOS[key] || "",
-          customDeliveryTime: false,
-          limitCartTotal: false,
-          limitVolumetricWeight: false,
-          limitProductQuantity: false
-        },
-        api: {
-          apiActive: false,
-          autoGenerateBarcode: true,
-          generateBarcodeForNonCarrier: false,
-          markAsShippedOnBranchReceive: true,
-          barcodeGenerationStage: "Yeni Sipariş",
-          sendFixedVolumetricWeight: false,
-          apiAuthorization: "",
-          apiFrom: "",
-          branchName: ""
-        },
-        regions: {
-          deliveryType: "all",
-          countries: []
-        }
-      }
-      setEditingCarrier(newCarrier)
-    }
-    setActiveTab("genel")
-    setAddCarrierModalOpen(false)
-    setCarrierFormModalOpen(true)
-  }
-
-  const handleSaveCarrier = () => {
-    if (!editingCarrier) return
-
-    let updatedCarriers = [...config.carriers]
-    const exists = config.carriers.find(c => c.id === editingCarrier.id)
-
-    if (exists) {
-      updatedCarriers = updatedCarriers.map(c => c.id === editingCarrier.id ? editingCarrier : c)
-    } else {
-      updatedCarriers.push(editingCarrier)
-    }
-
-    const newConfig = { ...config, carriers: updatedCarriers }
-    setConfig(newConfig)
-    setCarrierFormModalOpen(false)
-    setEditingCarrier(null)
-    handleSaveConfig(newConfig)
-  }
-
-  const handleDeleteCarrier = (id: string) => {
-    if (!confirm("Bu kargo firmasını silmek istediğinize emin misiniz?")) return
-    const updatedCarriers = config.carriers.filter(c => c.id !== id)
-    const newConfig = { ...config, carriers: updatedCarriers }
-    setConfig(newConfig)
-    handleSaveConfig(newConfig)
-  }
-
-  const handleCarrierStatusToggle = (id: string) => {
-    const updatedCarriers = config.carriers.map(c => {
-      if (c.id === id) {
-        return {
-          ...c,
-          general: { ...c.general, active: !c.general.active }
-        }
-      }
-      return c
+  const openAddGeneralRule = () => {
+    if (!config) return
+    setEditingGeneralRule({
+      id: `grule_${Date.now()}`,
+      name: "Standart Kargo Ücreti",
+      region_id: config.regions[0]?.id || "reg_tr",
+      carrier_id: config.carriers[0]?.id || "carrier_yurtici",
+      calculation_type: "fixed",
+      min_order_total: 0,
+      max_order_total: 1000,
+      min_desi: 0,
+      max_desi: 30,
+      price: 100,
+      currency: "TL",
+      active: true,
     })
-    const newConfig = { ...config, carriers: updatedCarriers }
-    setConfig(newConfig)
-    handleSaveConfig(newConfig)
+    setGeneralRuleModalOpen(true)
   }
 
-  if (loading) {
+  const saveGeneralRuleModal = async () => {
+    if (!config || !editingGeneralRule) return
+    const exists = config.general_rules.some((r) => r.id === editingGeneralRule.id)
+    const nextConfig = {
+      ...config,
+      general_rules: exists
+        ? config.general_rules.map((r) =>
+            r.id === editingGeneralRule.id ? editingGeneralRule : r
+          )
+        : [...config.general_rules, editingGeneralRule],
+    }
+    setConfig(nextConfig)
+    setGeneralRuleModalOpen(false)
+    setEditingGeneralRule(null)
+    await saveConfigToServer(nextConfig, "Genel kargo ücreti kaydedildi")
+  }
+
+  const openAddProductRule = () => {
+    if (!config) return
+    setEditingProductRule({
+      id: `prule_${Date.now()}`,
+      title: "Ağır / Hacimli Bodykit Ek Kargo Ücreti",
+      sku_or_category: "Tampon / Bodykit Setleri",
+      match_type: "oversize_bodykit",
+      extra_fee: 250,
+      currency: "TL",
+      free_shipping_exempt: true,
+      carrier_id: config.carriers[0]?.id || "carrier_yurtici",
+      active: true,
+    })
+    setProductRuleModalOpen(true)
+  }
+
+  const saveProductRuleModal = async () => {
+    if (!config || !editingProductRule) return
+    const exists = config.product_rules.some((r) => r.id === editingProductRule.id)
+    const nextConfig = {
+      ...config,
+      product_rules: exists
+        ? config.product_rules.map((r) =>
+            r.id === editingProductRule.id ? editingProductRule : r
+          )
+        : [...config.product_rules, editingProductRule],
+    }
+    setConfig(nextConfig)
+    setProductRuleModalOpen(false)
+    setEditingProductRule(null)
+    await saveConfigToServer(nextConfig, "Ürünlere özel kargo ücreti kaydedildi")
+  }
+
+  if (loading || !config) {
     return (
-      <div className="flex h-[60vh] items-center justify-center bg-white rounded-2xl border border-zinc-200 p-8 shadow-sm">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
-          <span className="text-sm font-semibold text-zinc-500">Yükleniyor...</span>
-        </div>
+      <div className="min-h-screen bg-[#f1f3f6] flex items-center justify-center p-12 text-[13px] text-[#64748b]">
+        Kargo ve teslimat ayarları yükleniyor...
       </div>
     )
   }
 
   return (
-    <div className="bg-zinc-50 min-h-screen text-zinc-900 p-6 md:p-8 custom-admin-wrapper">
-      <style>{`
-        .custom-admin-wrapper {
-          font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
-          text-rendering: optimizeLegibility !important;
-        }
-        
-        .custom-admin-wrapper * {
-          font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
-        }
-      `}</style>
-      {/* Toast Alert */}
-      {toastMessage && (
-        <div className="fixed top-6 right-6 z-[100] flex items-center gap-2 bg-emerald-600 text-white font-semibold text-xs px-4 py-3 rounded-xl shadow-lg border border-emerald-500 animate-slide-in transition-all">
-          <span>{toastMessage}</span>
+    <div className="min-h-screen bg-[#f1f3f6] font-sans text-[#1e293b] pb-16">
+      {/* Araçlar Sub-navigation Bar (Matches localhost:3095/?view=payments) */}
+      <div className="bg-white border-b border-gray-200 px-6 h-[46px] flex items-center justify-between shadow-2xs sticky top-0 z-20">
+        <div className="text-[14px] font-bold text-[#1e293b]">Araçlar</div>
+        <div className="flex items-center gap-7 h-full overflow-x-auto no-scrollbar">
+          <button
+            type="button"
+            onClick={() => navigate("/payment-settings")}
+            className="h-full flex items-center border-b-2 border-transparent text-[#475569] hover:text-[#1e293b] text-[12px] font-semibold transition-colors whitespace-nowrap"
+          >
+            Ödeme Yöntemleri
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate("/shipping-settings")}
+            className="h-full flex items-center border-b-2 border-[#1565c0] text-[#1565c0] text-[12px] font-semibold transition-colors whitespace-nowrap"
+          >
+            Kargo ve Teslimat
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate("/sms-settings")}
+            className="h-full flex items-center border-b-2 border-transparent text-[#475569] hover:text-[#1e293b] text-[12px] font-semibold transition-colors whitespace-nowrap"
+          >
+            E-Posta, SMS ve WhatsApp
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate("/e-fatura")}
+            className="h-full flex items-center border-b-2 border-transparent text-[#475569] hover:text-[#1e293b] text-[12px] font-semibold transition-colors whitespace-nowrap"
+          >
+            Muhasebe / ERP
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate("/payment-settings?tab=eklentiler")}
+            className="h-full flex items-center border-b-2 border-transparent text-[#475569] hover:text-[#1e293b] text-[12px] font-semibold transition-colors whitespace-nowrap"
+          >
+            Eklentiler
+          </button>
         </div>
-      )}
-
-      {/* HEADER */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-200 pb-5 mb-8">
-        <div>
-          <h1 className="text-xl font-bold text-zinc-900 flex items-center gap-2">
-            <Truck className="w-6 h-6 text-zinc-600" />
-            Kargo Ayarları
-          </h1>
-          <p className="text-xs text-zinc-500 mt-1 font-medium">
-            Teslimat bölgeleri, kargo firmaları, API entegrasyonu ve kargo ücret sistemini yönetin.
-          </p>
-        </div>
-        <button
-          onClick={() => handleSaveConfig()}
-          disabled={saving}
-          className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs h-10 px-6 rounded-lg transition-colors flex items-center gap-2 shadow-sm disabled:opacity-50"
-        >
-          {saving ? "Kaydediliyor..." : "Tüm Değişiklikleri Kaydet"}
-        </button>
+        <div className="w-[60px] hidden sm:block"></div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        
-        {/* CARD 1: Teslimat Bölgeleri */}
-        <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden flex flex-col">
-          <div className="p-6 border-b border-zinc-100 flex items-center justify-between">
-            <div>
-              <h2 className="text-sm font-bold text-zinc-900">Teslimat Bölgeleri</h2>
-              <p className="text-[11px] text-zinc-400 mt-0.5 font-medium">
-                Teslimat yaptığınız bölgeleri tanımlayabilirsiniz. Ülke, il, ilçe veya mahallelere göre sınırlandırmalar yapabilirsiniz.
-              </p>
+      {/* Main Content Container (max-w-[1040px] mx-auto px-4 py-7) */}
+      <div className="max-w-[1040px] mx-auto px-4 py-7">
+        {/* Top 2-Column Grid: Teslimat Bölgeleri & Kargo Firmaları */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
+          {/* Left Card: Teslimat Bölgeleri */}
+          <div className="bg-white rounded-[6px] border border-gray-200/90 shadow-xs p-6">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-[15px] font-bold text-[#1e293b]">
+                Teslimat Bölgeleri
+              </h3>
+              <button
+                type="button"
+                onClick={openAddRegionModal}
+                className="h-[28px] px-3 rounded-[4px] bg-[#10b981] hover:bg-[#059669] text-white text-[11.5px] font-bold flex items-center gap-1 shadow-2xs transition-colors"
+              >
+                <span>+</span> Ekle
+              </button>
             </div>
-            <button
-              onClick={() => handleOpenRegionModal()}
-              className="h-8 px-3 border border-emerald-600 text-emerald-600 hover:bg-emerald-50 font-bold text-[11px] rounded-lg transition-colors flex items-center gap-1.5"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Ekle
-            </button>
-          </div>
+            <p className="text-[11.5px] text-[#64748b] leading-relaxed mb-5">
+              Teslimat yapacağınız ülkeleri, şehirleri veya bölgeleri bu bölümden
+              yönetebilirsiniz. Yeni bir bölge eklemek için &quot;Ekle&quot; butonuna
+              tıklayınız.
+            </p>
 
-          <div className="p-6 flex-1 flex flex-col gap-4">
-            {config.regions.length === 0 ? (
-              <div className="text-center py-8 text-xs text-zinc-400 font-semibold border-2 border-dashed border-zinc-200 rounded-xl">
-                Kayıtlı teslimat bölgesi bulunmamaktadır.
-              </div>
-            ) : (
-              config.regions.map((reg) => (
-                <div key={reg.id} className="flex items-center justify-between p-4 bg-zinc-50 border border-zinc-200 rounded-xl">
+            <div className="divide-y divide-gray-100 border-t border-gray-100">
+              {config.regions.map((region) => (
+                <div
+                  key={region.id}
+                  className="flex items-center justify-between py-2.5"
+                >
                   <div className="flex items-center gap-3">
-                    {reg.countryCode === "tr" ? (
-                      <span className="text-xl">🇹🇷</span>
+                    {/* Turkish Flag SVG for TR, or badge for others */}
+                    {region.country_code === "TR" ? (
+                      <div
+                        style={{
+                          width: "34px",
+                          height: "23px",
+                          borderRadius: "3px",
+                          overflow: "hidden",
+                          boxShadow: "0 1px 2px rgba(0,0,0,0.12)",
+                          flexShrink: 0,
+                        }}
+                      >
+                        <svg
+                          viewBox="0 0 36 24"
+                          width="34"
+                          height="23"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <rect width="36" height="24" fill="#E30A17" />
+                          <circle cx="13.5" cy="12" r="6" fill="#ffffff" />
+                          <circle cx="15" cy="12" r="4.8" fill="#E30A17" />
+                          <polygon
+                            points="21.5,12 17.9,13.2 19.3,9.8 19.3,14.2 17.9,10.8"
+                            fill="#ffffff"
+                          />
+                        </svg>
+                      </div>
                     ) : (
-                      <span className="text-xl">🌍</span>
-                    )}
-                    <div>
-                      <h4 className="text-xs font-bold text-zinc-900">{reg.countryName}</h4>
-                      <p className="text-[10px] text-zinc-500 font-semibold mt-0.5">
-                        {reg.name} <span className="bg-zinc-200 text-zinc-700 px-1.5 py-0.5 rounded ml-1 font-bold">{reg.cities.length} İl</span>
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => {
-                        setSelectedRegionId(reg.id)
-                        setTempRegion({ ...reg })
-                        setCitiesModalOpen(true)
-                      }}
-                      className="px-2.5 py-1.5 border border-zinc-200 hover:border-zinc-300 text-zinc-700 hover:bg-white text-[11px] font-bold rounded-lg transition-colors"
-                    >
-                      İller
-                    </button>
-                    <button
-                      onClick={() => handleOpenRegionModal(reg)}
-                      className="p-1.5 border border-zinc-200 hover:border-zinc-300 text-zinc-600 hover:bg-white rounded-lg transition-colors"
-                    >
-                      <Adjustments className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteRegion(reg.id)}
-                      className="p-1.5 border border-zinc-200 hover:border-zinc-300 text-rose-600 hover:bg-white rounded-lg transition-colors"
-                    >
-                      <Trash className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* CARD 2: Kargo Firmaları */}
-        <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden flex flex-col">
-          <div className="p-6 border-b border-zinc-100 flex items-center justify-between">
-            <div>
-              <h2 className="text-sm font-bold text-zinc-900">Kargo Firmaları</h2>
-              <p className="text-[11px] text-zinc-400 mt-0.5 font-medium">
-                Sipariş teslimatlarında çalıştığınız kargo firmalarını tanımlayabilirsiniz. API bilgileri ile kargo çıkışlarını otomatik hale getirebilirsiniz.
-              </p>
-            </div>
-            <button
-              onClick={() => setAddCarrierModalOpen(true)}
-              className="h-8 px-3 border border-emerald-600 text-emerald-600 hover:bg-emerald-50 font-bold text-[11px] rounded-lg transition-colors flex items-center gap-1.5"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Ekle
-            </button>
-          </div>
-
-          <div className="p-6 flex-1 flex flex-col gap-4 max-h-[300px] overflow-y-auto">
-            {config.carriers.length === 0 ? (
-              <div className="text-center py-8 text-xs text-zinc-400 font-semibold border-2 border-dashed border-zinc-200 rounded-xl">
-                Kayıtlı kargo firması bulunmamaktadır.
-              </div>
-            ) : (
-              config.carriers.sort((a, b) => (b.general.sortOrder || 0) - (a.general.sortOrder || 0)).map((c) => (
-                <div key={c.id} className="flex items-center justify-between p-3 bg-zinc-50 border border-zinc-200 rounded-xl">
-                  <div className="flex items-center gap-3">
-                    {c.general.logoUrl ? (
-                      <img src={c.general.logoUrl} alt={c.general.name} className="w-12 h-6 object-contain border border-zinc-200 rounded bg-white" />
-                    ) : (
-                      <div className="w-12 h-6 flex items-center justify-center bg-zinc-200 border border-zinc-300 rounded text-[9px] font-bold text-zinc-600">
-                        LOGO
+                      <div className="w-[34px] h-[23px] rounded-[3px] bg-gray-100 border border-gray-200 flex items-center justify-center text-[13px]">
+                        {region.flag_emoji || "🌍"}
                       </div>
                     )}
                     <div>
-                      <h4 className="text-xs font-bold text-zinc-900">{c.general.name}</h4>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <button
-                          onClick={() => handleCarrierStatusToggle(c.id)}
-                          className={`text-[9px] font-bold px-1.5 py-0.5 rounded transition-all cursor-pointer ${
-                            c.general.active
-                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                              : "bg-zinc-200 text-zinc-600 border border-zinc-300"
-                          }`}
-                        >
-                          {c.general.active ? "✔ Aktif" : "✕ Pasif"}
-                        </button>
-                        <span className="text-[9px] font-semibold text-zinc-400">Sıra: {c.general.sortOrder || 0}</span>
+                      <div className="text-[12.5px] font-bold text-[#1e293b]">
+                        {region.name}
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[11px] text-[#64748b]">
+                        <span>{region.continent}</span>
+                        <span className="px-1.5 py-0.2 bg-gray-100 rounded text-[10px] font-bold text-[#475569]">
+                          {region.country_code === "TR"
+                            ? 1
+                            : region.active_cities_count}
+                        </span>
                       </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <button
-                      onClick={() => handleOpenCarrierForm(c)}
-                      className="p-1.5 border border-zinc-200 hover:border-zinc-300 text-zinc-600 hover:bg-white rounded-lg transition-colors"
+                      type="button"
+                      onClick={() => {
+                        setCitiesModalRegion(region)
+                        setCitySearch("")
+                      }}
+                      className="h-[26px] px-2.5 rounded-[4px] border border-gray-200 bg-white hover:bg-gray-50 text-[#475569] text-[11px] font-medium transition-colors"
                     >
-                      <Adjustments className="w-3.5 h-3.5" />
+                      İller
                     </button>
                     <button
-                      onClick={() => handleDeleteCarrier(c.id)}
-                      className="p-1.5 border border-zinc-200 hover:border-zinc-300 text-rose-600 hover:bg-white rounded-lg transition-colors"
+                      type="button"
+                      onClick={() => {
+                        setEditingRegion({ ...region })
+                        setRegionModalOpen(true)
+                      }}
+                      className="w-[26px] h-[26px] rounded-[4px] border border-gray-200 bg-white hover:bg-gray-50 text-[#475569] flex items-center justify-center text-[11px] transition-colors"
                     >
-                      <Trash className="w-3.5 h-3.5" />
+                      ✎
                     </button>
                   </div>
                 </div>
-              ))
-            )}
+              ))}
+            </div>
+          </div>
+
+          {/* Right Card: Kargo Firmaları */}
+          <div className="bg-white rounded-[6px] border border-gray-200/90 shadow-xs p-6">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-[15px] font-bold text-[#1e293b]">
+                Kargo Firmaları
+              </h3>
+              <button
+                type="button"
+                onClick={() => openCargoCompanyModal("custom")}
+                className="h-[28px] px-3 rounded-[4px] bg-[#10b981] hover:bg-[#059669] text-white text-[11.5px] font-bold flex items-center gap-1 shadow-2xs transition-colors"
+              >
+                <span>+</span> Ekle
+              </button>
+            </div>
+
+            <div className="divide-y divide-gray-100">
+              {config.carriers.map((carrier) => {
+                const cargoKey = carrier.code.toLowerCase()
+                const logoHtml =
+                  CARGO_LOGO_SVGS[cargoKey] || CARGO_LOGO_SVGS.yurtici
+
+                return (
+                  <div
+                    key={carrier.id}
+                    className="py-2.5 flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-3.5">
+                      <div
+                        className="shrink-0"
+                        dangerouslySetInnerHTML={{ __html: logoHtml }}
+                      />
+                      <div>
+                        <div className="text-[12.5px] font-bold text-[#1e293b]">
+                          {carrier.name}
+                        </div>
+                        <div className="flex items-center gap-1.5 mt-1">
+                          <button
+                            type="button"
+                            onClick={() => handleToggleCarrierQuick(cargoKey)}
+                            title="Durumu Değiştir"
+                            className={`px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-0.5 cursor-pointer transition-opacity hover:opacity-85 ${
+                              carrier.active
+                                ? "bg-[#d1fae5] text-[#059669]"
+                                : "bg-gray-100 text-[#64748b]"
+                            }`}
+                          >
+                            {carrier.active ? "✓ Aktif" : "Pasif"}
+                          </button>
+                          <span className="px-1.5 py-0.5 rounded bg-gray-100 text-[#64748b] text-[10px] font-bold">
+                            {carrier.sort_order ?? 0}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => openCargoCompanyModal(cargoKey)}
+                      className="w-[26px] h-[26px] rounded-[4px] border border-gray-200 bg-white hover:bg-gray-50 text-[#475569] flex items-center justify-center text-[11px] transition-colors"
+                      title="Kargo Firmasını Düzenle"
+                    >
+                      ✎
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
           </div>
         </div>
 
-      </div>
-
-      {/* CARD 3: Kargo Sistemi */}
-      <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden mb-8">
-        <div className="p-6 border-b border-zinc-100">
-          <h2 className="text-sm font-bold text-zinc-900">Kargo Sistemi</h2>
-          <p className="text-[11px] text-zinc-400 mt-0.5 font-medium">
-            Kargo ücretlendirme modelini seçin ve genel kargo limitlerini ayarlayın.
-          </p>
-        </div>
-
-        <div className="p-6 flex flex-col gap-6">
-          {/* Radio Group: System Type */}
-          <div className="flex flex-col gap-4">
-            <label className="flex items-start gap-3 cursor-pointer">
+        {/* Bottom Card: Kargo Sistemi */}
+        <div className="bg-white rounded-[6px] border border-gray-200/90 shadow-xs p-6">
+          <h3 className="text-[15px] font-bold text-[#1e293b] mb-3">
+            Kargo Sistemi
+          </h3>
+          <div className="flex items-center gap-5 mb-4">
+            <label className="flex items-center gap-2 cursor-pointer text-[12px] font-semibold text-[#1e293b]">
               <input
                 type="radio"
-                name="systemType"
-                checked={config.systemType === "advanced"}
-                onChange={() => setConfig({ ...config, systemType: "advanced" })}
-                className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 accent-emerald-600 mt-0.5"
+                name="kargo_sistem"
+                checked={config.system_mode === "advanced"}
+                onChange={() => {
+                  const next = { ...config, system_mode: "advanced" as const }
+                  setConfig(next)
+                  saveConfigToServer(next, "Kargo sistemi Gelişmiş olarak güncellendi")
+                }}
+                className="w-4 h-4 text-[#0284c7] accent-[#0284c7]"
               />
-              <div>
-                <span className="text-xs font-bold text-zinc-900">Gelişmiş</span>
-                <p className="text-[10px] text-zinc-500 font-medium mt-0.5">
-                  Bölgelere ve kargo firmalarına özel kargo ücretleri belirleyebilirsiniz. Kargo ücretleri ödeme adımında hesaplanacaktır.
-                </p>
-              </div>
+              <span>Gelişmiş</span>
             </label>
-
-            <label className="flex items-start gap-3 cursor-pointer">
+            <label className="flex items-center gap-2 cursor-pointer text-[12px] font-medium text-[#475569]">
               <input
                 type="radio"
-                name="systemType"
-                checked={config.systemType === "simple"}
-                onChange={() => setConfig({ ...config, systemType: "simple" })}
-                className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 accent-emerald-600 mt-0.5"
+                name="kargo_sistem"
+                checked={config.system_mode === "simple"}
+                onChange={() => {
+                  const next = { ...config, system_mode: "simple" as const }
+                  setConfig(next)
+                  saveConfigToServer(next, "Kargo sistemi Basit olarak güncellendi")
+                }}
+                className="w-4 h-4 text-[#0284c7] accent-[#0284c7]"
               />
-              <div>
-                <span className="text-xs font-bold text-zinc-900">Basit</span>
-                <p className="text-[10px] text-zinc-500 font-medium mt-0.5">
-                  Kargo ücretleri ürünler sepete eklendiğinde hesaplanmaktadır. Bölgesel ücretlendirme yapılamaz.
-                </p>
-              </div>
+              <span>Basit</span>
             </label>
           </div>
 
-          <div className="h-px bg-zinc-100" />
-
-          {/* Standard Shipping Fee Config */}
-          <div className="flex flex-col gap-4 bg-zinc-50 p-4 rounded-xl border border-zinc-200">
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={config.standardShippingEnabled}
-                onChange={(e) => setConfig({ ...config, standardShippingEnabled: e.target.checked })}
-                className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 accent-emerald-600 rounded"
-              />
-              <span className="text-xs font-bold text-zinc-800">Tüm bölgeler için standart kargo ücreti belirle</span>
-            </label>
-            <p className="text-[10px] text-zinc-400 font-medium -mt-2 ml-7">
-              Sepete uygun kargo ücreti bulunmadığında bu ücret geçerli olacaktır.
-            </p>
-
-            {config.standardShippingEnabled && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 ml-7 mt-2">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-extrabold text-zinc-500 uppercase">Kargo Ücreti</label>
-                  <div className="flex gap-2">
+          <div className="space-y-4">
+            {/* Checkbox 1: Standart Kargo Ücreti */}
+            <div>
+              <label className="flex items-center gap-2 cursor-pointer text-[12px] font-medium text-[#334155] mb-3">
+                <input
+                  type="checkbox"
+                  checked={config.standard_fee_enabled}
+                  onChange={(e) => {
+                    const next = {
+                      ...config,
+                      standard_fee_enabled: e.target.checked,
+                    }
+                    setConfig(next)
+                    saveConfigToServer(next)
+                  }}
+                  className="w-4 h-4 rounded border-gray-300 text-[#0284c7] accent-[#0284c7]"
+                />
+                <span>Tüm bölgeler için standart kargo ücreti belirle</span>
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-[680px]">
+                <div>
+                  <label className="block text-[11px] font-bold text-[#334155] mb-1">
+                    Kargo Ücreti
+                  </label>
+                  <div className="flex items-center">
                     <input
-                      type="number"
-                      value={config.standardShippingFee}
-                      onChange={(e) => setConfig({ ...config, standardShippingFee: Number(e.target.value) })}
-                      className="h-10 px-3 border border-zinc-200 focus:border-zinc-900 focus:outline-none rounded-lg text-xs font-bold text-zinc-900 flex-1 bg-white"
+                      type="text"
+                      value={config.standard_fee_amount}
+                      onChange={(e) =>
+                        setConfig({
+                          ...config,
+                          standard_fee_amount: Number(e.target.value) || 0,
+                        })
+                      }
+                      onBlur={() => saveConfigToServer(config)}
+                      className="flex-1 h-[32px] px-3 rounded-l-[4px] border border-gray-300 text-[12px] text-[#1e293b] focus:outline-none focus:border-[#0284c7]"
                     />
                     <select
-                      value={config.standardShippingCurrency}
-                      onChange={(e) => setConfig({ ...config, standardShippingCurrency: e.target.value })}
-                      className="h-10 px-3 border border-zinc-200 focus:border-zinc-900 focus:outline-none rounded-lg text-xs font-bold text-zinc-900 bg-white"
+                      value={config.standard_fee_currency}
+                      onChange={(e) => {
+                        const next = {
+                          ...config,
+                          standard_fee_currency: e.target.value as "TL" | "USD" | "EUR",
+                        }
+                        setConfig(next)
+                        saveConfigToServer(next)
+                      }}
+                      className="h-[32px] px-2.5 rounded-r-[4px] border border-l-0 border-gray-300 bg-gray-50 text-[11.5px] font-semibold text-[#475569] focus:outline-none"
                     >
                       <option value="TL">TL</option>
                       <option value="USD">USD</option>
@@ -657,943 +786,1082 @@ export default function ShippingSettingsPage() {
                     </select>
                   </div>
                 </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-extrabold text-zinc-500 uppercase">Sepet Tipi</label>
+                <div>
+                  <label className="block text-[11px] font-bold text-[#334155] mb-1">
+                    Sepet Tipi
+                  </label>
                   <select
-                    value={config.standardShippingCartType}
-                    onChange={(e) => setConfig({ ...config, standardShippingCartType: e.target.value })}
-                    className="h-10 px-3 border border-zinc-200 focus:border-zinc-900 focus:outline-none rounded-lg text-xs font-bold text-zinc-900 bg-white"
+                    value={config.standard_fee_cart_type}
+                    onChange={(e) => {
+                      const next = {
+                        ...config,
+                        standard_fee_cart_type: e.target.value as
+                          | "all_carts"
+                          | "only_without_shipping",
+                      }
+                      setConfig(next)
+                      saveConfigToServer(next)
+                    }}
+                    className="w-full h-[32px] px-3 rounded-[4px] border border-gray-300 bg-white text-[12px] text-[#1e293b] focus:outline-none focus:border-[#0284c7]"
                   >
-                    <option value="Tüm sepetlere ekle">Tüm sepetlere ekle</option>
-                    <option value="Sadece perakende">Sadece perakende</option>
-                    <option value="Sadece toptan">Sadece toptan</option>
+                    <option value="all_carts">Tüm sepetlere ekle</option>
+                    <option value="only_without_shipping">
+                      Sadece kargo ücreti olmayanlara ekle
+                    </option>
                   </select>
                 </div>
               </div>
-            )}
-          </div>
+            </div>
 
-          {/* Free Shipping Config */}
-          <div className="flex flex-col gap-4 bg-zinc-50 p-4 rounded-xl border border-zinc-200">
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={config.freeShippingEnabled}
-                onChange={(e) => setConfig({ ...config, freeShippingEnabled: e.target.checked })}
-                className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 accent-emerald-600 rounded"
-              />
-              <span className="text-xs font-bold text-zinc-800">Tüm bölgeler için ücretsiz kargo limiti belirle</span>
-            </label>
-
-            {config.freeShippingEnabled && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 ml-7 mt-2">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-extrabold text-zinc-500 uppercase">Sipariş tutarı ve üzeri</label>
-                  <div className="flex gap-2">
-                    <input
-                      type="number"
-                      value={config.freeShippingThreshold}
-                      onChange={(e) => setConfig({ ...config, freeShippingThreshold: Number(e.target.value) })}
-                      className="h-10 px-3 border border-zinc-200 focus:border-zinc-900 focus:outline-none rounded-lg text-xs font-bold text-zinc-900 flex-1 bg-white"
-                    />
-                    <select
-                      value={config.freeShippingCurrency}
-                      onChange={(e) => setConfig({ ...config, freeShippingCurrency: e.target.value })}
-                      className="h-10 px-3 border border-zinc-200 focus:border-zinc-900 focus:outline-none rounded-lg text-xs font-bold text-zinc-900 bg-white"
-                    >
-                      <option value="TL">TL</option>
-                      <option value="USD">USD</option>
-                      <option value="EUR">EUR</option>
-                    </select>
-                  </div>
+            {/* Checkbox 2: Ücretsiz Kargo Limiti */}
+            <div className="pt-2">
+              <label className="flex items-center gap-2 cursor-pointer text-[12px] font-medium text-[#334155] mb-3">
+                <input
+                  type="checkbox"
+                  checked={config.free_shipping_enabled}
+                  onChange={(e) => {
+                    const next = {
+                      ...config,
+                      free_shipping_enabled: e.target.checked,
+                    }
+                    setConfig(next)
+                    saveConfigToServer(next)
+                  }}
+                  className="w-4 h-4 rounded border-gray-300 text-[#0284c7] accent-[#0284c7]"
+                />
+                <span>Tüm bölgeler için ücretsiz kargo limiti belirle</span>
+              </label>
+              <div className="max-w-[330px]">
+                <label className="block text-[11px] font-bold text-[#334155] mb-1">
+                  Sipariş tutarı ve üzeri
+                </label>
+                <div className="flex items-center">
+                  <input
+                    type="text"
+                    value={config.free_shipping_threshold}
+                    onChange={(e) =>
+                      setConfig({
+                        ...config,
+                        free_shipping_threshold: Number(e.target.value) || 0,
+                      })
+                    }
+                    onBlur={() => saveConfigToServer(config)}
+                    className="flex-1 h-[32px] px-3 rounded-l-[4px] border border-gray-300 text-[12px] text-[#1e293b] focus:outline-none focus:border-[#0284c7]"
+                  />
+                  <select
+                    value={config.free_shipping_currency}
+                    onChange={(e) => {
+                      const next = {
+                        ...config,
+                        free_shipping_currency: e.target.value as "TL" | "USD" | "EUR",
+                      }
+                      setConfig(next)
+                      saveConfigToServer(next)
+                    }}
+                    className="h-[32px] px-2.5 rounded-r-[4px] border border-l-0 border-gray-300 bg-gray-50 text-[11.5px] font-semibold text-[#475569] focus:outline-none"
+                  >
+                    <option value="TL">TL</option>
+                    <option value="USD">USD</option>
+                    <option value="EUR">EUR</option>
+                  </select>
                 </div>
               </div>
-            )}
-          </div>
+            </div>
 
-          {/* Genel Kargo Ücretleri Table Section */}
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-between border-b border-zinc-100 pb-2">
-              <div>
-                <h3 className="text-xs font-bold text-zinc-900">Genel Kargo Ücretleri</h3>
-                <p className="text-[10px] text-zinc-400 font-medium">Desi, miktar, ağırlık veya sepet tutarı aralıklarına göre bölgesel kargo ücretleri ekleyebilirsiniz.</p>
+            {/* Genel Kargo Ücretleri */}
+            <div className="pt-5 border-t border-gray-100">
+              <div className="flex items-center justify-between mb-1.5">
+                <h4 className="text-[13.5px] font-bold text-[#1e293b]">
+                  Genel Kargo Ücretleri
+                </h4>
+                <button
+                  type="button"
+                  onClick={openAddGeneralRule}
+                  className="h-[26px] px-2.5 rounded-[4px] bg-[#10b981] hover:bg-[#059669] text-white text-[11px] font-bold flex items-center gap-1 shadow-2xs transition-colors"
+                >
+                  <span>+</span> Ekle
+                </button>
               </div>
-              <button
-                type="button"
-                className="h-7 px-2.5 border border-emerald-600 text-emerald-600 hover:bg-emerald-50 font-bold text-[10px] rounded-lg transition-colors flex items-center gap-1"
-              >
-                <Plus className="w-3 h-3" />
-                Ekle
-              </button>
-            </div>
-            <div className="text-center py-6 text-[11px] text-zinc-400 font-semibold border border-zinc-200 rounded-xl bg-zinc-50/50">
-              Genel kargo ücreti bulunmamaktadır.
-            </div>
-          </div>
+              <p className="text-[11.5px] text-[#64748b] mb-3">
+                Sipariş tutarlarına veya desilere göre kargo ücreti
+                belirleyebilirsiniz. Yeni bir kargo ücreti eklemek için &quot;Ekle&quot;
+                butonuna tıklayınız.
+              </p>
 
-          {/* Ürünlere Özel Ücretler Table Section */}
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-between border-b border-zinc-100 pb-2">
-              <div>
-                <h3 className="text-xs font-bold text-zinc-900">Ürünlere Özel Ücretler</h3>
-                <p className="text-[10px] text-zinc-400 font-medium">Belirli kategori, marka veya ürünler için özel kargo ücretleri ekleyebilirsiniz.</p>
-              </div>
-              <button
-                type="button"
-                className="h-7 px-2.5 border border-emerald-600 text-emerald-600 hover:bg-emerald-50 font-bold text-[10px] rounded-lg transition-colors flex items-center gap-1"
-              >
-                <Plus className="w-3 h-3" />
-                Ekle
-              </button>
+              {config.general_rules.length === 0 ? (
+                <div className="bg-[#f8fafc] border border-gray-200/80 rounded-[4px] py-3 px-4 text-center text-[11.5px] text-[#64748b]">
+                  Genel kargo ücreti bulunmamaktadır.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="bg-[#f8fafc] border border-gray-200/80 rounded-[4px] divide-y divide-gray-200/60">
+                    {config.general_rules.map((rule) => (
+                      <div
+                        key={rule.id}
+                        className="py-2.5 px-4 flex items-center justify-between text-[12px]"
+                      >
+                        <div>
+                          <span className="font-bold text-[#1e293b]">
+                            {rule.name}
+                          </span>
+                          <span className="text-[#64748b] ml-2 text-[11px]">
+                            ({rule.min_order_total} - {rule.max_order_total} TL •{" "}
+                            {rule.price} {rule.currency})
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingGeneralRule({ ...rule })
+                              setGeneralRuleModalOpen(true)
+                            }}
+                            className="w-[24px] h-[24px] rounded-[4px] border border-gray-200 bg-white hover:bg-gray-50 text-[#475569] flex items-center justify-center text-[11px]"
+                          >
+                            ✎
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const next = {
+                                ...config,
+                                general_rules: config.general_rules.filter(
+                                  (r) => r.id !== rule.id
+                                ),
+                              }
+                              setConfig(next)
+                              saveConfigToServer(next, "Kargo ücreti silindi")
+                            }}
+                            className="w-[24px] h-[24px] rounded-[4px] border border-gray-200 bg-white hover:bg-red-50 text-[#ef4444] flex items-center justify-center text-[11px]"
+                          >
+                            🗑
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-            <div className="text-center py-6 text-[11px] text-zinc-400 font-semibold border border-zinc-200 rounded-xl bg-zinc-50/50">
-              Ürünler özel kargo ücreti bulunmamaktadır.
+
+            {/* Ürünlere Özel Ücretler */}
+            <div className="pt-4 border-t border-gray-100">
+              <div className="flex items-center justify-between mb-1.5">
+                <h4 className="text-[13.5px] font-bold text-[#1e293b]">
+                  Ürünlere Özel Ücretler
+                </h4>
+                <button
+                  type="button"
+                  onClick={openAddProductRule}
+                  className="h-[26px] px-2.5 rounded-[4px] bg-[#10b981] hover:bg-[#059669] text-white text-[11px] font-bold flex items-center gap-1 shadow-2xs transition-colors"
+                >
+                  <span>+</span> Ekle
+                </button>
+              </div>
+              <p className="text-[11.5px] text-[#64748b] mb-3">
+                Ürünlere özel kargo ücreti veya ücretsiz kargo tanımlaması
+                yapabilirsiniz. Yeni bir kargo ücreti eklemek için &quot;Ekle&quot;
+                butonuna tıklayınız.
+              </p>
+
+              {config.product_rules.length === 0 ? (
+                <div className="bg-[#f8fafc] border border-gray-200/80 rounded-[4px] py-3 px-4 text-center text-[11.5px] text-[#64748b]">
+                  Ürünlere özel kargo ücreti bulunmamaktadır.
+                </div>
+              ) : (
+                <div className="bg-[#f8fafc] border border-gray-200/80 rounded-[4px] divide-y divide-gray-200/60">
+                  {config.product_rules.map((prule) => (
+                    <div
+                      key={prule.id}
+                      className="py-2.5 px-4 flex items-center justify-between text-[12px]"
+                    >
+                      <div>
+                        <span className="font-bold text-[#1e293b]">
+                          {prule.title}
+                        </span>
+                        <span className="text-[#64748b] ml-2 text-[11px]">
+                          ({prule.sku_or_category} • +{prule.extra_fee}{" "}
+                          {prule.currency})
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingProductRule({ ...prule })
+                            setProductRuleModalOpen(true)
+                          }}
+                          className="w-[24px] h-[24px] rounded-[4px] border border-gray-200 bg-white hover:bg-gray-50 text-[#475569] flex items-center justify-center text-[11px]"
+                        >
+                          ✎
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const next = {
+                              ...config,
+                              product_rules: config.product_rules.filter(
+                                (r) => r.id !== prule.id
+                              ),
+                            }
+                            setConfig(next)
+                            saveConfigToServer(next, "Özel kargo kuralı silindi")
+                          }}
+                          className="w-[24px] h-[24px] rounded-[4px] border border-gray-200 bg-white hover:bg-red-50 text-[#ef4444] flex items-center justify-center text-[11px]"
+                        >
+                          🗑
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
 
-      {/* ==================== MODALS ==================== */}
-
-      {/* MODAL: Region Add/Edit */}
-      {regionModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-fade-in">
-          <div className="bg-white rounded-2xl border border-zinc-200 shadow-xl w-full max-w-md overflow-hidden animate-scale-up">
-            <div className="bg-emerald-600 px-6 py-4 flex items-center justify-between text-white">
-              <h3 className="text-sm font-bold">
-                {selectedRegionId ? "Bölgeyi Düzenle" : "Yeni Teslimat Bölgesi"}
-              </h3>
-              <button onClick={() => setRegionModalOpen(false)} className="text-white hover:opacity-85">
-                <XMark className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="p-6 flex flex-col gap-4">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-extrabold text-zinc-500 uppercase">Bölge Adı *</label>
-                <input
-                  type="text"
-                  placeholder="örn. Asya 1, Avrupa, Marmara"
-                  value={tempRegion.name}
-                  onChange={(e) => setTempRegion({ ...tempRegion, name: e.target.value })}
-                  className="h-10 px-3 border border-zinc-200 focus:border-zinc-900 focus:outline-none rounded-lg text-xs font-bold text-zinc-900 bg-white"
-                />
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-extrabold text-zinc-500 uppercase">Ülke</label>
-                <select
-                  value={tempRegion.countryCode}
-                  onChange={(e) => {
-                    const code = e.target.value
-                    const name = code === "tr" ? "Türkiye" : "Diğer Ülke"
-                    setTempRegion({ ...tempRegion, countryCode: code, countryName: name })
-                  }}
-                  className="h-10 px-3 border border-zinc-200 focus:border-zinc-900 focus:outline-none rounded-lg text-xs font-bold text-zinc-900 bg-white"
-                >
-                  <option value="tr">Türkiye</option>
-                  <option value="us">United States</option>
-                  <option value="de">Germany</option>
-                </select>
-              </div>
-            </div>
-            <div className="bg-zinc-50 px-6 py-4 border-t border-zinc-200 flex justify-end gap-3">
-              <button
-                onClick={() => setRegionModalOpen(false)}
-                className="h-9 px-4 border border-zinc-200 hover:bg-white text-zinc-700 font-bold text-xs rounded-lg transition-colors"
-              >
-                İptal
-              </button>
-              <button
-                onClick={handleSaveRegion}
-                className="h-9 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg transition-colors"
-              >
-                Kaydet
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL: City Selection */}
-      {citiesModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-fade-in">
-          <div className="bg-white rounded-2xl border border-zinc-200 shadow-xl w-full max-w-xl overflow-hidden animate-scale-up flex flex-col max-h-[85vh]">
-            <div className="bg-emerald-600 px-6 py-4 flex items-center justify-between text-white flex-shrink-0">
-              <div>
-                <h3 className="text-sm font-bold">Şehirleri Seçin</h3>
-                <p className="text-[10px] text-emerald-100 font-semibold mt-0.5">{tempRegion.name}</p>
-              </div>
-              <button onClick={() => setCitiesModalOpen(false)} className="text-white hover:opacity-85">
-                <XMark className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="p-6 overflow-y-auto flex-1">
-              <div className="flex justify-between items-center mb-4 bg-zinc-50 p-3 rounded-lg border border-zinc-200">
-                <span className="text-xs font-bold text-zinc-700">Seçilen İl Sayısı: {tempRegion.cities?.length || 0}</span>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setTempRegion({ ...tempRegion, cities: [...TURKEY_CITIES] })}
-                    className="px-2 py-1 bg-white border border-zinc-200 text-[10px] font-bold text-zinc-600 rounded hover:bg-zinc-50"
-                  >
-                    Tümünü Seç
-                  </button>
-                  <button
-                    onClick={() => setTempRegion({ ...tempRegion, cities: [] })}
-                    className="px-2 py-1 bg-white border border-zinc-200 text-[10px] font-bold text-rose-600 rounded hover:bg-zinc-50"
-                  >
-                    Temizle
-                  </button>
+      {/* ─── Cargo Company Edit Modal (9 Nolu Kargo Firması) ───────────────────── */}
+      {cargoModalOpen && (
+        <div
+          className="fixed inset-0 z-[120] bg-slate-900/50 backdrop-blur-[1px] flex items-center justify-center p-4"
+          onClick={() => setCargoModalOpen(false)}
+        >
+          <div
+            className="bg-white w-full max-w-[650px] rounded-[6px] shadow-2xl overflow-hidden border border-gray-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Blue Modal Header */}
+            <div className="bg-[#0b5ed7] px-6 pt-4 pb-0 text-white">
+              <div className="flex items-start justify-between mb-3">
+                <div>
+                  <div className="text-[11px] text-white/80 font-medium">
+                    Kargo Firmaları
+                  </div>
+                  <div className="text-[18px] font-bold tracking-tight">
+                    {cargoModalForm.id} Nolu Kargo Firması
+                  </div>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => setCargoModalOpen(false)}
+                  className="w-7 h-7 rounded-full hover:bg-white/15 flex items-center justify-center text-white/90 text-[18px] font-bold transition-colors"
+                >
+                  ×
+                </button>
               </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                {TURKEY_CITIES.map((city) => {
-                  const isChecked = tempRegion.cities?.includes(city) || false
-                  return (
-                    <label key={city} className="flex items-center gap-2.5 p-2 border border-zinc-100 hover:border-zinc-200 rounded-lg cursor-pointer hover:bg-zinc-50/50 select-none">
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={() => {
-                          const current = tempRegion.cities || []
-                          const updated = isChecked
-                            ? current.filter(c => c !== city)
-                            : [...current, city]
-                          setTempRegion({ ...tempRegion, cities: updated })
-                        }}
-                        className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 accent-emerald-600 rounded"
-                      />
-                      <span className="text-[11px] font-bold text-zinc-800">{city}</span>
-                    </label>
-                  )
-                })}
-              </div>
-            </div>
-            <div className="bg-zinc-50 px-6 py-4 border-t border-zinc-200 flex justify-end gap-3 flex-shrink-0">
-              <button
-                onClick={() => setCitiesModalOpen(false)}
-                className="h-9 px-4 border border-zinc-200 hover:bg-white text-zinc-700 font-bold text-xs rounded-lg transition-colors"
-              >
-                İptal
-              </button>
-              <button
-                onClick={() => {
-                  let updatedRegions = config.regions.map((r) =>
-                    r.id === selectedRegionId ? (tempRegion as ShippingRegion) : r
-                  )
-                  const newConfig = { ...config, regions: updatedRegions }
-                  setConfig(newConfig)
-                  setCitiesModalOpen(false)
-                  handleSaveConfig(newConfig)
-                }}
-                className="h-9 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg transition-colors"
-              >
-                Kaydet
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* CARRIER WIZARD MODAL 1: Kargo Ekle (List of Predefined Carriers) */}
-      {addCarrierModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-fade-in">
-          <div className="bg-white rounded-2xl border border-zinc-200 shadow-xl w-full max-w-lg overflow-hidden animate-scale-up flex flex-col max-h-[85vh]">
-            <div className="bg-blue-600 px-6 py-4 flex items-center justify-between text-white">
-              <div>
-                <h3 className="text-sm font-bold">Kargo Firmaları</h3>
-                <p className="text-[10px] text-blue-100 font-semibold mt-0.5">Yeni Kargo Firması</p>
-              </div>
-              <button onClick={() => setAddCarrierModalOpen(false)} className="text-white hover:opacity-85">
-                <XMark className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <div className="p-6 overflow-y-auto flex-1">
-              <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl text-zinc-800 text-xs font-semibold leading-normal mb-5">
-                Lütfen eklemek istediğiniz kargo firmasını seçin. Eğer listede bulunmayan bir kargo firmasıysa "Diğer" seçeneğini seçebilirsiniz.
-              </div>
-
-              <div className="flex flex-col gap-2.5 max-h-[300px] overflow-y-auto pr-2">
-                {PREDEFINED_CARRIERS.map((item) => (
-                  <label
-                    key={item.key}
-                    className={`flex items-center justify-between p-3 border rounded-xl cursor-pointer select-none transition-all ${
-                      selectedCarrierKey === item.key
-                        ? "border-blue-600 bg-blue-50/35"
-                        : "border-zinc-200 hover:border-zinc-300 bg-white"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="radio"
-                        name="carrierSelect"
-                        checked={selectedCarrierKey === item.key}
-                        onChange={() => setSelectedCarrierKey(item.key)}
-                        className="w-4 h-4 text-blue-600 focus:ring-blue-500 accent-blue-600"
-                      />
-                      <span className="text-xs font-bold text-zinc-800">{item.name}</span>
-                    </div>
-                  </label>
-                ))}
+              {/* Tabs */}
+              <div className="flex items-center gap-6 text-[11.5px] font-semibold">
+                <button
+                  type="button"
+                  onClick={() => setCargoModalTab("genel")}
+                  className={`pb-2.5 border-b-2 flex items-center gap-1.5 transition-colors ${
+                    cargoModalTab === "genel"
+                      ? "border-white text-white"
+                      : "border-transparent text-white/75 hover:text-white"
+                  }`}
+                >
+                  <span className="w-3.5 h-3.5 rounded-full bg-white text-[#0b5ed7] text-[9px] font-black flex items-center justify-center">
+                    i
+                  </span>
+                  Genel Bilgiler
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCargoModalTab("api")}
+                  className={`pb-2.5 border-b-2 flex items-center gap-1.5 transition-colors ${
+                    cargoModalTab === "api"
+                      ? "border-white text-white"
+                      : "border-transparent text-white/75 hover:text-white"
+                  }`}
+                >
+                  <span>&lt;/&gt;</span> API Ayarları
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCargoModalTab("bolgeler")}
+                  className={`pb-2.5 border-b-2 flex items-center gap-1.5 transition-colors ${
+                    cargoModalTab === "bolgeler"
+                      ? "border-white text-white"
+                      : "border-transparent text-white/75 hover:text-white"
+                  }`}
+                >
+                  <span>🌍</span> Bölgeler
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCargoModalTab("saatler")}
+                  className={`pb-2.5 border-b-2 flex items-center gap-1.5 transition-colors ${
+                    cargoModalTab === "saatler"
+                      ? "border-white text-white"
+                      : "border-transparent text-white/75 hover:text-white"
+                  }`}
+                >
+                  <span>🕒</span> Teslimat Saatleri
+                </button>
               </div>
             </div>
 
-            <div className="bg-zinc-50 px-6 py-4 border-t border-zinc-200 flex justify-end gap-3">
-              <button
-                onClick={() => setAddCarrierModalOpen(false)}
-                className="h-9 px-4 border border-zinc-200 hover:bg-white text-zinc-700 font-bold text-xs rounded-lg transition-colors"
-              >
-                Kapat
-              </button>
-              <button
-                onClick={() => handleOpenCarrierForm()}
-                className="h-9 px-5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg transition-all flex items-center gap-1 shadow-sm"
-              >
-                İleri »
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* CARRIER WIZARD MODAL 2: Kargo Bilgileri Formu */}
-      {carrierFormModalOpen && editingCarrier && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-fade-in">
-          <div className="bg-white rounded-2xl border border-zinc-200 shadow-xl w-full max-w-xl overflow-hidden animate-scale-up flex flex-col max-h-[90vh]">
-            <div className="bg-blue-600 px-6 py-4 flex items-center justify-between text-white">
-              <div>
-                <h3 className="text-sm font-bold">Kargo Firmaları</h3>
-                <p className="text-[10px] text-blue-100 font-semibold mt-0.5">{editingCarrier.general.name || "Yeni Kargo Firması"}</p>
-              </div>
-              <button onClick={() => setCarrierFormModalOpen(false)} className="text-white hover:opacity-85">
-                <XMark className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* TAB SELECTOR */}
-            <div className="bg-blue-600 flex px-4 border-t border-blue-500 flex-shrink-0">
-              <button
-                type="button"
-                onClick={() => setActiveTab("genel")}
-                className={`px-4 py-3 text-xs font-bold text-white transition-all flex items-center gap-1.5 border-b-2 ${
-                  activeTab === "genel" ? "bg-white text-blue-600 border-white rounded-t-lg" : "border-transparent opacity-80 hover:opacity-100"
-                }`}
-              >
-                🛈 Genel Bilgiler
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("api")}
-                className={`px-4 py-3 text-xs font-bold text-white transition-all flex items-center gap-1.5 border-b-2 ${
-                  activeTab === "api" ? "bg-white text-blue-600 border-white rounded-t-lg" : "border-transparent opacity-80 hover:opacity-100"
-                }`}
-              >
-                &lt;/&gt; API Ayarları
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("bolgeler")}
-                className={`px-4 py-3 text-xs font-bold text-white transition-all flex items-center gap-1.5 border-b-2 ${
-                  activeTab === "bolgeler" ? "bg-white text-blue-600 border-white rounded-t-lg" : "border-transparent opacity-80 hover:opacity-100"
-                }`}
-              >
-                🌍 Bölgeler
-              </button>
-            </div>
-
-            <div className="p-6 overflow-y-auto flex-1">
-              
-              {/* TAB 1: Genel Bilgiler */}
-              {activeTab === "genel" && (
-                <div className="flex flex-col gap-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-extrabold text-zinc-500 uppercase">Adı *</label>
+            {/* Modal Body */}
+            <div className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+              {cargoModalTab === "genel" && (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center">
+                    <div className="sm:col-span-8">
+                      <label className="block text-[11.5px] font-bold text-[#334155] mb-1">
+                        Adı <span className="text-red-500">*</span>
+                      </label>
                       <input
                         type="text"
-                        value={editingCarrier.general.name}
-                        onChange={(e) => setEditingCarrier({
-                          ...editingCarrier,
-                          general: { ...editingCarrier.general, name: e.target.value }
-                        })}
-                        className="h-10 px-3 border border-zinc-200 focus:border-zinc-900 focus:outline-none rounded-lg text-xs font-bold text-zinc-900 bg-white"
+                        value={cargoModalForm.name}
+                        onChange={(e) =>
+                          setCargoModalForm({
+                            ...cargoModalForm,
+                            name: e.target.value,
+                          })
+                        }
+                        className="w-full h-[32px] px-3 rounded-[4px] border border-gray-300 text-[12px] text-[#1e293b] focus:outline-none focus:border-[#0b5ed7]"
                       />
                     </div>
-                    
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-extrabold text-zinc-500 uppercase">Durum</label>
-                      <div className="flex items-center h-10">
-                        <label className="relative inline-flex items-center cursor-pointer select-none">
-                          <input
-                            type="checkbox"
-                            checked={editingCarrier.general.active}
-                            onChange={(e) => setEditingCarrier({
-                              ...editingCarrier,
-                              general: { ...editingCarrier.general, active: e.target.checked }
-                            })}
-                            className="sr-only peer"
-                          />
-                          <div className="w-11 h-6 bg-zinc-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
-                          <span className="ml-3 text-xs font-bold text-zinc-800">
-                            {editingCarrier.general.active ? "Aktif" : "Pasif"}
-                          </span>
-                        </label>
-                      </div>
+                    <div className="sm:col-span-4">
+                      <label className="block text-[11.5px] font-bold text-[#334155] mb-1">
+                        Durum
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setCargoModalForm({
+                            ...cargoModalForm,
+                            active: !cargoModalForm.active,
+                          })
+                        }
+                        className={`w-[42px] h-[22px] rounded-full relative transition-colors p-0.5 flex items-center ${
+                          cargoModalForm.active ? "bg-[#10b981]" : "bg-gray-300"
+                        }`}
+                      >
+                        <span
+                          className={`w-[18px] h-[18px] rounded-full bg-white shadow transition-transform transform ${
+                            cargoModalForm.active
+                              ? "translate-x-[20px]"
+                              : "translate-x-0"
+                          }`}
+                        />
+                      </button>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-extrabold text-zinc-500 uppercase">Kısa Açıklaması</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-4">
+                    <div className="sm:col-span-8">
+                      <label className="block text-[11.5px] font-bold text-[#334155] mb-1">
+                        Kısa Açıklaması
+                      </label>
                       <input
                         type="text"
-                        value={editingCarrier.general.description}
-                        onChange={(e) => setEditingCarrier({
-                          ...editingCarrier,
-                          general: { ...editingCarrier.general, description: e.target.value }
-                        })}
-                        className="h-10 px-3 border border-zinc-200 focus:border-zinc-900 focus:outline-none rounded-lg text-xs font-bold text-zinc-900 bg-white"
+                        value={cargoModalForm.short_description}
+                        onChange={(e) =>
+                          setCargoModalForm({
+                            ...cargoModalForm,
+                            short_description: e.target.value,
+                          })
+                        }
+                        className="w-full h-[32px] px-3 rounded-[4px] border border-gray-300 text-[12px] text-[#1e293b] focus:outline-none focus:border-[#0b5ed7]"
                       />
                     </div>
-                    
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-extrabold text-zinc-500 uppercase">Sıra</label>
+                    <div className="sm:col-span-4">
+                      <label className="block text-[11.5px] font-bold text-[#334155] mb-1">
+                        Sıra
+                      </label>
                       <input
                         type="number"
-                        value={editingCarrier.general.sortOrder}
-                        onChange={(e) => setEditingCarrier({
-                          ...editingCarrier,
-                          general: { ...editingCarrier.general, sortOrder: Number(e.target.value) }
-                        })}
-                        className="h-10 px-3 border border-zinc-200 focus:border-zinc-900 focus:outline-none rounded-lg text-xs font-bold text-zinc-900 bg-white"
+                        value={cargoModalForm.sort_order}
+                        onChange={(e) =>
+                          setCargoModalForm({
+                            ...cargoModalForm,
+                            sort_order: Number(e.target.value) || 0,
+                          })
+                        }
+                        className="w-full h-[32px] px-3 rounded-[4px] border border-gray-300 text-[12px] text-[#1e293b] focus:outline-none focus:border-[#0b5ed7]"
                       />
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-extrabold text-zinc-500 uppercase">Taşıyıcı VKN</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-4">
+                    <div className="sm:col-span-8">
+                      <label className="block text-[11.5px] font-bold text-[#334155] mb-1">
+                        Taşıyıcı VKN
+                      </label>
                       <input
                         type="text"
-                        value={editingCarrier.general.taxNumber}
-                        onChange={(e) => setEditingCarrier({
-                          ...editingCarrier,
-                          general: { ...editingCarrier.general, taxNumber: e.target.value }
-                        })}
-                        className="h-10 px-3 border border-zinc-200 focus:border-zinc-900 focus:outline-none rounded-lg text-xs font-bold text-zinc-900 bg-white"
+                        value={cargoModalForm.tax_number}
+                        onChange={(e) =>
+                          setCargoModalForm({
+                            ...cargoModalForm,
+                            tax_number: e.target.value,
+                          })
+                        }
+                        className="w-full h-[32px] px-3 rounded-[4px] border border-gray-300 text-[12px] text-[#1e293b] focus:outline-none focus:border-[#0b5ed7]"
                       />
                     </div>
-
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-extrabold text-zinc-500 uppercase">Müşteri Tipi</label>
+                    <div className="sm:col-span-4">
+                      <label className="block text-[11.5px] font-bold text-[#334155] mb-1">
+                        Müşteri Tipi
+                      </label>
                       <select
-                        value={editingCarrier.general.customerType}
-                        onChange={(e) => setEditingCarrier({
-                          ...editingCarrier,
-                          general: { ...editingCarrier.general, customerType: e.target.value }
-                        })}
-                        className="h-10 px-3 border border-zinc-200 focus:border-zinc-900 focus:outline-none rounded-lg text-xs font-bold text-zinc-900 bg-white"
+                        value={cargoModalForm.customer_type}
+                        onChange={(e) =>
+                          setCargoModalForm({
+                            ...cargoModalForm,
+                            customer_type: e.target.value as
+                              | "all"
+                              | "individual"
+                              | "corporate",
+                          })
+                        }
+                        className="w-full h-[32px] px-2.5 rounded-[4px] border border-gray-300 bg-white text-[12px] text-[#1e293b] focus:outline-none focus:border-[#0b5ed7]"
                       >
-                        <option value="Hepsi">Hepsi</option>
-                        <option value="Bireysel">Bireysel</option>
-                        <option value="Kurumsal">Kurumsal</option>
+                        <option value="all">Hepsi</option>
+                        <option value="individual">Bireysel</option>
+                        <option value="corporate">Kurumsal</option>
                       </select>
                     </div>
                   </div>
 
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-extrabold text-zinc-500 uppercase">Firma Kodu</label>
-                    <input
-                      type="text"
-                      value={editingCarrier.general.companyCode}
-                      onChange={(e) => setEditingCarrier({
-                        ...editingCarrier,
-                        general: { ...editingCarrier.general, companyCode: e.target.value }
-                      })}
-                      className="h-10 px-3 border border-zinc-200 focus:border-zinc-900 focus:outline-none rounded-lg text-xs font-bold text-zinc-900 bg-white"
-                    />
-                  </div>
-
-                  {/* Logo Config */}
-                  <div className="flex flex-col gap-2 p-4 bg-zinc-50 border border-zinc-200 rounded-xl mt-2">
-                    <label className="flex items-center gap-3 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={!!editingCarrier.general.logoUrl}
-                        onChange={(e) => {
-                          const val = e.target.checked ? (CARRIER_LOGOS[editingCarrier.key] || "placeholder-url") : ""
-                          setEditingCarrier({
-                            ...editingCarrier,
-                            general: { ...editingCarrier.general, logoUrl: val }
-                          })
-                        }}
-                        className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 accent-emerald-600 rounded"
-                      />
-                      <span className="text-xs font-bold text-zinc-800">Kargo firması için logo belirle</span>
-                    </label>
-
-                    {editingCarrier.general.logoUrl && (
-                      <div className="flex items-center gap-4 mt-2 bg-white p-3 border border-zinc-200 rounded-lg">
-                        {editingCarrier.general.logoUrl.startsWith("data:image") ? (
-                          <img src={editingCarrier.general.logoUrl} alt="Logo" className="w-24 h-12 object-contain border border-zinc-200 rounded" />
-                        ) : (
-                          <div className="w-24 h-12 flex items-center justify-center bg-zinc-100 border border-zinc-200 text-[10px] font-bold text-zinc-400 rounded">
-                            LOGO
-                          </div>
-                        )}
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const input = prompt("Lütfen logo resim URL'ini veya Base64 verisini giriniz:")
-                              if (input) {
-                                setEditingCarrier({
-                                  ...editingCarrier,
-                                  general: { ...editingCarrier.general, logoUrl: input }
-                                })
-                              }
-                            }}
-                            className="px-2 py-1.5 border border-zinc-200 hover:bg-zinc-50 text-[10px] font-bold text-zinc-600 rounded"
-                          >
-                            Değiştir
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setEditingCarrier({
-                              ...editingCarrier,
-                              general: { ...editingCarrier.general, logoUrl: "" }
-                            })}
-                            className="px-2 py-1.5 border border-rose-200 hover:bg-rose-50 text-[10px] font-bold text-rose-600 rounded"
-                          >
-                            Sil
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Advanced settings checkboxes */}
-                  <div className="flex flex-col gap-3 mt-2">
-                    <label className="flex items-center gap-3 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={editingCarrier.general.customDeliveryTime}
-                        onChange={(e) => setEditingCarrier({
-                          ...editingCarrier,
-                          general: { ...editingCarrier.general, customDeliveryTime: e.target.checked }
-                        })}
-                        className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 accent-emerald-600 rounded"
-                      />
-                      <span className="text-xs font-semibold text-zinc-700">Bayilere özel teslimat süresi belirle</span>
-                    </label>
-
-                    <label className="flex items-center gap-3 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={editingCarrier.general.limitCartTotal}
-                        onChange={(e) => setEditingCarrier({
-                          ...editingCarrier,
-                          general: { ...editingCarrier.general, limitCartTotal: e.target.checked }
-                        })}
-                        className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 accent-emerald-600 rounded"
-                      />
-                      <span className="text-xs font-semibold text-zinc-700">Taşınabilecek sepet tutarlarını sınırla</span>
-                    </label>
-
-                    <label className="flex items-center gap-3 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={editingCarrier.general.limitVolumetricWeight}
-                        onChange={(e) => setEditingCarrier({
-                          ...editingCarrier,
-                          general: { ...editingCarrier.general, limitVolumetricWeight: e.target.checked }
-                        })}
-                        className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 accent-emerald-600 rounded"
-                      />
-                      <span className="text-xs font-semibold text-zinc-700">Taşınabilecek desi aralıklarını belirle</span>
-                    </label>
-
-                    <label className="flex items-center gap-3 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={editingCarrier.general.limitProductQuantity}
-                        onChange={(e) => setEditingCarrier({
-                          ...editingCarrier,
-                          general: { ...editingCarrier.general, limitProductQuantity: e.target.checked }
-                        })}
-                        className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 accent-emerald-600 rounded"
-                      />
-                      <span className="text-xs font-semibold text-zinc-700">Taşınabilecek ürün miktarını belirle</span>
-                    </label>
-                  </div>
-                </div>
-              )}
-
-              {/* TAB 2: API Ayarları */}
-              {activeTab === "api" && (
-                <div className="flex flex-col gap-4">
-                  
-                  {/* API Info banner */}
-                  <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl text-zinc-800 text-xs font-semibold leading-normal">
-                    <p className="font-bold text-zinc-900 mb-1">{editingCarrier.general.name} API Entegrasyon Ayarları</p>
-                    Kargo entegrasyon ayarlarını tamamlayarak kargo barkodlarınızın otomatik oluşmasını sağlayabilirsiniz. API bilgilerinizi kargo şubenizden talep edebilirsiniz.
-                    <span className="text-rose-600 mt-2 block">Kargo firmanıza API kullanımı için 95.173.161.78 IP adresini iletebilirsiniz.</span>
-                  </div>
-
-                  <div className="flex flex-col gap-1.5 mt-2">
-                    <label className="text-[10px] font-extrabold text-zinc-500 uppercase">API Durumu</label>
-                    <div className="flex items-center h-10">
-                      <label className="relative inline-flex items-center cursor-pointer select-none">
-                        <input
-                          type="checkbox"
-                          checked={editingCarrier.api.apiActive}
-                          onChange={(e) => setEditingCarrier({
-                            ...editingCarrier,
-                            api: { ...editingCarrier.api, apiActive: e.target.checked }
-                          })}
-                          className="sr-only peer"
-                        />
-                        <div className="w-11 h-6 bg-zinc-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
-                        <span className="ml-3 text-xs font-bold text-zinc-800">
-                          {editingCarrier.api.apiActive ? "Aktif" : "Pasif"}
+                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-4">
+                    <div className="sm:col-span-8">
+                      <label className="flex items-center gap-1 text-[11.5px] font-bold text-[#334155] mb-1">
+                        <span>Firma Kodu</span>
+                        <span className="w-3.5 h-3.5 rounded-full bg-[#334155] text-white text-[9px] flex items-center justify-center">
+                          ?
                         </span>
                       </label>
+                      <input
+                        type="text"
+                        value={cargoModalForm.company_code}
+                        onChange={(e) =>
+                          setCargoModalForm({
+                            ...cargoModalForm,
+                            company_code: e.target.value,
+                          })
+                        }
+                        className="w-full h-[32px] px-3 rounded-[4px] border border-gray-300 bg-gray-50 text-[12px] text-[#475569] focus:outline-none"
+                      />
                     </div>
                   </div>
 
-                  <div className="h-px bg-zinc-100 my-2" />
-
-                  {/* API Checkboxes */}
-                  <div className="flex flex-col gap-3">
-                    <label className="flex items-center gap-3 cursor-pointer">
+                  {/* Logo Belirle */}
+                  <div className="pt-1 space-y-2.5">
+                    <label className="flex items-center gap-2 cursor-pointer text-[12px] text-[#334155]">
                       <input
                         type="checkbox"
-                        checked={editingCarrier.api.autoGenerateBarcode}
-                        onChange={(e) => setEditingCarrier({
-                          ...editingCarrier,
-                          api: { ...editingCarrier.api, autoGenerateBarcode: e.target.checked }
-                        })}
-                        className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 accent-emerald-600 rounded"
+                        checked={cargoModalForm.use_custom_logo}
+                        onChange={(e) =>
+                          setCargoModalForm({
+                            ...cargoModalForm,
+                            use_custom_logo: e.target.checked,
+                          })
+                        }
+                        className="w-4 h-4 rounded border-gray-300 text-[#0284c7] accent-[#0284c7]"
                       />
-                      <span className="text-xs font-semibold text-zinc-700">Kargo barkodlarını otomatik oluştur</span>
+                      <span>Kargo firması için logo belirle</span>
                     </label>
-
-                    <label className="flex items-center gap-3 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={editingCarrier.api.generateBarcodeForNonCarrier}
-                        onChange={(e) => setEditingCarrier({
-                          ...editingCarrier,
-                          api: { ...editingCarrier.api, generateBarcodeForNonCarrier: e.target.checked }
-                        })}
-                        className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 accent-emerald-600 rounded"
+                    <div className="w-[96px]">
+                      <div
+                        className="w-[96px] h-[72px] rounded-[4px] border border-gray-200 bg-white flex items-center justify-center p-2 shadow-2xs"
+                        dangerouslySetInnerHTML={{
+                          __html:
+                            CARGO_LOGO_SVGS[editingCargoKey] ||
+                            CARGO_LOGO_SVGS.yurtici,
+                        }}
                       />
-                      <span className="text-xs font-semibold text-zinc-700">Kargo firması olmayan siparişler için kargo barkodu oluştur</span>
-                    </label>
-
-                    <label className="flex items-center gap-3 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={editingCarrier.api.markAsShippedOnBranchReceive}
-                        onChange={(e) => setEditingCarrier({
-                          ...editingCarrier,
-                          api: { ...editingCarrier.api, markAsShippedOnBranchReceive: e.target.checked }
-                        })}
-                        className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 accent-emerald-600 rounded"
-                      />
-                      <span className="text-xs font-semibold text-zinc-700">Kargo, şube tarafından teslim alındığında kargolandı olarak işaretle</span>
-                    </label>
-                  </div>
-
-                  <div className="flex flex-col gap-1.5 mt-2">
-                    <label className="text-[10px] font-extrabold text-zinc-500 uppercase">Sipariş Kargo Barkod Oluşturulma Aşaması</label>
-                    <select
-                      value={editingCarrier.api.barcodeGenerationStage}
-                      onChange={(e) => setEditingCarrier({
-                        ...editingCarrier,
-                        api: { ...editingCarrier.api, barcodeGenerationStage: e.target.value }
-                      })}
-                      className="h-10 px-3 border border-zinc-200 focus:border-zinc-900 focus:outline-none rounded-lg text-xs font-bold text-zinc-900 bg-white"
-                    >
-                      <option value="Yeni Sipariş">Yeni Sipariş</option>
-                      <option value="Ödeme Onaylandığında">Ödeme Onaylandığında</option>
-                      <option value="Kargoya Verildiğinde">Kargoya Verildiğinde</option>
-                    </select>
-                  </div>
-
-                  <label className="flex items-center gap-3 cursor-pointer mt-2">
-                    <input
-                      type="checkbox"
-                      checked={editingCarrier.api.sendFixedVolumetricWeight}
-                      onChange={(e) => setEditingCarrier({
-                        ...editingCarrier,
-                        api: { ...editingCarrier.api, sendFixedVolumetricWeight: e.target.checked }
-                      })}
-                      className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 accent-emerald-600 rounded"
-                    />
-                    <span className="text-xs font-semibold text-zinc-700">Sabit desi miktarı gönder</span>
-                  </label>
-
-                  <div className="h-px bg-zinc-100 my-2" />
-
-                  {/* API Auth Credentials */}
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-extrabold text-zinc-500 uppercase font-sans">API Authorization</label>
-                    <input
-                      type="text"
-                      value={editingCarrier.api.apiAuthorization}
-                      onChange={(e) => setEditingCarrier({
-                        ...editingCarrier,
-                        api: { ...editingCarrier.api, apiAuthorization: e.target.value }
-                      })}
-                      className="h-10 px-3 border border-zinc-200 focus:border-zinc-900 focus:outline-none rounded-lg text-xs font-semibold text-zinc-900 bg-white"
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-extrabold text-zinc-500 uppercase">API From</label>
-                    <input
-                      type="text"
-                      value={editingCarrier.api.apiFrom}
-                      onChange={(e) => setEditingCarrier({
-                        ...editingCarrier,
-                        api: { ...editingCarrier.api, apiFrom: e.target.value }
-                      })}
-                      className="h-10 px-3 border border-zinc-200 focus:border-zinc-900 focus:outline-none rounded-lg text-xs font-semibold text-zinc-900 bg-white"
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-extrabold text-zinc-500 uppercase">Şube (KargoNOVA, Kargoist, MNG vb.)</label>
-                    <input
-                      type="text"
-                      value={editingCarrier.api.branchName}
-                      onChange={(e) => setEditingCarrier({
-                        ...editingCarrier,
-                        api: { ...editingCarrier.api, branchName: e.target.value }
-                      })}
-                      className="h-10 px-3 border border-zinc-200 focus:border-zinc-900 focus:outline-none rounded-lg text-xs font-semibold text-zinc-900 bg-white"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* TAB 3: Bölgeler */}
-              {activeTab === "bolgeler" && (
-                <div className="flex flex-col gap-4">
-                  <span className="text-xs font-semibold text-zinc-700">Kargo firmasının teslimat yaptığı bölgeleri belirleyebilirsiniz.</span>
-                  
-                  <div className="flex flex-col gap-3 bg-zinc-50 p-4 rounded-xl border border-zinc-200">
-                    <label className="flex items-start gap-3 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="carrierRegionType"
-                        checked={editingCarrier.regions.deliveryType === "all"}
-                        onChange={() => setEditingCarrier({
-                          ...editingCarrier,
-                          regions: { ...editingCarrier.regions, deliveryType: "all" }
-                        })}
-                        className="w-4 h-4 text-blue-600 focus:ring-blue-500 accent-blue-600 mt-0.5"
-                      />
-                      <div>
-                        <span className="text-xs font-bold text-zinc-900">Tüm bölgelere teslimat</span>
-                        <p className="text-[10px] text-zinc-500 font-semibold mt-0.5">Kargo firması tüm teslimat bölgelerinde geçerli olacaktır.</p>
-                      </div>
-                    </label>
-
-                    <label className="flex items-start gap-3 cursor-pointer mt-2">
-                      <input
-                        type="radio"
-                        name="carrierRegionType"
-                        checked={editingCarrier.regions.deliveryType === "selected"}
-                        onChange={() => setEditingCarrier({
-                          ...editingCarrier,
-                          regions: { ...editingCarrier.regions, deliveryType: "selected" }
-                        })}
-                        className="w-4 h-4 text-blue-600 focus:ring-blue-500 accent-blue-600 mt-0.5"
-                      />
-                      <div>
-                        <span className="text-xs font-bold text-zinc-900">Belirli bölgelere teslimat</span>
-                        <p className="text-[10px] text-zinc-500 font-semibold mt-0.5">Ülke, il, ilçe ve mahalleleri belirleyebilirsiniz.</p>
-                      </div>
-                    </label>
-                  </div>
-
-                  {editingCarrier.regions.deliveryType === "selected" && (
-                    <div className="flex flex-col gap-3 mt-2">
-                      <div className="flex items-center justify-between border-b border-zinc-200 pb-2">
-                        <span className="text-xs font-bold text-zinc-800">Kapsanan Bölgeler</span>
+                      <div className="flex items-center justify-center gap-1 mt-1.5">
                         <button
                           type="button"
-                          onClick={() => {
-                            setTempCountry({ countryCode: "tr", countryName: "Türkiye", regions: [] })
-                            setCountryAddModalOpen(true)
-                          }}
-                          className="h-7 px-3 border border-emerald-600 text-emerald-600 hover:bg-emerald-50 font-bold text-[10px] rounded-lg transition-colors flex items-center gap-1"
+                          onClick={() =>
+                            toast.info("Varsayılan kargo logosu kullanılıyor")
+                          }
+                          className="w-[24px] h-[24px] rounded-[3px] border border-gray-200 bg-white hover:bg-gray-50 text-[#475569] text-[11px] flex items-center justify-center"
                         >
-                          <Plus className="w-3 h-3" />
-                          Ülke Ekle
+                          ✎
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setCargoModalForm({
+                              ...cargoModalForm,
+                              use_custom_logo: false,
+                            })
+                          }
+                          className="w-[24px] h-[24px] rounded-[3px] border border-gray-200 bg-white hover:bg-red-50 text-[#ef4444] text-[11px] flex items-center justify-center"
+                        >
+                          🗑
                         </button>
                       </div>
-
-                      {/* Region Countries Table */}
-                      <div className="border border-zinc-200 rounded-xl overflow-hidden bg-white">
-                        <div className="grid grid-cols-[100px_1fr_60px] bg-zinc-50 border-b border-zinc-200 px-4 py-2 text-[10px] font-extrabold text-zinc-500 uppercase">
-                          <span>Ülkeler</span>
-                          <span>Bölgeler</span>
-                          <span className="text-right">İşlem</span>
-                        </div>
-                        {editingCarrier.regions.countries.length === 0 ? (
-                          <div className="text-center py-6 text-xs font-semibold text-zinc-400">
-                            Lütfen ülke ekleyin.
-                          </div>
-                        ) : (
-                          editingCarrier.regions.countries.map((c, i) => (
-                            <div key={i} className="grid grid-cols-[100px_1fr_60px] border-b border-zinc-100 last:border-0 px-4 py-3 text-xs items-center">
-                              <span className="font-bold text-zinc-900">{c.countryName}</span>
-                              <span className="text-zinc-500 font-semibold">{c.regions.join(", ") || "Tümü"}</span>
-                              <div className="text-right">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const updated = editingCarrier.regions.countries.filter((_, idx) => idx !== i)
-                                    setEditingCarrier({
-                                      ...editingCarrier,
-                                      regions: { ...editingCarrier.regions, countries: updated }
-                                    })
-                                  }}
-                                  className="text-rose-600 hover:text-rose-800 font-bold text-[10px]"
-                                >
-                                  Sil
-                                </button>
-                              </div>
-                            </div>
-                          ))
-                        )}
-                      </div>
                     </div>
-                  )}
+                  </div>
 
+                  <div className="pt-2 space-y-2">
+                    <label className="flex items-center gap-2 cursor-pointer text-[12px] text-[#334155]">
+                      <input
+                        type="checkbox"
+                        checked={cargoModalForm.dealer_custom_delivery_time}
+                        onChange={(e) =>
+                          setCargoModalForm({
+                            ...cargoModalForm,
+                            dealer_custom_delivery_time: e.target.checked,
+                          })
+                        }
+                        className="w-4 h-4 rounded border-gray-300 text-[#0284c7] accent-[#0284c7]"
+                      />
+                      <span>Bayilere özel teslimat süresi belirle</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer text-[12px] text-[#334155]">
+                      <input
+                        type="checkbox"
+                        checked={cargoModalForm.limit_cart_totals}
+                        onChange={(e) =>
+                          setCargoModalForm({
+                            ...cargoModalForm,
+                            limit_cart_totals: e.target.checked,
+                          })
+                        }
+                        className="w-4 h-4 rounded border-gray-300 text-[#0284c7] accent-[#0284c7]"
+                      />
+                      <span>Taşınabilecek sepet tutarlarını sınırla</span>
+                    </label>
+                  </div>
+                </>
+              )}
+
+              {cargoModalTab === "api" && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-[11.5px] font-bold text-[#334155] mb-1">
+                      Web Servis Kullanıcı Adı
+                    </label>
+                    <input
+                      type="text"
+                      value={cargoModalForm.api_username}
+                      onChange={(e) =>
+                        setCargoModalForm({
+                          ...cargoModalForm,
+                          api_username: e.target.value,
+                        })
+                      }
+                      placeholder="API Kullanıcı Adı"
+                      className="w-full h-[32px] px-3 rounded-[4px] border border-gray-300 text-[12px]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11.5px] font-bold text-[#334155] mb-1">
+                      Web Servis Şifresi
+                    </label>
+                    <input
+                      type="password"
+                      value={cargoModalForm.api_password}
+                      onChange={(e) =>
+                        setCargoModalForm({
+                          ...cargoModalForm,
+                          api_password: e.target.value,
+                        })
+                      }
+                      placeholder="••••••••••••"
+                      className="w-full h-[32px] px-3 rounded-[4px] border border-gray-300 text-[12px]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11.5px] font-bold text-[#334155] mb-1">
+                      Müşteri / Sözleşme Kodu
+                    </label>
+                    <input
+                      type="text"
+                      value={cargoModalForm.api_customer_code}
+                      onChange={(e) =>
+                        setCargoModalForm({
+                          ...cargoModalForm,
+                          api_customer_code: e.target.value,
+                        })
+                      }
+                      placeholder="Örn: 204981920"
+                      className="w-full h-[32px] px-3 rounded-[4px] border border-gray-300 text-[12px]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11.5px] font-bold text-[#334155] mb-1">
+                      Kargo Takip URL Şablonu
+                    </label>
+                    <input
+                      type="text"
+                      value={cargoModalForm.tracking_url_template}
+                      onChange={(e) =>
+                        setCargoModalForm({
+                          ...cargoModalForm,
+                          tracking_url_template: e.target.value,
+                        })
+                      }
+                      placeholder="https://.../?code={code}"
+                      className="w-full h-[32px] px-3 rounded-[4px] border border-gray-300 text-[12px]"
+                    />
+                  </div>
                 </div>
               )}
 
+              {cargoModalTab === "bolgeler" && (
+                <div className="space-y-3">
+                  <p className="text-[12px] text-[#64748b]">
+                    Bu kargo firmasının gönderim yapabileceği aktif teslimat
+                    bölgeleri:
+                  </p>
+                  <div className="border border-gray-200 rounded-[4px] divide-y divide-gray-100">
+                    {config.regions.map((r) => (
+                      <label
+                        key={r.id}
+                        className="flex items-center justify-between px-4 py-2.5 text-[12px] cursor-pointer hover:bg-gray-50"
+                      >
+                        <span className="font-semibold text-[#1e293b]">
+                          {r.name} ({r.continent})
+                        </span>
+                        <input
+                          type="checkbox"
+                          defaultChecked
+                          className="w-4 h-4 rounded border-gray-300 text-[#10b981] accent-[#10b981]"
+                        />
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {cargoModalTab === "saatler" && (
+                <div className="space-y-3">
+                  <label className="block text-[11.5px] font-bold text-[#334155] mb-1">
+                    Teslimat / Kargo Çıkış Saat Aralığı
+                  </label>
+                  <input
+                    type="text"
+                    value={cargoModalForm.delivery_hours}
+                    onChange={(e) =>
+                      setCargoModalForm({
+                        ...cargoModalForm,
+                        delivery_hours: e.target.value,
+                      })
+                    }
+                    className="w-full h-[32px] px-3 rounded-[4px] border border-gray-300 text-[12px]"
+                  />
+                  <p className="text-[11px] text-[#64748b]">
+                    Belirtilen saat aralığında verilen siparişler aynı gün kargo
+                    planlamasına dahil edilir.
+                  </p>
+                </div>
+              )}
             </div>
 
-            <div className="bg-zinc-50 px-6 py-4 border-t border-zinc-200 flex justify-between gap-3 flex-shrink-0">
-              <div className="relative group">
-                <button
-                  type="button"
-                  className="h-9 px-4 border border-zinc-200 hover:bg-white text-zinc-700 font-bold text-xs rounded-lg transition-colors"
-                >
-                  İşlemler ▾
-                </button>
-                <div className="absolute left-0 bottom-full mb-1 w-36 bg-white border border-zinc-200 rounded-lg shadow-lg hidden group-hover:block z-10 py-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (confirm("Değişiklikleri kaydetmeden kapatmak istiyor musunuz?")) {
-                        setCarrierFormModalOpen(false)
-                      }
-                    }}
-                    className="w-full text-left px-3 py-2 text-xs font-semibold text-zinc-600 hover:bg-zinc-50"
-                  >
-                    Vazgeç
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setCarrierFormModalOpen(false)}
-                  className="h-9 px-4 border border-zinc-200 hover:bg-white text-zinc-700 font-bold text-xs rounded-lg transition-colors"
-                >
-                  Kapat
-                </button>
-                <button
-                  onClick={handleSaveCarrier}
-                  className="h-9 px-5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg transition-all flex items-center gap-1 shadow-sm"
-                >
-                  ✔ Kaydet
-                </button>
-              </div>
+            {/* Modal Footer */}
+            <div className="px-6 py-3.5 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() =>
+                  setCargoModalForm({
+                    ...cargoModalForm,
+                    active: !cargoModalForm.active,
+                  })
+                }
+                className="h-[32px] px-3 rounded-[4px] border border-gray-300 bg-white hover:bg-gray-50 text-[#334155] text-[12px] font-semibold flex items-center gap-1.5"
+              >
+                <span>İşlemler</span>
+                <span className="text-[10px]">^</span>
+              </button>
+              <button
+                type="button"
+                disabled={saving}
+                onClick={handleSaveCargoModal}
+                className="h-[32px] px-4 rounded-[4px] bg-[#10b981] hover:bg-[#059669] text-white text-[12px] font-bold flex items-center gap-1.5 shadow-xs transition-colors"
+              >
+                <span>✓</span> {saving ? "Kaydediliyor..." : "Kaydet"}
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* CARRIER SUBMODAL: Ülke / Bölge Ekle */}
-      {countryAddModalOpen && editingCarrier && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4 animate-fade-in">
-          <div className="bg-white rounded-2xl border border-zinc-200 shadow-xl w-full max-w-sm overflow-hidden animate-scale-up">
-            <div className="bg-blue-600 px-6 py-4 flex items-center justify-between text-white">
-              <h3 className="text-sm font-bold">Kapsanacak Ülke Ekle</h3>
-              <button onClick={() => setCountryAddModalOpen(false)} className="text-white hover:opacity-85">
-                <XMark className="w-5 h-5" />
+      {/* ─── Teslimat Bölgesi Ekle/Düzenle Modal ───────────────────────────────── */}
+      {regionModalOpen && editingRegion && (
+        <div
+          className="fixed inset-0 z-[120] bg-slate-900/50 backdrop-blur-[1px] flex items-center justify-center p-4"
+          onClick={() => setRegionModalOpen(false)}
+        >
+          <div
+            className="bg-white w-full max-w-[460px] rounded-[6px] shadow-2xl overflow-hidden border border-gray-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="bg-[#0b5ed7] px-6 py-4 text-white flex items-center justify-between">
+              <div>
+                <div className="text-[11px] text-white/80 font-medium">
+                  Teslimat Bölgeleri
+                </div>
+                <div className="text-[17px] font-bold tracking-tight">
+                  Bölge Tanımı
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRegionModalOpen(false)}
+                className="w-7 h-7 rounded-full hover:bg-white/15 flex items-center justify-center text-white/90 text-[18px] font-bold"
+              >
+                ×
               </button>
             </div>
-            <div className="p-6 flex flex-col gap-4">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-extrabold text-zinc-500 uppercase">Ülke Seçin</label>
-                <select
-                  value={tempCountry.countryCode}
-                  onChange={(e) => {
-                    const code = e.target.value
-                    const name = code === "tr" ? "Türkiye" : (code === "us" ? "United States" : "Germany")
-                    setTempCountry({ ...tempCountry, countryCode: code, countryName: name })
-                  }}
-                  className="h-10 px-3 border border-zinc-200 focus:border-zinc-900 focus:outline-none rounded-lg text-xs font-bold text-zinc-900 bg-white"
-                >
-                  <option value="tr">Türkiye</option>
-                  <option value="us">United States</option>
-                  <option value="de">Germany</option>
-                </select>
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-extrabold text-zinc-500 uppercase">Bölgeler (İsteğe bağlı, virgülle ayırın)</label>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-[11.5px] font-bold text-[#334155] mb-1">
+                  Bölge / Ülke Adı *
+                </label>
                 <input
                   type="text"
-                  placeholder="örn. Asya 1, Avrupa, Marmara"
-                  onChange={(e) => {
-                    const list = e.target.value.split(",").map(s => s.trim()).filter(Boolean)
-                    setTempCountry({ ...tempCountry, regions: list })
-                  }}
-                  className="h-10 px-3 border border-zinc-200 focus:border-zinc-900 focus:outline-none rounded-lg text-xs font-semibold text-zinc-900 bg-white"
+                  value={editingRegion.name}
+                  onChange={(e) =>
+                    setEditingRegion({ ...editingRegion, name: e.target.value })
+                  }
+                  placeholder="Örn: Türkiye, KKTC, Almanya"
+                  className="w-full h-[32px] px-3 rounded-[4px] border border-gray-300 text-[12px]"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[11.5px] font-bold text-[#334155] mb-1">
+                    Kıta / Grup
+                  </label>
+                  <input
+                    type="text"
+                    value={editingRegion.continent}
+                    onChange={(e) =>
+                      setEditingRegion({
+                        ...editingRegion,
+                        continent: e.target.value,
+                      })
+                    }
+                    className="w-full h-[32px] px-3 rounded-[4px] border border-gray-300 text-[12px]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11.5px] font-bold text-[#334155] mb-1">
+                    Ülke Kodu
+                  </label>
+                  <input
+                    type="text"
+                    value={editingRegion.country_code}
+                    onChange={(e) =>
+                      setEditingRegion({
+                        ...editingRegion,
+                        country_code: e.target.value.toUpperCase(),
+                      })
+                    }
+                    className="w-full h-[32px] px-3 rounded-[4px] border border-gray-300 text-[12px]"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="px-6 py-3.5 bg-gray-50 border-t border-gray-200 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setRegionModalOpen(false)}
+                className="h-[32px] px-4 rounded-[4px] border border-gray-300 bg-white hover:bg-gray-50 text-[#475569] text-[12px] font-semibold"
+              >
+                İptal
+              </button>
+              <button
+                type="button"
+                onClick={saveRegionModal}
+                className="h-[32px] px-4 rounded-[4px] bg-[#10b981] hover:bg-[#059669] text-white text-[12px] font-bold flex items-center gap-1.5 shadow-xs"
+              >
+                <span>✓</span> Kaydet
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── İller Modal ───────────────────────────────────────────────────────── */}
+      {citiesModalRegion && (
+        <div
+          className="fixed inset-0 z-[120] bg-slate-900/50 backdrop-blur-[1px] flex items-center justify-center p-4"
+          onClick={() => setCitiesModalRegion(null)}
+        >
+          <div
+            className="bg-white w-full max-w-[640px] rounded-[6px] shadow-2xl overflow-hidden border border-gray-200 max-h-[85vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="bg-[#0b5ed7] px-6 py-4 text-white flex items-center justify-between shrink-0">
+              <div>
+                <div className="text-[11px] text-white/80 font-medium">
+                  Teslimat Bölgeleri
+                </div>
+                <div className="text-[17px] font-bold tracking-tight">
+                  {citiesModalRegion.name} — İller ({citiesModalRegion.cities.length})
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCitiesModalRegion(null)}
+                className="w-7 h-7 rounded-full hover:bg-white/15 flex items-center justify-center text-white/90 text-[18px] font-bold"
+              >
+                ×
+              </button>
+            </div>
+            <div className="p-4 border-b border-gray-200 bg-gray-50 shrink-0">
+              <input
+                type="text"
+                value={citySearch}
+                onChange={(e) => setCitySearch(e.target.value)}
+                placeholder="İl ara..."
+                className="w-full h-[32px] px-3 rounded-[4px] border border-gray-300 bg-white text-[12px]"
+              />
+            </div>
+            <div className="p-5 overflow-y-auto grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {citiesModalRegion.cities
+                .filter((c) =>
+                  c.toLocaleLowerCase("tr-TR").includes(citySearch.toLocaleLowerCase("tr-TR"))
+                )
+                .map((city) => (
+                  <div
+                    key={city}
+                    className="px-3 py-1.5 rounded-[4px] border border-gray-200 bg-[#f8fafc] text-[11.5px] font-medium text-[#334155] flex items-center justify-between"
+                  >
+                    <span>{city}</span>
+                    <span className="text-[#10b981] font-bold">✓</span>
+                  </div>
+                ))}
+            </div>
+            <div className="px-6 py-3 bg-gray-50 border-t border-gray-200 flex justify-end shrink-0">
+              <button
+                type="button"
+                onClick={() => setCitiesModalRegion(null)}
+                className="h-[32px] px-4 rounded-[4px] bg-[#0b5ed7] text-white text-[12px] font-bold"
+              >
+                Tamam
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Genel Kargo Ücreti Modal ──────────────────────────────────────────── */}
+      {generalRuleModalOpen && editingGeneralRule && (
+        <div
+          className="fixed inset-0 z-[120] bg-slate-900/50 backdrop-blur-[1px] flex items-center justify-center p-4"
+          onClick={() => setGeneralRuleModalOpen(false)}
+        >
+          <div
+            className="bg-white w-full max-w-[520px] rounded-[6px] shadow-2xl overflow-hidden border border-gray-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="bg-[#0b5ed7] px-6 py-4 text-white flex items-center justify-between">
+              <div>
+                <div className="text-[11px] text-white/80 font-medium">
+                  Kargo Sistemi
+                </div>
+                <div className="text-[17px] font-bold tracking-tight">
+                  Genel Kargo Ücreti
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setGeneralRuleModalOpen(false)}
+                className="w-7 h-7 rounded-full hover:bg-white/15 flex items-center justify-center text-white/90 text-[18px] font-bold"
+              >
+                ×
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-[11.5px] font-bold text-[#334155] mb-1">
+                  Kural Adı
+                </label>
+                <input
+                  type="text"
+                  value={editingGeneralRule.name}
+                  onChange={(e) =>
+                    setEditingGeneralRule({
+                      ...editingGeneralRule,
+                      name: e.target.value,
+                    })
+                  }
+                  className="w-full h-[32px] px-3 rounded-[4px] border border-gray-300 text-[12px]"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[11.5px] font-bold text-[#334155] mb-1">
+                    Min. Sepet Tutarı (TL)
+                  </label>
+                  <input
+                    type="number"
+                    value={editingGeneralRule.min_order_total}
+                    onChange={(e) =>
+                      setEditingGeneralRule({
+                        ...editingGeneralRule,
+                        min_order_total: Number(e.target.value) || 0,
+                      })
+                    }
+                    className="w-full h-[32px] px-3 rounded-[4px] border border-gray-300 text-[12px]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11.5px] font-bold text-[#334155] mb-1">
+                    Maks. Sepet Tutarı (TL)
+                  </label>
+                  <input
+                    type="number"
+                    value={editingGeneralRule.max_order_total}
+                    onChange={(e) =>
+                      setEditingGeneralRule({
+                        ...editingGeneralRule,
+                        max_order_total: Number(e.target.value) || 0,
+                      })
+                    }
+                    className="w-full h-[32px] px-3 rounded-[4px] border border-gray-300 text-[12px]"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-[11.5px] font-bold text-[#334155] mb-1">
+                  Kargo Ücreti (TL)
+                </label>
+                <input
+                  type="number"
+                  value={editingGeneralRule.price}
+                  onChange={(e) =>
+                    setEditingGeneralRule({
+                      ...editingGeneralRule,
+                      price: Number(e.target.value) || 0,
+                    })
+                  }
+                  className="w-full h-[32px] px-3 rounded-[4px] border border-gray-300 text-[12px]"
                 />
               </div>
             </div>
-            <div className="bg-zinc-50 px-6 py-4 border-t border-zinc-200 flex justify-end gap-3">
+            <div className="px-6 py-3.5 bg-gray-50 border-t border-gray-200 flex items-center justify-end gap-2">
               <button
-                onClick={() => setCountryAddModalOpen(false)}
-                className="h-9 px-4 border border-zinc-200 hover:bg-white text-zinc-700 font-bold text-xs rounded-lg transition-colors"
+                type="button"
+                onClick={() => setGeneralRuleModalOpen(false)}
+                className="h-[32px] px-4 rounded-[4px] border border-gray-300 bg-white hover:bg-gray-50 text-[#475569] text-[12px] font-semibold"
               >
-                Vazgeç
+                İptal
               </button>
               <button
-                onClick={() => {
-                  const updatedCountries = [...editingCarrier.regions.countries, tempCountry]
-                  setEditingCarrier({
-                    ...editingCarrier,
-                    regions: { ...editingCarrier.regions, countries: updatedCountries }
-                  })
-                  setCountryAddModalOpen(false)
-                }}
-                className="h-9 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg transition-colors"
+                type="button"
+                onClick={saveGeneralRuleModal}
+                className="h-[32px] px-4 rounded-[4px] bg-[#10b981] hover:bg-[#059669] text-white text-[12px] font-bold flex items-center gap-1.5 shadow-xs"
               >
-                Ekle
+                <span>✓</span> Kaydet
               </button>
             </div>
           </div>
         </div>
       )}
 
+      {/* ─── Ürünlere Özel Kargo Ücreti Modal ──────────────────────────────────── */}
+      {productRuleModalOpen && editingProductRule && (
+        <div
+          className="fixed inset-0 z-[120] bg-slate-900/50 backdrop-blur-[1px] flex items-center justify-center p-4"
+          onClick={() => setProductRuleModalOpen(false)}
+        >
+          <div
+            className="bg-white w-full max-w-[520px] rounded-[6px] shadow-2xl overflow-hidden border border-gray-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="bg-[#0b5ed7] px-6 py-4 text-white flex items-center justify-between">
+              <div>
+                <div className="text-[11px] text-white/80 font-medium">
+                  Kargo Sistemi
+                </div>
+                <div className="text-[17px] font-bold tracking-tight">
+                  Ürünlere Özel Kargo Ücreti
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setProductRuleModalOpen(false)}
+                className="w-7 h-7 rounded-full hover:bg-white/15 flex items-center justify-center text-white/90 text-[18px] font-bold"
+              >
+                ×
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-[11.5px] font-bold text-[#334155] mb-1">
+                  Başlık
+                </label>
+                <input
+                  type="text"
+                  value={editingProductRule.title}
+                  onChange={(e) =>
+                    setEditingProductRule({
+                      ...editingProductRule,
+                      title: e.target.value,
+                    })
+                  }
+                  className="w-full h-[32px] px-3 rounded-[4px] border border-gray-300 text-[12px]"
+                />
+              </div>
+              <div>
+                <label className="block text-[11.5px] font-bold text-[#334155] mb-1">
+                  Ürün SKU veya Kategori Adı
+                </label>
+                <input
+                  type="text"
+                  value={editingProductRule.sku_or_category}
+                  onChange={(e) =>
+                    setEditingProductRule({
+                      ...editingProductRule,
+                      sku_or_category: e.target.value,
+                    })
+                  }
+                  className="w-full h-[32px] px-3 rounded-[4px] border border-gray-300 text-[12px]"
+                />
+              </div>
+              <div>
+                <label className="block text-[11.5px] font-bold text-[#334155] mb-1">
+                  Ek Kargo Ücreti (TL)
+                </label>
+                <input
+                  type="number"
+                  value={editingProductRule.extra_fee}
+                  onChange={(e) =>
+                    setEditingProductRule({
+                      ...editingProductRule,
+                      extra_fee: Number(e.target.value) || 0,
+                    })
+                  }
+                  className="w-full h-[32px] px-3 rounded-[4px] border border-gray-300 text-[12px]"
+                />
+              </div>
+            </div>
+            <div className="px-6 py-3.5 bg-gray-50 border-t border-gray-200 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setProductRuleModalOpen(false)}
+                className="h-[32px] px-4 rounded-[4px] border border-gray-300 bg-white hover:bg-gray-50 text-[#475569] text-[12px] font-semibold"
+              >
+                İptal
+              </button>
+              <button
+                type="button"
+                onClick={saveProductRuleModal}
+                className="h-[32px] px-4 rounded-[4px] bg-[#10b981] hover:bg-[#059669] text-white text-[12px] font-bold flex items-center gap-1.5 shadow-xs"
+              >
+                <span>✓</span> Kaydet
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
 
 export const config = defineRouteConfig({
-  label: "Kargo Ayarları",
-  icon: Truck,
+  label: "Kargo ve Teslimat",
+  icon: Buildings,
 })
+
+export default ShippingSettingsPage
