@@ -521,6 +521,14 @@ export const getTopNavCategories = (prepOrdersBadge: number): TopNavCategory[] =
 ]
 
 const GLOBAL_NO_SIDEBAR_CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+  body, main {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+    background-color: #f1f3f6 !important;
+    -webkit-font-smoothing: antialiased !important;
+  }
+
   /* Medusa V2 Sol Menüyü (MainSidebar & SettingsSidebar) ve Üst Breadcrumb Barı Tamamen Gizle */
   aside.flex.flex-1.flex-col.justify-between.overflow-y-auto,
   aside.relative.flex.flex-1.flex-col.justify-between.overflow-y-auto,
@@ -1703,7 +1711,7 @@ export const EntegreShopHeaderBar = ({
               maxWidth: "1640px",
               margin: "0 auto",
               padding: "0 24px",
-              minHeight: "48px",
+              minHeight: "52px",
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
@@ -1713,9 +1721,10 @@ export const EntegreShopHeaderBar = ({
             {/* Left: Active Category Section Title (e.g. Ürün Yönetimi, Pazaryeri Yönetimi, Sipariş Yönetimi) */}
             <div
               style={{
-                fontSize: "13.5px",
-                fontWeight: 700,
-                color: "#334155",
+                fontSize: "14px",
+                fontWeight: 800,
+                color: "#1e293b",
+                letterSpacing: "-0.025em",
                 whiteSpace: "nowrap",
                 minWidth: "150px",
               }}
@@ -1740,7 +1749,7 @@ export const EntegreShopHeaderBar = ({
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                gap: "22px",
+                gap: "24px",
                 flex: 1,
                 overflowX: "auto",
               }}
@@ -1760,15 +1769,15 @@ export const EntegreShopHeaderBar = ({
                     }}
                     style={{
                       position: "relative",
-                      padding: "14px 4px 12px 4px",
+                      padding: "16px 2px",
                       backgroundColor: "transparent",
                       border: "none",
                       borderBottom: subActive
-                        ? "2.5px solid #1976d2"
-                        : "2.5px solid transparent",
-                      color: subActive ? "#1976d2" : "#334155",
-                      fontSize: "13px",
-                      fontWeight: subActive ? 600 : 500,
+                        ? "2px solid #1565c0"
+                        : "2px solid transparent",
+                      color: subActive ? "#1565c0" : "#475569",
+                      fontSize: "12px",
+                      fontWeight: 700,
                       cursor: "pointer",
                       whiteSpace: "nowrap",
                       display: "inline-flex",

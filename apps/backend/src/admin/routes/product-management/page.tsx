@@ -1846,15 +1846,27 @@ const IkasProductsPage = () => {
   const paginatedProducts = filteredProducts.slice((currentPage - 1) * pageSize, currentPage * pageSize)
 
   return (
-    <div className="bg-[#f8fafc] -m-8 p-8 min-h-screen text-slate-800 custom-admin-wrapper">
+    <div
+      className="bg-[#f1f3f6] min-h-screen text-slate-800 custom-admin-wrapper px-6 py-5"
+      style={{
+        backgroundColor: "#f1f3f6",
+        paddingTop: "20px",
+        paddingBottom: "40px",
+        paddingLeft: "24px",
+        paddingRight: "24px",
+      }}
+    >
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
         .custom-admin-wrapper {
-          font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+          font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
           text-rendering: optimizeLegibility !important;
+          -webkit-font-smoothing: antialiased !important;
         }
         
         .custom-admin-wrapper * {
-          font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+          font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
         }
 
         @keyframes slideOver {
@@ -3809,14 +3821,14 @@ const IkasProductsPage = () => {
               {/* Filtreler Sekmesi + Hızlı Ara + Sağ 4 Aksiyon Butonu + Mavi Çerçeveli Filtre Paneli */}
               <div>
                 <div className="flex flex-wrap items-end justify-between gap-3">
-                  <div className="flex items-center gap-2.5">
+                  <div className="flex items-end gap-2.5">
                     <button
                       type="button"
                       onClick={() => setShowCategoryFilters((prev) => !prev)}
-                      className={`h-10 px-4 bg-white ${
+                      className={`px-4 bg-white ${
                         showCategoryFilters
-                          ? "border-t border-l border-r border-[#3b82f6] rounded-t-md relative z-10 -mb-px"
-                          : "border border-slate-300 rounded-md"
+                          ? "h-10 border-t border-l border-r border-[#3b82f6] rounded-t-md relative z-10 -mb-px"
+                          : "h-9 hover:bg-slate-50 border border-slate-300 rounded-md shadow-2xs"
                       } flex items-center gap-3 text-xs font-bold text-slate-800 cursor-pointer`}
                     >
                       <svg className="w-4 h-4 text-slate-700" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
@@ -3833,7 +3845,7 @@ const IkasProductsPage = () => {
                       </svg>
                     </button>
 
-                    <div className="relative w-64 sm:w-80 mb-1">
+                    <div className={`relative w-64 sm:w-80 ${showCategoryFilters ? "mb-1" : ""}`}>
                       <svg className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
                         <circle cx="11" cy="11" r="8" />
                         <line x1="21" y1="21" x2="16.65" y2="16.65" />
@@ -3849,7 +3861,7 @@ const IkasProductsPage = () => {
                   </div>
 
                   {/* Sağ 4 Aksiyon Butonu (+ Yeni Kategori | Kategori Ağacı | Pazaryeri Eşleştirmeleri | Excel İşlemleri) */}
-                  <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                  <div className={`flex flex-wrap items-center gap-2 ${showCategoryFilters ? "mb-1" : ""}`}>
                     <button
                       type="button"
                       onClick={() => {
@@ -4279,14 +4291,14 @@ const IkasProductsPage = () => {
               {/* Top Action Bar + Connected Blue-Bordered Filter Panel */}
               <div>
                 <div className="flex flex-wrap items-end justify-between gap-3">
-                  <div className="flex items-center gap-2.5">
+                  <div className="flex items-end gap-2.5">
                     <button
                       type="button"
                       onClick={() => setShowProductFilters((prev) => !prev)}
-                      className={`h-10 px-4 bg-white ${
+                      className={`px-4 bg-white ${
                         showProductFilters
-                          ? "border-t border-l border-r border-[#3b82f6] rounded-t-md relative z-10 -mb-px"
-                          : "border border-slate-300 rounded-md"
+                          ? "h-10 border-t border-l border-r border-[#3b82f6] rounded-t-md relative z-10 -mb-px"
+                          : "h-9 hover:bg-slate-50 border border-slate-300 rounded-md shadow-2xs"
                       } flex items-center gap-3 text-xs font-bold text-slate-800 cursor-pointer`}
                     >
                       <svg className="w-4 h-4 text-slate-700" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
@@ -4303,7 +4315,7 @@ const IkasProductsPage = () => {
                       </svg>
                     </button>
 
-                    <div className="relative w-64 sm:w-80 mb-1">
+                    <div className={`relative w-64 sm:w-80 ${showProductFilters ? "mb-1" : ""}`}>
                       <svg className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
                         <circle cx="11" cy="11" r="8" />
                         <line x1="21" y1="21" x2="16.65" y2="16.65" />
@@ -4321,7 +4333,7 @@ const IkasProductsPage = () => {
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                  <div className={`flex flex-wrap items-center gap-2 ${showProductFilters ? "mb-1" : ""}`}>
                     <button
                       type="button"
                       onClick={initCreateMode}
@@ -4339,11 +4351,11 @@ const IkasProductsPage = () => {
                       }}
                       className="h-9 px-3.5 rounded-md bg-[#1976d2] hover:bg-[#1565c0] text-white text-xs font-bold inline-flex items-center gap-2 shadow-2xs transition cursor-pointer"
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
                         <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
                         <polyline points="14 2 14 8 20 8" />
-                        <polyline points="10 13 8 15 10 17" />
-                        <polyline points="14 13 16 15 14 17" />
+                        <path d="M9 15l-2-2 2-2" />
+                        <path d="M15 11l2 2-2 2" />
                       </svg>
                       <span>XML İşlemleri</span>
                     </button>
@@ -4367,21 +4379,21 @@ const IkasProductsPage = () => {
                 {/* Collapsible Blue-Bordered Product Filter Panel (Image 2) */}
                 {showProductFilters && (
                   <div className="bg-white border border-[#3b82f6] rounded-b-md rounded-tr-md p-5 shadow-2xs">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-5 gap-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-x-5 gap-y-4 text-xs">
                     {/* Row 1 */}
                     <div>
-                      <label className="block text-[11.5px] font-bold text-zinc-800 mb-1.5">Arama Terimi</label>
-                      <div className="flex items-center">
+                      <label className="block font-medium text-slate-600 mb-1.5">Arama Terimi</label>
+                      <div className="grid grid-cols-[1fr_135px] gap-2">
                         <input
                           type="text"
                           value={prodFilter.searchTerm}
                           onChange={(e) => setProdFilter({ ...prodFilter, searchTerm: e.target.value })}
-                          className="w-1/2 border border-zinc-200 rounded-l-md px-3 py-2 text-xs text-zinc-800 focus:outline-none focus:border-[#3b82f6]"
+                          className="h-9 px-3 rounded border border-slate-300 text-slate-800 focus:outline-none focus:border-[#1565c0]"
                         />
                         <select
                           value={prodFilter.searchField}
                           onChange={(e) => setProdFilter({ ...prodFilter, searchField: e.target.value })}
-                          className="w-1/2 border border-l-0 border-zinc-200 rounded-r-md px-2 py-2 text-xs text-zinc-700 bg-white focus:outline-none focus:border-[#3b82f6]"
+                          className="h-9 px-2 rounded border border-slate-300 bg-white text-slate-700 font-medium focus:outline-none focus:border-[#1565c0]"
                         >
                           <option value="Ürün No, Ürün Adı, Ürün Kodu">Ürün No, Ürün Adı, Ürün Kodu</option>
                           <option value="Ürün No">Ürün No</option>
@@ -4393,11 +4405,11 @@ const IkasProductsPage = () => {
                     </div>
 
                     <div>
-                      <label className="block text-[11.5px] font-bold text-zinc-800 mb-1.5">Gelişmiş Filtreleme</label>
+                      <label className="block font-medium text-slate-600 mb-1.5">Gelişmiş Filtreleme</label>
                       <select
                         value={prodFilter.advanced}
                         onChange={(e) => setProdFilter({ ...prodFilter, advanced: e.target.value })}
-                        className="w-full border border-zinc-200 rounded-md px-3 py-2 text-xs text-zinc-700 bg-white focus:outline-none focus:border-[#3b82f6]"
+                        className="w-full h-9 px-3 rounded border border-slate-300 bg-white text-slate-700 font-medium focus:outline-none focus:border-[#1565c0]"
                       >
                         <option value="Seçilmedi">Seçilmedi</option>
                         <option value="Stokta Olanlar">Stokta Olanlar</option>
@@ -4410,22 +4422,22 @@ const IkasProductsPage = () => {
                     </div>
 
                     <div>
-                      <label className="block text-[11.5px] font-bold text-zinc-800 mb-1.5">Sıralama</label>
-                      <div className="flex items-center">
+                      <label className="block font-medium text-slate-600 mb-1.5">Sıralama</label>
+                      <div className="grid grid-cols-2 gap-2">
                         <select
                           value={prodFilter.sortField}
                           onChange={(e) => setProdFilter({ ...prodFilter, sortField: e.target.value })}
-                          className="w-1/2 border border-zinc-200 rounded-l-md px-2.5 py-2 text-xs text-zinc-700 bg-white focus:outline-none focus:border-[#3b82f6]"
+                          className="h-9 px-3 rounded border border-slate-300 bg-white text-slate-700 font-medium focus:outline-none focus:border-[#1565c0]"
                         >
                           <option value="Varsayılan">Varsayılan</option>
                           <option value="Ürün Adı">Ürün Adı</option>
-                          <option value="Fiyat">Fiyat</option>
-                          <option value="Stok">Stok</option>
+                          <option value="Fiyat">Satış Fiyatı</option>
+                          <option value="Stok">Stok Miktarı</option>
                         </select>
                         <select
                           value={prodFilter.sortDir}
                           onChange={(e) => setProdFilter({ ...prodFilter, sortDir: e.target.value })}
-                          className="w-1/2 border border-l-0 border-zinc-200 rounded-r-md px-2.5 py-2 text-xs text-zinc-700 bg-white focus:outline-none focus:border-[#3b82f6]"
+                          className="h-9 px-3 rounded border border-slate-300 bg-white text-slate-700 font-medium focus:outline-none focus:border-[#1565c0]"
                         >
                           <option value="Azalan (Z -> A)">Azalan (Z -&gt; A)</option>
                           <option value="Artan (A -> Z)">Artan (A -&gt; Z)</option>
@@ -4434,11 +4446,11 @@ const IkasProductsPage = () => {
                     </div>
 
                     <div>
-                      <label className="block text-[11.5px] font-bold text-zinc-800 mb-1.5">Ürün Kaynağı</label>
+                      <label className="block font-medium text-slate-600 mb-1.5">Ürün Kaynağı</label>
                       <select
                         value={prodFilter.source}
                         onChange={(e) => setProdFilter({ ...prodFilter, source: e.target.value })}
-                        className="w-full border border-zinc-200 rounded-md px-3 py-2 text-xs text-zinc-700 bg-white focus:outline-none focus:border-[#3b82f6]"
+                        className="w-full h-9 px-3 rounded border border-slate-300 bg-white text-slate-700 font-medium focus:outline-none focus:border-[#1565c0]"
                       >
                         <option value="Kaynak Seçilmedi">Kaynak Seçilmedi</option>
                         <option value="Yönetim Paneli">Yönetim Paneli</option>
@@ -4449,11 +4461,11 @@ const IkasProductsPage = () => {
 
                     {/* Row 2 */}
                     <div>
-                      <label className="block text-[11.5px] font-bold text-zinc-800 mb-1.5">Kategori</label>
+                      <label className="block font-medium text-slate-600 mb-1.5">Kategori</label>
                       <select
                         value={prodFilter.category}
                         onChange={(e) => setProdFilter({ ...prodFilter, category: e.target.value })}
-                        className="w-full border border-zinc-200 rounded-md px-3 py-2 text-xs text-zinc-700 bg-white focus:outline-none focus:border-[#3b82f6]"
+                        className="w-full h-9 px-3 rounded border border-slate-300 bg-white text-slate-700 font-medium focus:outline-none focus:border-[#1565c0]"
                       >
                         <option value="">Kategori Seçilmedi</option>
                         {categories.map((cat: any) => (
@@ -4465,11 +4477,11 @@ const IkasProductsPage = () => {
                     </div>
 
                     <div>
-                      <label className="block text-[11.5px] font-bold text-zinc-800 mb-1.5">Marka</label>
+                      <label className="block font-medium text-slate-600 mb-1.5">Marka</label>
                       <select
                         value={prodFilter.brand}
                         onChange={(e) => setProdFilter({ ...prodFilter, brand: e.target.value })}
-                        className="w-full border border-zinc-200 rounded-md px-3 py-2 text-xs text-zinc-700 bg-white focus:outline-none focus:border-[#3b82f6]"
+                        className="w-full h-9 px-3 rounded border border-slate-300 bg-white text-slate-700 font-medium focus:outline-none focus:border-[#1565c0]"
                       >
                         <option value="">Marka Seçilmedi</option>
                         <option value="BODYKİT MERKEZİ">BODYKİT MERKEZİ</option>
@@ -4487,11 +4499,11 @@ const IkasProductsPage = () => {
                     </div>
 
                     <div>
-                      <label className="block text-[11.5px] font-bold text-zinc-800 mb-1.5">Ürün Etiketleri</label>
+                      <label className="block font-medium text-slate-600 mb-1.5">Ürün Etiketleri</label>
                       <select
                         value={prodFilter.tag}
                         onChange={(e) => setProdFilter({ ...prodFilter, tag: e.target.value })}
-                        className="w-full border border-zinc-200 rounded-md px-3 py-2 text-xs text-zinc-700 bg-white focus:outline-none focus:border-[#3b82f6]"
+                        className="w-full h-9 px-3 rounded border border-slate-300 bg-white text-slate-700 font-medium focus:outline-none focus:border-[#1565c0]"
                       >
                         <option value="">Etiket Seçilmedi</option>
                         {(catalogData.tags || []).map((t: any) => (
@@ -4503,11 +4515,11 @@ const IkasProductsPage = () => {
                     </div>
 
                     <div>
-                      <label className="block text-[11.5px] font-bold text-zinc-800 mb-1.5">Ürün Tipi</label>
+                      <label className="block font-medium text-slate-600 mb-1.5">Ürün Tipi</label>
                       <select
                         value={prodFilter.productType}
                         onChange={(e) => setProdFilter({ ...prodFilter, productType: e.target.value })}
-                        className="w-full border border-zinc-200 rounded-md px-3 py-2 text-xs text-zinc-700 bg-white focus:outline-none focus:border-[#3b82f6]"
+                        className="w-full h-9 px-3 rounded border border-slate-300 bg-white text-slate-700 font-medium focus:outline-none focus:border-[#1565c0]"
                       >
                         <option value="Seçilmedi">Seçilmedi</option>
                         <option value="Standart Ürün">Standart Ürün</option>
@@ -4517,117 +4529,117 @@ const IkasProductsPage = () => {
 
                     {/* Row 3 */}
                     <div>
-                      <label className="block text-[11.5px] font-bold text-zinc-800 mb-1.5">Stok Miktarı</label>
-                      <div className="flex items-center">
+                      <label className="block font-medium text-slate-600 mb-1.5">Stok Miktarı</label>
+                      <div className="flex items-center gap-2">
                         <input
                           type="text"
+                          placeholder="0.00"
                           value={prodFilter.stockMin}
                           onChange={(e) => setProdFilter({ ...prodFilter, stockMin: e.target.value })}
-                          className="w-full border border-zinc-200 rounded-l-md px-3 py-2 text-xs text-zinc-700 focus:outline-none focus:border-[#3b82f6]"
+                          className="w-full h-9 px-3 rounded border border-slate-300 text-slate-700 focus:outline-none focus:border-[#1565c0]"
                         />
-                        <span className="bg-zinc-100 border-y border-zinc-200 px-2.5 py-2 text-xs text-zinc-600 font-medium shrink-0">
-                          ile
-                        </span>
+                        <span className="text-slate-500">ile</span>
                         <input
                           type="text"
+                          placeholder="0.00"
                           value={prodFilter.stockMax}
                           onChange={(e) => setProdFilter({ ...prodFilter, stockMax: e.target.value })}
-                          className="w-full border border-zinc-200 rounded-r-md px-3 py-2 text-xs text-zinc-700 focus:outline-none focus:border-[#3b82f6]"
+                          className="w-full h-9 px-3 rounded border border-slate-300 text-slate-700 focus:outline-none focus:border-[#1565c0]"
                         />
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-[11.5px] font-bold text-zinc-800 mb-1.5">Desi</label>
-                      <div className="flex items-center">
+                      <label className="block font-medium text-slate-600 mb-1.5">Desi</label>
+                      <div className="flex items-center gap-2">
                         <input
                           type="text"
+                          placeholder="0.00"
                           value={prodFilter.desiMin}
                           onChange={(e) => setProdFilter({ ...prodFilter, desiMin: e.target.value })}
-                          className="w-full border border-zinc-200 rounded-l-md px-3 py-2 text-xs text-zinc-700 focus:outline-none focus:border-[#3b82f6]"
+                          className="w-full h-9 px-3 rounded border border-slate-300 text-slate-700 focus:outline-none focus:border-[#1565c0]"
                         />
-                        <span className="bg-zinc-100 border-y border-zinc-200 px-2.5 py-2 text-xs text-zinc-600 font-medium shrink-0">
-                          ile
-                        </span>
+                        <span className="text-slate-500">ile</span>
                         <input
                           type="text"
+                          placeholder="0.00"
                           value={prodFilter.desiMax}
                           onChange={(e) => setProdFilter({ ...prodFilter, desiMax: e.target.value })}
-                          className="w-full border border-zinc-200 rounded-r-md px-3 py-2 text-xs text-zinc-700 focus:outline-none focus:border-[#3b82f6]"
+                          className="w-full h-9 px-3 rounded border border-slate-300 text-slate-700 focus:outline-none focus:border-[#1565c0]"
                         />
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-[11.5px] font-bold text-zinc-800 mb-1.5">Alış Fiyatı</label>
-                      <div className="flex items-center">
+                      <label className="block font-medium text-slate-600 mb-1.5">Alış Fiyatı</label>
+                      <div className="flex items-center gap-2">
                         <input
                           type="text"
+                          placeholder="0.00"
                           value={prodFilter.costPriceMin}
                           onChange={(e) => setProdFilter({ ...prodFilter, costPriceMin: e.target.value })}
-                          className="w-full border border-zinc-200 rounded-l-md px-3 py-2 text-xs text-zinc-700 focus:outline-none focus:border-[#3b82f6]"
+                          className="w-full h-9 px-3 rounded border border-slate-300 text-slate-700 focus:outline-none focus:border-[#1565c0]"
                         />
-                        <span className="bg-zinc-100 border-y border-zinc-200 px-2.5 py-2 text-xs text-zinc-600 font-medium shrink-0">
-                          ile
-                        </span>
+                        <span className="text-slate-500">ile</span>
                         <input
                           type="text"
+                          placeholder="0.00"
                           value={prodFilter.costPriceMax}
                           onChange={(e) => setProdFilter({ ...prodFilter, costPriceMax: e.target.value })}
-                          className="w-full border border-zinc-200 rounded-r-md px-3 py-2 text-xs text-zinc-700 focus:outline-none focus:border-[#3b82f6]"
+                          className="w-full h-9 px-3 rounded border border-slate-300 text-slate-700 focus:outline-none focus:border-[#1565c0]"
                         />
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-[11.5px] font-bold text-zinc-800 mb-1.5">Piyasa Fiyatı</label>
-                      <div className="flex items-center">
+                      <label className="block font-medium text-slate-600 mb-1.5">Piyasa Fiyatı</label>
+                      <div className="flex items-center gap-2">
                         <input
                           type="text"
+                          placeholder="0.00"
                           value={prodFilter.marketPriceMin}
                           onChange={(e) => setProdFilter({ ...prodFilter, marketPriceMin: e.target.value })}
-                          className="w-full border border-zinc-200 rounded-l-md px-3 py-2 text-xs text-zinc-700 focus:outline-none focus:border-[#3b82f6]"
+                          className="w-full h-9 px-3 rounded border border-slate-300 text-slate-700 focus:outline-none focus:border-[#1565c0]"
                         />
-                        <span className="bg-zinc-100 border-y border-zinc-200 px-2.5 py-2 text-xs text-zinc-600 font-medium shrink-0">
-                          ile
-                        </span>
+                        <span className="text-slate-500">ile</span>
                         <input
                           type="text"
+                          placeholder="0.00"
                           value={prodFilter.marketPriceMax}
                           onChange={(e) => setProdFilter({ ...prodFilter, marketPriceMax: e.target.value })}
-                          className="w-full border border-zinc-200 rounded-r-md px-3 py-2 text-xs text-zinc-700 focus:outline-none focus:border-[#3b82f6]"
+                          className="w-full h-9 px-3 rounded border border-slate-300 text-slate-700 focus:outline-none focus:border-[#1565c0]"
                         />
                       </div>
                     </div>
 
                     {/* Row 4 */}
                     <div>
-                      <label className="block text-[11.5px] font-bold text-zinc-800 mb-1.5">Satış Fiyatı</label>
-                      <div className="flex items-center">
+                      <label className="block font-medium text-slate-600 mb-1.5">Satış Fiyatı</label>
+                      <div className="flex items-center gap-2">
                         <input
                           type="text"
+                          placeholder="0.00"
                           value={prodFilter.salePriceMin}
                           onChange={(e) => setProdFilter({ ...prodFilter, salePriceMin: e.target.value })}
-                          className="w-full border border-zinc-200 rounded-l-md px-3 py-2 text-xs text-zinc-700 focus:outline-none focus:border-[#3b82f6]"
+                          className="w-full h-9 px-3 rounded border border-slate-300 text-slate-700 focus:outline-none focus:border-[#1565c0]"
                         />
-                        <span className="bg-zinc-100 border-y border-zinc-200 px-2.5 py-2 text-xs text-zinc-600 font-medium shrink-0">
-                          ile
-                        </span>
+                        <span className="text-slate-500">ile</span>
                         <input
                           type="text"
+                          placeholder="0.00"
                           value={prodFilter.salePriceMax}
                           onChange={(e) => setProdFilter({ ...prodFilter, salePriceMax: e.target.value })}
-                          className="w-full border border-zinc-200 rounded-r-md px-3 py-2 text-xs text-zinc-700 focus:outline-none focus:border-[#3b82f6]"
+                          className="w-full h-9 px-3 rounded border border-slate-300 text-slate-700 focus:outline-none focus:border-[#1565c0]"
                         />
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-[11.5px] font-bold text-zinc-800 mb-1.5">Para Birimi</label>
+                      <label className="block font-medium text-slate-600 mb-1.5">Para Birimi</label>
                       <select
                         value={prodFilter.currency}
                         onChange={(e) => setProdFilter({ ...prodFilter, currency: e.target.value })}
-                        className="w-full border border-zinc-200 rounded-md px-3 py-2 text-xs text-zinc-700 bg-white focus:outline-none focus:border-[#3b82f6]"
+                        className="w-full h-9 px-3 rounded border border-slate-300 bg-white text-slate-700 font-medium focus:outline-none focus:border-[#1565c0]"
                       >
                         <option value="Seçilmedi">Seçilmedi</option>
                         <option value="TL">TL (₺)</option>
@@ -4698,7 +4710,7 @@ const IkasProductsPage = () => {
                           <th className="py-3 px-4 text-center w-[320px]">Pazaryerleri</th>
                           <th className="py-3 px-3 text-center w-16">Desi</th>
                           <th className="py-3 px-3 text-center w-16">Stok</th>
-                          <th className="py-3 px-4 w-28">İşlemler</th>
+                          <th className="py-3 px-4 text-center w-28">İşlemler</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200">
