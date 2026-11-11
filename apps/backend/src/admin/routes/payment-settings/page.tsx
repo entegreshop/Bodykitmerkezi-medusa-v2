@@ -2,7 +2,7 @@ import { defineRouteConfig } from "@medusajs/admin-sdk"
 import { CreditCard } from "@medusajs/icons"
 import { toast } from "@medusajs/ui"
 import { useEffect, useState } from "react"
-import { useLocation, useNavigate } from "react-router-dom"
+import { useLocation } from "react-router-dom"
 import { POS_LOGO_SVGS } from "./pos-cargo-logos"
 
 // ─── Types matching /admin/payment-settings/route.ts ──────────────────────────
@@ -142,7 +142,6 @@ const POS_PROVIDER_LIST: Array<{ key: string; name: string; defaultActive?: bool
 // ─── Component ────────────────────────────────────────────────────────────────
 
 const PaymentSettingsPage = () => {
-  const navigate = useNavigate()
   const location = useLocation()
 
   const [config, setConfig] = useState<PaymentConfig>(DEFAULT_PAYMENT_CONFIG)
@@ -424,63 +423,6 @@ const PaymentSettingsPage = () => {
 
   return (
     <div className="min-h-screen bg-[#f1f3f6] font-sans text-[#1e293b] pb-16">
-      {/* Araçlar Sub-navigation Bar (Matches localhost:3095/?view=payments) */}
-      <div className="bg-white border-b border-gray-200 px-6 h-[46px] flex items-center justify-between shadow-2xs sticky top-0 z-20">
-        <div className="text-[14px] font-bold text-[#1e293b]">Araçlar</div>
-        <div className="flex items-center gap-7 h-full overflow-x-auto no-scrollbar">
-          <button
-            type="button"
-            onClick={() => {
-              setActiveSubTab("odeme")
-              navigate("/payment-settings")
-            }}
-            className={`h-full flex items-center text-[12px] font-semibold transition-colors whitespace-nowrap ${
-              activeSubTab === "odeme"
-                ? "border-b-2 border-[#1565c0] text-[#1565c0]"
-                : "border-b-2 border-transparent text-[#475569] hover:text-[#1e293b]"
-            }`}
-          >
-            Ödeme Yöntemleri
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate("/shipping-settings")}
-            className="h-full flex items-center border-b-2 border-transparent text-[#475569] hover:text-[#1e293b] text-[12px] font-semibold transition-colors whitespace-nowrap"
-          >
-            Kargo ve Teslimat
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate("/sms-settings")}
-            className="h-full flex items-center border-b-2 border-transparent text-[#475569] hover:text-[#1e293b] text-[12px] font-semibold transition-colors whitespace-nowrap"
-          >
-            E-Posta, SMS ve WhatsApp
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate("/e-fatura")}
-            className="h-full flex items-center border-b-2 border-transparent text-[#475569] hover:text-[#1e293b] text-[12px] font-semibold transition-colors whitespace-nowrap"
-          >
-            Muhasebe / ERP
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setActiveSubTab("eklentiler")
-              navigate("/payment-settings?tab=eklentiler")
-            }}
-            className={`h-full flex items-center text-[12px] font-semibold transition-colors whitespace-nowrap ${
-              activeSubTab === "eklentiler"
-                ? "border-b-2 border-[#1565c0] text-[#1565c0]"
-                : "border-b-2 border-transparent text-[#475569] hover:text-[#1e293b]"
-            }`}
-          >
-            Eklentiler
-          </button>
-        </div>
-        <div className="w-[60px] hidden sm:block"></div>
-      </div>
-
       {/* Sub-view 1: Ödeme Yöntemleri */}
       {activeSubTab === "odeme" && (
         <div className="max-w-[920px] mx-auto px-4 py-7">

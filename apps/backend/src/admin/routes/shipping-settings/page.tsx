@@ -2,7 +2,6 @@ import { defineRouteConfig } from "@medusajs/admin-sdk"
 import { Buildings } from "@medusajs/icons"
 import { toast } from "@medusajs/ui"
 import { useEffect, useState } from "react"
-import { useNavigate } from "react-router-dom"
 import { CARGO_ITEMS_META, CARGO_LOGO_SVGS } from "../payment-settings/pos-cargo-logos"
 
 // ─── Types matching /admin/shipping-settings/route.ts ─────────────────────────
@@ -160,8 +159,6 @@ const DEFAULT_SHIPPING_CONFIG: ShippingConfig = {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 const ShippingSettingsPage = () => {
-  const navigate = useNavigate()
-
   const [config, setConfig] = useState<ShippingConfig>(DEFAULT_SHIPPING_CONFIG)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -624,49 +621,6 @@ const ShippingSettingsPage = () => {
 
   return (
     <div className="min-h-screen bg-[#f1f3f6] font-sans text-[#1e293b] pb-16">
-      {/* Araçlar Sub-navigation Bar (Matches localhost:3095/?view=payments) */}
-      <div className="bg-white border-b border-gray-200 px-6 h-[46px] flex items-center justify-between shadow-2xs sticky top-0 z-20">
-        <div className="text-[14px] font-bold text-[#1e293b]">Araçlar</div>
-        <div className="flex items-center gap-7 h-full overflow-x-auto no-scrollbar">
-          <button
-            type="button"
-            onClick={() => navigate("/payment-settings")}
-            className="h-full flex items-center border-b-2 border-transparent text-[#475569] hover:text-[#1e293b] text-[12px] font-semibold transition-colors whitespace-nowrap"
-          >
-            Ödeme Yöntemleri
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate("/shipping-settings")}
-            className="h-full flex items-center border-b-2 border-[#1565c0] text-[#1565c0] text-[12px] font-semibold transition-colors whitespace-nowrap"
-          >
-            Kargo ve Teslimat
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate("/sms-settings")}
-            className="h-full flex items-center border-b-2 border-transparent text-[#475569] hover:text-[#1e293b] text-[12px] font-semibold transition-colors whitespace-nowrap"
-          >
-            E-Posta, SMS ve WhatsApp
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate("/e-fatura")}
-            className="h-full flex items-center border-b-2 border-transparent text-[#475569] hover:text-[#1e293b] text-[12px] font-semibold transition-colors whitespace-nowrap"
-          >
-            Muhasebe / ERP
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate("/payment-settings?tab=eklentiler")}
-            className="h-full flex items-center border-b-2 border-transparent text-[#475569] hover:text-[#1e293b] text-[12px] font-semibold transition-colors whitespace-nowrap"
-          >
-            Eklentiler
-          </button>
-        </div>
-        <div className="w-[60px] hidden sm:block"></div>
-      </div>
-
       {/* Main Content Container (max-w-[1040px] mx-auto px-4 py-7) */}
       <div className="max-w-[1040px] mx-auto px-4 py-7">
         {/* Top 2-Column Grid: Teslimat Bölgeleri & Kargo Firmaları */}
