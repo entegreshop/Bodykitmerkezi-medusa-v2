@@ -11,7 +11,7 @@ type InfiniteProductsProps = {
   count: number
   region: HttpTypes.StoreRegion
   countryCode: string
-  categoryId?: string | string[]
+  categoryId?: string
   collectionId?: string
   productsIds?: string[]
   sortBy?: any
@@ -38,7 +38,6 @@ export default function InfiniteProducts({
   const [hasMore, setHasMore] = useState<boolean>(totalPages > 1)
 
   const observerRef = useRef<HTMLDivElement>(null)
-  const categoryKey = Array.isArray(categoryId) ? categoryId.join(",") : categoryId || ""
 
   // Reset state when server-side props change (e.g. user toggles sorting, searchParams, or switches category tabs)
   useEffect(() => {
@@ -47,7 +46,7 @@ export default function InfiniteProducts({
     const newTotalPages = Math.ceil(count / limit)
     setHasMore(newTotalPages > 1)
     setIsLoading(false)
-  }, [initialProducts, count, categoryKey, collectionId, sortBy])
+  }, [initialProducts, count, categoryId, collectionId, sortBy])
 
   useEffect(() => {
     if (!hasMore || isLoading) return
@@ -63,10 +62,7 @@ export default function InfiniteProducts({
               limit,
             }
             if (categoryId) {
-              const catArray = Array.isArray(categoryId) ? categoryId : [categoryId]
-              if (catArray.length > 0) {
-                queryParams["category_id"] = catArray
-              }
+              queryParams["category_id"] = [categoryId]
             }
             if (collectionId) {
               queryParams["collection_id"] = [collectionId]
@@ -116,7 +112,7 @@ export default function InfiniteProducts({
         observer.unobserve(currentObserverRef)
       }
     }
-  }, [page, hasMore, isLoading, categoryKey, collectionId, productsIds, sortBy, countryCode, count, products.length])
+  }, [page, hasMore, isLoading, categoryId, collectionId, productsIds, sortBy, countryCode, count, products.length])
 
   return (
     <div className="flex flex-col items-center w-full">

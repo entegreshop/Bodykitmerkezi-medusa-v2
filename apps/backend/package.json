@@ -13,8 +13,8 @@
     "medusa"
   ],
   "scripts": {
-    "build": "medusa build",
-    "start": "medusa db:migrate --skip-links && medusa db:sync-links --execute-safe && medusa start -H 0.0.0.0",
+    "build": "medusa build && node -e \"try{require('fs').cpSync('.medusa/server/public','./public',{recursive:true})}catch(e){}\"",
+    "start": "node -e \"try{require('fs').cpSync('.medusa/server/public','./public',{recursive:true})}catch(e){}\" && (medusa db:migrate --skip-links || true) && (medusa db:sync-links --execute-safe || true) && medusa start -H 0.0.0.0 -p 9000",
     "dev": "medusa develop",
     "test:integration:http": "TEST_TYPE=integration:http NODE_OPTIONS=--experimental-vm-modules jest --silent=false --runInBand --forceExit",
     "test:integration:modules": "TEST_TYPE=integration:modules NODE_OPTIONS=--experimental-vm-modules jest --silent=false --runInBand --forceExit",

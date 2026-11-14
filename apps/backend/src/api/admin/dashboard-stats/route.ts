@@ -488,7 +488,7 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
           iadeEdilen: iadeEdilenCount,
           circleCount: onayBekleyenCount + iadeEdilenCount,
           channels: [
-            { name: "bodykitmerkezi.com (Web Mağaza)", count: realOrderCount },
+            { name: "kombingo.com (Web Mağaza)", count: realOrderCount },
             { name: "N11", count: "-" },
             { name: "Hepsiburada", count: "-" },
             { name: "Trendyol", count: "-" }

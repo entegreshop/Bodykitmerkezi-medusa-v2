@@ -20,7 +20,7 @@ const EXCEL_SECTIONS = [
 const ExcelIoTab: React.FC = () => {
   const [selectedSection, setSelectedSection] = useState<string>("Ürün Bilgileri")
   const [categories, setCategories] = useState<any[]>([])
-  const [brands, setBrands] = useState<string[]>(["Alerion", "Bodykit Merkezi", "Maxton Design", "Oettinger", "Rieger"])
+  const [brands, setBrands] = useState<string[]>(["Kombingo", "Modaskop", "Yeni Sezon", "Özel Koleksiyon"])
 
   // Export states
   const [selectedCategory, setSelectedCategory] = useState<string>("all")
@@ -121,7 +121,7 @@ const ExcelIoTab: React.FC = () => {
         const priceObj = variant.prices?.[0]
         const price = priceObj?.amount ? (priceObj.amount / 100).toFixed(2) : (p.metadata?.price || "0.00")
         const stock = variant.inventory_quantity ?? p.metadata?.stock ?? 10
-        const brandName = p.metadata?.brand || "Bodykit Merkezi"
+        const brandName = p.metadata?.brand || "Kombingo"
         const catName = p.categories?.[0]?.name || "Genel"
         const catId = p.categories?.[0]?.id || ""
 
@@ -162,7 +162,7 @@ const ExcelIoTab: React.FC = () => {
           rows.push([p.id || "", sku, p.title || "", String(brandName), `BKM-${sku}`])
         } else if (selectedSection === "Ürün Etiketleri") {
           const tags = (p.tags || []).map((t: any) => t.value).join(", ")
-          rows.push([p.id || "", sku, p.title || "", tags || "bodykit, tuning"])
+          rows.push([p.id || "", sku, p.title || "", tags || "giyim, kombin, moda"])
         } else if (selectedSection === "Ürün Pazaryeri Listelemeleri") {
           rows.push([p.id || "", sku, p.title || "", "Aktif", "Aktif", "Pasif"])
         } else {

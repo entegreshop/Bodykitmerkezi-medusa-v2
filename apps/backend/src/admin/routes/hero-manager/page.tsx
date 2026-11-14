@@ -862,32 +862,32 @@ const HeroManagerPage = () => {
                 {[
                   {
                     page: "Ana Sayfa",
-                    title: "Bodykit Merkezi | Oto Bodykit, Tampon, Spoiler ve Modifiye",
-                    desc: "Aracınıza özel bodykit setleri, ön lip, difüzör ve spoiler modelleri.",
+                    title: "Kombingo | Kadın Giyim, Elbise, Takım ve Yeni Sezon Kombinler",
+                    desc: "Yeni sezon kadın giyim, elbise, ikili takım ve şık kombin modelleri.",
                   },
                   {
                     page: "Yeni Ürünler",
-                    title: "Yeni Gelen Ürünler | Bodykit Merkezi",
+                    title: "Yeni Gelen Ürünler | Kombingo",
                     desc: "En yeni sezon ürünleri ve güncel stoklarımızı hemen inceleyin.",
                   },
                   {
                     page: "İndirimdeki Ürünler",
-                    title: "Fırsat & İndirimli Ürünler | Bodykit Merkezi",
+                    title: "Fırsat & İndirimli Ürünler | Kombingo",
                     desc: "Kampanyalı ve özel indirimli ürünleri kaçırmayın.",
                   },
                   {
                     page: "Çok Satan Ürünler",
-                    title: "En Çok Satanlar | Bodykit Merkezi",
+                    title: "En Çok Satanlar | Kombingo",
                     desc: "Müşterilerimizin en çok tercih ettiği popüler ürünler.",
                   },
                   {
                     page: "İletişim Sayfası",
-                    title: "İletişim & Mağaza Adresimiz | Bodykit Merkezi",
+                    title: "İletişim & Mağaza Adresimiz | Kombingo",
                     desc: "Bize ulaşın, adres, telefon ve WhatsApp destek hattımız.",
                   },
                   {
                     page: "Blog Ana Sayfa",
-                    title: "Blog & Rehber Yazıları | Bodykit Merkezi",
+                    title: "Blog & Rehber Yazıları | Kombingo",
                     desc: "Modifiye, bakım ve stil önerileri hakkında güncel blog yazıları.",
                   },
                 ].map((r) => (
@@ -1089,11 +1089,11 @@ const HeroManagerPage = () => {
             </div>
             <div className="divide-y divide-[#ebedf2] text-[13px]">
               {[
-                { name: "Ana Sitemap İndeksi", url: "https://bodykitmerkezi.com/sitemap.xml", count: "Tüm Alt Haritalar" },
-                { name: "Ürünler Sitemap", url: "https://bodykitmerkezi.com/sitemap-products-1.xml", count: "1.420 Ürün URL" },
-                { name: "Kategoriler Sitemap", url: "https://bodykitmerkezi.com/sitemap-categories.xml", count: "48 Kategori URL" },
-                { name: "Sayfalar Sitemap", url: "https://bodykitmerkezi.com/sitemap-pages.xml", count: "12 Sayfa URL" },
-                { name: "Blog Yazıları Sitemap", url: "https://bodykitmerkezi.com/sitemap-blog.xml", count: "24 Blog URL" },
+                { name: "Ana Sitemap İndeksi", url: "https://kombingo.com/sitemap.xml", count: "Tüm Alt Haritalar" },
+                { name: "Ürünler Sitemap", url: "https://kombingo.com/sitemap-products-1.xml", count: "1.420 Ürün URL" },
+                { name: "Kategoriler Sitemap", url: "https://kombingo.com/sitemap-categories.xml", count: "48 Kategori URL" },
+                { name: "Sayfalar Sitemap", url: "https://kombingo.com/sitemap-pages.xml", count: "12 Sayfa URL" },
+                { name: "Blog Yazıları Sitemap", url: "https://kombingo.com/sitemap-blog.xml", count: "24 Blog URL" },
               ].map((s) => (
                 <div key={s.url} className="py-3.5 flex flex-wrap items-center justify-between gap-3">
                   <div>

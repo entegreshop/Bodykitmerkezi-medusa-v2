@@ -1,9 +1,12 @@
 import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
+import { updateRegionsWorkflow } from "@medusajs/medusa/core-flows"
 import fs from "fs"
 import path from "path"
 import os from "os"
 
 const configFilePath = path.join(process.cwd(), "uploads", "payment-settings.json")
+const legacyConfigFilePath = path.join(process.cwd(), ".xoox-payment-settings.json")
+const legacyHomeConfigFilePath = path.join(os.homedir(), ".xoox-payment-settings.json")
 
 const defaultInstallments = [
   { taksit: "Tek Çekim", oran: 0, active: true },
@@ -26,9 +29,9 @@ const defaultData = {
     active: true,
     min_total: 0,
     max_total: 100000,
-    merchant_id: "647433",
-    merchant_key: "Xon89DCuBQGLIM7",
-    merchant_salt: "tXX2UJMk5CZrBke4",
+    merchant_id: process.env.PAYTR_MERCHANT_ID || "629307",
+    merchant_key: process.env.PAYTR_MERCHANT_KEY || "9FMJdoSkaUX87q8F",
+    merchant_salt: process.env.PAYTR_MERCHANT_SALT || "1uFDNEN7PX3a6CR2",
     test_mode: "Kapalı",
     disable_3d_secure_intl: false,
     installments: defaultInstallments
@@ -64,13 +67,27 @@ const defaultData = {
 
 export function readConfig() {
   try {
-    if (fs.existsSync(configFilePath)) {
-      const content = fs.readFileSync(configFilePath, "utf-8")
+    const targetPath = fs.existsSync(configFilePath)
+      ? configFilePath
+      : fs.existsSync(legacyConfigFilePath)
+        ? legacyConfigFilePath
+        : fs.existsSync(legacyHomeConfigFilePath)
+          ? legacyHomeConfigFilePath
+          : null
+
+    if (targetPath) {
+      const content = fs.readFileSync(targetPath, "utf-8")
       const parsed = JSON.parse(content)
+      const parsedPaytr = { ...(parsed.paytr || {}) }
+      if (parsedPaytr.merchant_id === "647433" || parsedPaytr.merchant_key === "Xon89DCuBQGLIM7" || parsedPaytr.merchant_key === "9FMjdoSkaUX87q8F" || parsedPaytr.merchant_salt === "1uFDNFN7PX3a6CR7") {
+        delete parsedPaytr.merchant_id
+        delete parsedPaytr.merchant_key
+        delete parsedPaytr.merchant_salt
+      }
       return {
         ...defaultData,
         ...parsed,
-        paytr: { ...defaultData.paytr, ...(parsed.paytr || {}) },
+        paytr: { ...defaultData.paytr, ...parsedPaytr },
         bank_transfer: { ...defaultData.bank_transfer, ...(parsed.bank_transfer || {}) },
         cash_on_delivery: { ...defaultData.cash_on_delivery, ...(parsed.cash_on_delivery || {}) },
         card_on_delivery: { ...defaultData.card_on_delivery, ...(parsed.card_on_delivery || {}) }
@@ -104,7 +121,47 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
 export async function POST(req: MedusaRequest, res: MedusaResponse) {
   const body = req.body as any
   const success = writeConfig(body)
+  
   if (success) {
+    try {
+      // Background Sync with Medusa Core
+      const query = req.scope.resolve("query")
+      
+      // 1. Fetch all existing regions
+      const { data: regions } = await query.graph({
+        entity: "region",
+        fields: ["id", "payment_providers.*"]
+      })
+
+      if (regions && regions.length > 0) {
+        // Collect active providers from our config
+        const activeProviders: string[] = []
+        if (body.paytr?.active) activeProviders.push("pp_PAYTR_PAYTR")
+        if (body.bank_transfer?.active) activeProviders.push("pp_BANK-TRANSFER_BANK-TRANSFER")
+        if (body.cash_on_delivery?.active) activeProviders.push("pp_CASH-ON-DELIVERY_CASH-ON-DELIVERY")
+        if (body.card_on_delivery?.active) activeProviders.push("pp_CARD-ON-DELIVERY_CARD-ON-DELIVERY")
+
+        // Update all regions to include these providers
+        for (const region of regions as any[]) {
+          // We can optionally merge with existing providers, or just set them to the active ones.
+          // Medusa also has "pp_system_default". We will include it so admin manual payment works.
+          const finalProviders = ["pp_system_default", ...activeProviders]
+
+          await updateRegionsWorkflow(req.scope).run({
+            input: {
+              selector: { id: region.id },
+              update: {
+                payment_providers: finalProviders
+              }
+            }
+          })
+        }
+        console.log("Successfully synced payment providers to regions.")
+      }
+    } catch (syncError) {
+      console.error("Error syncing payment providers with Medusa Core:", syncError)
+    }
+
     res.json({ success: true, config: body })
   } else {
     res.status(500).json({ success: false, message: "Could not write configuration" })

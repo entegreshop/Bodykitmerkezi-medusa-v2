@@ -14,7 +14,7 @@ async function handleCallback(request: Request) {
     const cartId = url.searchParams.get("cart_id")
     
     // Read the actual public host from headers (set by Coolify/Traefik)
-    const host = request.headers.get("x-forwarded-host") || request.headers.get("host") || "bodykitmerkezi.com"
+    const host = request.headers.get("x-forwarded-host") || request.headers.get("host") || "kombingo.com"
     const proto = request.headers.get("x-forwarded-proto") || "https"
     const origin = `${proto}://${host}`
 
@@ -25,7 +25,7 @@ async function handleCallback(request: Request) {
             const { getAuthHeaders, removeCartId } = await import("@lib/data/cookies");
             
             const headers = await getAuthHeaders();
-            const backendUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
+            const backendUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "https://api.kombingo.com";
             
             // Poll up to 15 seconds for the order to be created by the webhook
             for (let i = 0; i < 15; i++) {

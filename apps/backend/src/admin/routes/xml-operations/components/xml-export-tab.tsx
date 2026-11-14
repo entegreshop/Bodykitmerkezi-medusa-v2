@@ -236,7 +236,7 @@ const XmlExportPage = () => {
   }
 
   const getFeedUrl = (id: string) => {
-    const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://bodykitmerkezi.com"
+    const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://kombingo.com"
     return `${baseUrl}/export/${id}`
   }
 
@@ -563,7 +563,7 @@ const XmlExportPage = () => {
                   >
                     <option value="Marka Seçilmedi">Marka Seçilmedi</option>
                     <option value="Tüm Markalar">Tüm Markalar</option>
-                    <option value="Bodykit Merkezi">Bodykit Merkezi</option>
+                    <option value="Kombingo">Kombingo</option>
                     <option value="Maxton Design">Maxton Design</option>
                     <option value="Rieger">Rieger</option>
                   </select>

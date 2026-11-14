@@ -584,8 +584,8 @@ const ShippingSettingsPage = () => {
   const openAddProductRule = () => {
     setEditingProductRule({
       id: `prule_${Date.now()}`,
-      title: "Ağır / Hacimli Bodykit Ek Kargo Ücreti",
-      sku_or_category: "Tampon / Bodykit Setleri",
+      title: "Özel Koleksiyon Ek Kargo Ücreti",
+      sku_or_category: "Mont & Kürk Koleksiyonu",
       extra_fee: 250,
       currency: "TL",
     })
@@ -1454,7 +1454,7 @@ const ShippingSettingsPage = () => {
                           apiFrom: e.target.value,
                         })
                       }
-                      placeholder="Örn: info@bodykitmerkezi.com"
+                      placeholder="Örn: info@kombingo.com"
                       className="w-full h-[32px] px-3 rounded-[4px] border border-gray-300 text-[12px]"
                     />
                   </div>

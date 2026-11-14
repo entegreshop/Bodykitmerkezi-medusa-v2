@@ -25,8 +25,18 @@ const defaultData: SMSConfig = {
 
 export function readConfig(): SMSConfig {
   try {
-    if (fs.existsSync(configFilePath)) {
-      const content = fs.readFileSync(configFilePath, "utf-8")
+    const legacyHome = path.join(os.homedir(), ".xoox-sms-settings.json")
+    const legacyCwd = path.join(process.cwd(), ".xoox-sms-settings.json")
+    const targetPath = fs.existsSync(configFilePath)
+      ? configFilePath
+      : fs.existsSync(legacyHome)
+        ? legacyHome
+        : fs.existsSync(legacyCwd)
+          ? legacyCwd
+          : null
+
+    if (targetPath) {
+      const content = fs.readFileSync(targetPath, "utf-8")
       const parsed = JSON.parse(content)
       return {
         active: typeof parsed.active === "boolean" ? parsed.active : defaultData.active,

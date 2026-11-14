@@ -70,6 +70,13 @@ interface ShippingConfig {
   freeShippingEnabled: boolean
   freeShippingThreshold: number
   freeShippingCurrency: string
+  carriers?: Array<{
+    id: string
+    general: {
+      name: string
+      active: boolean
+    }
+  }>
 }
 
 type SinglePageCheckoutProps = {
@@ -77,7 +84,6 @@ type SinglePageCheckoutProps = {
   customer: HttpTypes.StoreCustomer | null
   shippingMethods: HttpTypes.StoreCartShippingOption[] | null
   paymentMethods: any[] | null
-  initialError?: string
 }
 
 const CITIES_LIST = [
@@ -109,7 +115,6 @@ export default function SinglePageCheckout({
   customer,
   shippingMethods,
   paymentMethods,
-  initialError,
 }: SinglePageCheckoutProps) {
   const router = useRouter()
 
@@ -171,20 +176,16 @@ export default function SinglePageCheckout({
 
   // Fetch payment settings from backend
   useEffect(() => {
-    const MEDUSA_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "https://api.bodykitmerkezi.com"
-    const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
-    fetch(`${MEDUSA_URL}/store/payment-settings`, {
-      headers: { "x-publishable-api-key": PUBLISHABLE_KEY },
-      cache: "no-store",
-    })
-      .then((res) => res.json())
+    const ts = new Date().getTime()
+    sdk.client.fetch<{ config: PaymentConfig }>(`/store/payment-settings?t=${ts}`)
       .then((res) => {
         if (res && res.config) {
+          console.log("Loaded payment settings:", res.config)
           setPaymentSettings(res.config)
         }
       })
       .catch((err) => {
-        console.warn("Error loading payment settings:", err)
+        console.error("Error loading payment settings:", err)
       })
   }, [])
 
@@ -205,20 +206,15 @@ export default function SinglePageCheckout({
 
   // Fetch shipping settings from backend
   useEffect(() => {
-    const MEDUSA_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "https://api.bodykitmerkezi.com"
-    const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
-    fetch(`${MEDUSA_URL}/store/shipping-settings`, {
-      headers: { "x-publishable-api-key": PUBLISHABLE_KEY },
-      cache: "no-store",
-    })
-      .then((res) => res.json())
+    const ts = new Date().getTime()
+    sdk.client.fetch<{ config: ShippingConfig }>(`/store/shipping-settings?t=${ts}`)
       .then((res) => {
         if (res && res.config) {
           setShippingSettings(res.config)
         }
       })
       .catch((err) => {
-        console.warn("Error loading shipping settings:", err)
+        console.error("Error loading shipping settings:", err)
       })
   }, [])
 
@@ -229,23 +225,27 @@ export default function SinglePageCheckout({
     const subtotalVal = (cart.subtotal ?? 0) / 100
     const availableMethods: Array<"paytr" | "cash_on_delivery" | "card_on_delivery" | "bank_transfer"> = []
 
+    const parseMin = (val: any) => val ? Number(val) : 0
+    const parseMax = (val: any) => val ? Number(val) : 1000000
+    const isActive = (val: any) => val === true || String(val) === "true"
+
     const paytr = paymentSettings.paytr
-    if (paytr?.active && subtotalVal >= (paytr.min_total ?? 0) && subtotalVal <= (paytr.max_total ?? 1000000)) {
+    if (isActive(paytr?.active) && subtotalVal >= parseMin(paytr?.min_total) && subtotalVal <= parseMax(paytr?.max_total)) {
       availableMethods.push("paytr")
     }
 
     const bt = paymentSettings.bank_transfer
-    if (bt?.active && subtotalVal >= (bt.min_total ?? 0) && subtotalVal <= (bt.max_total ?? 1000000)) {
+    if (isActive(bt?.active) && subtotalVal >= parseMin(bt?.min_total) && subtotalVal <= parseMax(bt?.max_total)) {
       availableMethods.push("bank_transfer")
     }
 
     const cc = paymentSettings.card_on_delivery
-    if (cc?.active && subtotalVal >= (cc.min_total ?? 0) && subtotalVal <= (cc.max_total ?? 1000000)) {
+    if (isActive(cc?.active) && subtotalVal >= parseMin(cc?.min_total) && subtotalVal <= parseMax(cc?.max_total)) {
       availableMethods.push("card_on_delivery")
     }
 
     const cod = paymentSettings.cash_on_delivery
-    if (cod?.active && subtotalVal >= (cod.min_total ?? 0) && subtotalVal <= (cod.max_total ?? 1000000)) {
+    if (isActive(cod?.active) && subtotalVal >= parseMin(cod?.min_total) && subtotalVal <= parseMax(cod?.max_total)) {
       availableMethods.push("cash_on_delivery")
     }
 
@@ -263,7 +263,7 @@ export default function SinglePageCheckout({
 
   const [agreeTerms, setAgreeTerms] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [errorMessage, setErrorMessage] = useState<string | null>(initialError || null)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   // Mobile Accordion state
   const [summaryExpanded, setSummaryExpanded] = useState(false)
@@ -333,7 +333,7 @@ export default function SinglePageCheckout({
         }
       })
     } catch (e) {
-      console.warn("Background address save failed:", e)
+      console.error("Background address save failed:", e)
     }
   }
 
@@ -342,7 +342,7 @@ export default function SinglePageCheckout({
     try {
       await setShippingMethod({ cartId: cart.id, shippingMethodId: id })
     } catch (e) {
-      console.warn("Failed to set shipping method:", e)
+      console.error("Failed to set shipping method:", e)
     }
   }
 
@@ -368,34 +368,32 @@ export default function SinglePageCheckout({
   // Kargo ayarlarından gelen veya ödeme ayarlarından fallback olan ücretsiz kargo limiti
   const freeShippingThreshold = useMemo(() => {
     if (shippingSettings) {
-      return shippingSettings.freeShippingEnabled ? shippingSettings.freeShippingThreshold : Infinity
+      return shippingSettings.freeShippingEnabled ? shippingSettings.freeShippingThreshold : 1000000
     }
     if (paymentSettings) {
-      return paymentSettings.free_shipping_threshold || Infinity
+      return paymentSettings.free_shipping_threshold
     }
-    return Infinity
+    return 500 // fallback default
   }, [shippingSettings, paymentSettings])
 
   const neededForFreeShipping = freeShippingThreshold - subtotalAmount
 
   const isFreeShipping = useMemo(() => {
-    if (shippingSettings && shippingSettings.standardShippingEnabled === false) {
-      return true
-    }
     return subtotalAmount >= freeShippingThreshold
-  }, [subtotalAmount, freeShippingThreshold, shippingSettings])
+  }, [subtotalAmount, freeShippingThreshold])
 
   // Kargo seçeneğinin güncellenmiş ücreti (cents bazında)
   const shippingSubtotalCents = useMemo(() => {
     if (isFreeShipping) return 0
-    if (shippingSettings) {
-      if (shippingSettings.standardShippingEnabled === false) return 0
-      return Math.round(Number(shippingSettings.standardShippingFee || 0) * 100)
-    }
+    
     const selectedMethod = cart.shipping_methods?.at(-1)
     const original = cart.shipping_subtotal ?? 0
-    if (selectedMethod) {
-      return original
+    
+    if (shippingSettings?.standardShippingEnabled && selectedMethod) {
+      const name = selectedMethod.name || ""
+      if (name.toLowerCase().includes("standard") || name.toLowerCase().includes("standart")) {
+        return shippingSettings.standardShippingFee * 100
+      }
     }
     return original
   }, [isFreeShipping, cart.shipping_methods, cart.shipping_subtotal, shippingSettings])
@@ -411,8 +409,8 @@ export default function SinglePageCheckout({
       return {
         isPaytrAvailable: true,
         isBankTransferAvailable: true,
-        isCashOnDeliveryAvailable: false,
-        isCardOnDeliveryAvailable: false
+        isCashOnDeliveryAvailable: true,
+        isCardOnDeliveryAvailable: true
       }
     }
 
@@ -421,11 +419,15 @@ export default function SinglePageCheckout({
     const cod = paymentSettings.cash_on_delivery
     const cc = paymentSettings.card_on_delivery
 
+    const parseMin = (val: any) => val ? Number(val) : 0
+    const parseMax = (val: any) => val ? Number(val) : 1000000
+    const isActive = (val: any) => val === true || String(val) === "true"
+
     return {
-      isPaytrAvailable: Boolean(paytr?.active && subtotalAmount >= (paytr.min_total ?? 0) && subtotalAmount <= (paytr.max_total ?? 1000000)),
-      isBankTransferAvailable: Boolean(bt?.active && subtotalAmount >= (bt.min_total ?? 0) && subtotalAmount <= (bt.max_total ?? 1000000)),
-      isCashOnDeliveryAvailable: Boolean(cod?.active && subtotalAmount >= (cod.min_total ?? 0) && subtotalAmount <= (cod.max_total ?? 1000000)),
-      isCardOnDeliveryAvailable: Boolean(cc?.active && subtotalAmount >= (cc.min_total ?? 0) && subtotalAmount <= (cc.max_total ?? 1000000))
+      isPaytrAvailable: isActive(paytr?.active) && subtotalAmount >= parseMin(paytr?.min_total) && subtotalAmount <= parseMax(paytr?.max_total),
+      isBankTransferAvailable: isActive(bt?.active) && subtotalAmount >= parseMin(bt?.min_total) && subtotalAmount <= parseMax(bt?.max_total),
+      isCashOnDeliveryAvailable: isActive(cod?.active) && subtotalAmount >= parseMin(cod?.min_total) && subtotalAmount <= parseMax(cod?.max_total),
+      isCardOnDeliveryAvailable: isActive(cc?.active) && subtotalAmount >= parseMin(cc?.min_total) && subtotalAmount <= parseMax(cc?.max_total)
     }
   }, [paymentSettings, subtotalAmount])
 
@@ -575,56 +577,40 @@ export default function SinglePageCheckout({
       })
 
       // 2. Select shipping method
-      let selectedOptionId = shippingMethodId || (shippingMethods && shippingMethods[0]?.id)
-      if (!selectedOptionId) {
-        const { shipping_options } = await sdk.client.fetch<{ shipping_options: HttpTypes.StoreCartShippingOption[] }>(
-            "/store/shipping-options",
-            { query: { cart_id: cart.id }, cache: "no-store" }
-        )
-        if (shipping_options && shipping_options.length > 0) {
-          selectedOptionId = shipping_options[0].id
-        }
-      }
-      
+      const selectedOptionId = shippingMethodId || (shippingMethods && shippingMethods[0]?.id)
       if (selectedOptionId) {
         await setShippingMethod({ cartId: cart.id, shippingMethodId: selectedOptionId })
       }
 
-      // 2.5 Sync shipping method amount & COD fees in DB before initiating payment
-      try {
-        const MEDUSA_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "https://api.bodykitmerkezi.com"
-        const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
-        await fetch(`${MEDUSA_URL}/store/custom/payment-cod/apply`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-publishable-api-key": PUBLISHABLE_KEY
-          },
-          body: JSON.stringify({ cart_id: cart.id, method_id: paymentMethod })
-        })
-      } catch (syncErr) {
-        console.warn("Shipping/COD sync warning:", syncErr)
-      }
+      // 3. Initiate payment session
+      let providerIdsToTry: string[] = []
+      if (paymentMethod === "paytr") providerIdsToTry = ["pp_PAYTR_PAYTR", "pp_custom-payment_paytr", "pp_custom-payment_PAYTR", "pp_PAYTR", "PAYTR", "pp_paytr", "paytr"]
+      else if (paymentMethod === "bank_transfer") providerIdsToTry = ["pp_BANK-TRANSFER_BANK-TRANSFER", "pp_custom-payment_bank-transfer", "pp_custom-payment_BANK-TRANSFER", "pp_BANK-TRANSFER", "BANK-TRANSFER", "pp_bank_transfer", "bank_transfer"]
+      else if (paymentMethod === "cash_on_delivery") providerIdsToTry = ["pp_CASH-ON-DELIVERY_CASH-ON-DELIVERY", "pp_custom-payment_cash-on-delivery", "pp_custom-payment_CASH-ON-DELIVERY", "pp_CASH-ON-DELIVERY", "CASH-ON-DELIVERY", "pp_cod_cash", "cod_cash"]
+      else if (paymentMethod === "card_on_delivery") providerIdsToTry = ["pp_CARD-ON-DELIVERY_CARD-ON-DELIVERY", "pp_custom-payment_card-on-delivery", "pp_custom-payment_CARD-ON-DELIVERY", "pp_CARD-ON-DELIVERY", "CARD-ON-DELIVERY", "pp_CASH-ON-DELIVERY_CASH-ON-DELIVERY", "pp_custom-payment_cash-on-delivery", "pp_custom-payment_CASH-ON-DELIVERY", "pp_CASH-ON-DELIVERY", "CASH-ON-DELIVERY", "pp_cod_cash", "cod_cash"]
+      else providerIdsToTry = ["pp_system_default"]
 
-      // 3. Initiate payment session (with fallback to pp_system_default)
-      let providerId = "pp_system_default"
-      if (paymentMethod === "paytr") providerId = "pp_system_default"
-      else if (paymentMethod === "bank_transfer") providerId = "pp_bank-transfer_bank-transfer"
-      else if (paymentMethod === "cash_on_delivery" || paymentMethod === "card_on_delivery") providerId = "pp_cash-on-delivery_cash-on-delivery"
-
-      try {
-        await initiatePaymentSession(updatedCart || cart, {
-          provider_id: providerId
-        })
-      } catch (sessionErr) {
-        await initiatePaymentSession(updatedCart || cart, {
-          provider_id: "pp_system_default"
-        })
+      for (const pId of providerIdsToTry) {
+        try {
+          await initiatePaymentSession(updatedCart || cart, {
+            provider_id: pId
+          })
+          break
+        } catch (e: any) {
+          console.warn("initiatePaymentSession fallback notice:", pId, e?.message)
+        }
       }
 
       // 4. If PayTR is selected, invoke PayTR Direct API and redirect via client POST to 3D Secure
       if (paymentMethod === "paytr") {
-        const MEDUSA_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "https://api.bodykitmerkezi.com"
+        let clientIpv4 = ""
+        try {
+          const ipRes = await fetch("https://api.ipify.org?format=json", { signal: AbortSignal.timeout(2500) })
+          const ipData = await ipRes.json()
+          if (ipData?.ip) clientIpv4 = ipData.ip
+        } catch {}
+
+        const MEDUSA_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "https://api.kombingo.com"
         const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
         const directRes = await fetch(`${MEDUSA_URL}/store/custom/paytr/direct`, {
           method: "POST",
@@ -638,7 +624,8 @@ export default function SinglePageCheckout({
             cc_number: cardNumber.replace(/\s/g, ""),
             cc_month: cardMonth,
             cc_year: cardYear.slice(-2),
-            cc_cvv: cardCvv
+            cc_cvv: cardCvv,
+            client_ip: clientIpv4 || undefined
           })
         })
         const directData = await directRes.json()
@@ -666,7 +653,10 @@ export default function SinglePageCheckout({
       await placeOrder(cart.id)
 
     } catch (err: any) {
-      setErrorMessage(err.message || "Sipariş tamamlanırken bir hata oluştu.")
+      if (err?.message === "NEXT_REDIRECT" || err?.digest?.startsWith("NEXT_REDIRECT")) {
+        throw err;
+      }
+      setErrorMessage(err.message || "Siparişi tamamlanırken bir hata oluştu.")
       setIsSubmitting(false)
     }
   }
@@ -955,13 +945,57 @@ export default function SinglePageCheckout({
               <h2 className="text-xl font-bold text-zinc-900 mb-4">Kargo Yöntemi</h2>
               
               <div className="grid grid-cols-1 gap-2">
-                {shippingMethods && shippingMethods.map((sm) => {
+                {shippingSettings?.carriers?.filter(c => c.general?.active).length ? (
+                  shippingSettings.carriers.filter(c => c.general?.active).map((carrier) => {
+                    const sm = shippingMethods?.[0]
+                    const isSelected = shippingMethodId === carrier.id
+                    
+                    const basePrice = sm?.amount ? (sm.amount / 100) : 0
+                    const optionPrice = shippingSettings?.standardShippingEnabled 
+                      ? shippingSettings.standardShippingFee
+                      : basePrice
+                      
+                    const displayPrice = isFreeShipping ? 0 : optionPrice
+                    
+                    return (
+                      <div
+                        key={carrier.id}
+                        onClick={() => {
+                          if (sm) {
+                            handleSetShippingMethod(sm.id)
+                          }
+                          setShippingMethodId(carrier.id)
+                        }}
+                        className={`flex flex-col p-4 border cursor-pointer select-none transition-colors ${
+                          isSelected ? "border-black bg-zinc-50" : "border-gray-200 bg-white hover:border-black"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between w-full">
+                          <div className="flex items-center gap-x-3">
+                            <input
+                              type="radio"
+                              checked={isSelected}
+                              onChange={() => {}}
+                              className="w-4 h-4 text-black focus:ring-black accent-black"
+                            />
+                            <span className="text-sm font-semibold text-zinc-900">
+                              {carrier.general.name}
+                            </span>
+                          </div>
+                          <span className="text-sm font-bold text-zinc-900">
+                            {displayPrice === 0 ? "Ücretsiz" : `₺${displayPrice.toFixed(2)}`}
+                          </span>
+                        </div>
+                      </div>
+                    )
+                  })
+                ) : shippingMethods && shippingMethods.length > 0 ? shippingMethods.map((sm) => {
                   const isSelected = shippingMethodId === sm.id
                   
                   // Calculate dynamic option price
                   const basePrice = sm.amount ? (sm.amount / 100) : 0
-                  const optionPrice = shippingSettings
-                    ? (shippingSettings.standardShippingEnabled === false ? 0 : Number(shippingSettings.standardShippingFee || 0))
+                  const optionPrice = (shippingSettings?.standardShippingEnabled && (sm.name.toLowerCase().includes("standard") || sm.name.toLowerCase().includes("standart")))
+                    ? shippingSettings.standardShippingFee
                     : basePrice
                     
                   const displayPrice = isFreeShipping ? 0 : optionPrice
@@ -987,16 +1021,18 @@ export default function SinglePageCheckout({
                           </span>
                         </div>
                         <span className="text-sm font-bold text-zinc-900">
-                          {displayPrice === 0 ? "Karşı Ödemeli" : `₺${displayPrice.toFixed(2)}`}
+                          {displayPrice === 0 ? "Ücretsiz" : `₺${displayPrice.toFixed(2)}`}
                         </span>
                       </div>
                     </div>
                   )
-                })}
+                }) : (
+                  <div className="text-sm text-zinc-500">Kargo seçeneği bulunamadı.</div>
+                )}
               </div>
 
               {/* Free shipping banner */}
-              {shippingSettings?.freeShippingEnabled && shippingSettings?.standardShippingEnabled !== false && neededForFreeShipping > 0 && isFinite(neededForFreeShipping) && (
+              {neededForFreeShipping > 0 && (
                 <div className="mt-3 bg-zinc-50 border border-zinc-200 p-3 text-xs text-zinc-700 font-medium text-center">
                   ₺{neededForFreeShipping.toFixed(2)} daha alışveriş yapın, kargonuz ücretsiz olsun!
                 </div>

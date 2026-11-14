@@ -77,8 +77,8 @@ const StarIcon = () => (
 )
 
 const CizgiLogo = () => (
-  <svg width="40" height="20" viewBox="0 0 100 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <text x="50" y="25" fontFamily="Arial, sans-serif" fontSize="24" fontWeight="900" fill="#18181b" textAnchor="middle" letterSpacing="2">ÇİZGİ</text>
+  <svg width="56" height="20" viewBox="0 0 140 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <text x="70" y="25" fontFamily="Arial, sans-serif" fontSize="20" fontWeight="900" fill="#18181b" textAnchor="middle" letterSpacing="1">KOMBİNGO</text>
   </svg>
 )
 
@@ -104,7 +104,7 @@ interface OrderLog {
 interface CustomOrder {
   id: string
   display_id: string
-  platform: "WhatsApp" | "Cizgibutik"
+  platform: "WhatsApp" | "Kombingo"
   store: string
   order_tag: string
   discount_total?: any
@@ -817,8 +817,8 @@ const SiparisYonetimiPage = () => {
       return {
         id: o.id,
         display_id: o.display_id?.toString() || o.id.slice(-8),
-        platform: o.metadata?.platform || "Cizgibutik",
-        store: "Cizgibutik",
+        platform: o.metadata?.platform || "Kombingo",
+        store: "Kombingo",
         order_tag: o.metadata?.order_tag || "Seçilmedi",
         customer: {
           first_name: o.customer?.first_name || o.shipping_address?.first_name || "Müşteri",
@@ -1500,7 +1500,7 @@ const SiparisYonetimiPage = () => {
                 </div>
 
                 <div class="footer">
-                  <div>https://www.cizgibutik.com/admin/orders/refund</div>
+                  <div>https://www.kombingo.com/admin/orders/refund</div>
                   <div>${idx + 1}/${ordersToPrint.length}</div>
                 </div>
               </div>
@@ -2761,7 +2761,7 @@ const SiparisYonetimiPage = () => {
                   className="w-full h-9 px-3 rounded border border-zinc-200 focus:outline-none focus:border-[#3b82f6] text-[12px] text-zinc-700 bg-white"
                 >
                   <option value="">Hiçbiri seçilmedi</option>
-                  <option value="Cizgibutik">Web Sitesi</option>
+                  <option value="Kombingo">Web Sitesi</option>
                   <option value="WhatsApp">WhatsApp</option>
                   <option value="Instagram">Instagram</option>
                   <option value="Trendyol">Trendyol</option>
@@ -2778,7 +2778,7 @@ const SiparisYonetimiPage = () => {
                   className="w-full h-9 px-3 rounded border border-zinc-200 focus:outline-none focus:border-[#3b82f6] text-[12px] text-zinc-700 bg-white"
                 >
                   <option value="">Hiçbiri seçilmedi</option>
-                  <option value="cizgibutik">Bodykit Merkezi</option>
+                  <option value="kombingo">Kombingo</option>
                 </select>
               </div>
 

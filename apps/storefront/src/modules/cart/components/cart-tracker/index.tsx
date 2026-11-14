@@ -3,12 +3,9 @@
 import { useEffect } from "react"
 import { trackViewCart } from "@lib/util/tracking"
 
-let globalLastTrackedCartId = ""
-
 export default function CartTracker({ cart }: { cart: any }) {
   useEffect(() => {
-    if (cart && globalLastTrackedCartId !== cart.id) {
-      globalLastTrackedCartId = cart.id
+    if (cart) {
       trackViewCart({
         id: cart.id,
         total: (cart.total ?? 0) / 100, // convert from cents

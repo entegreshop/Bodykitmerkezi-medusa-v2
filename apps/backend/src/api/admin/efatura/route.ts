@@ -144,7 +144,7 @@ const DEFAULT_CONFIG: EfaturaConfig = {
   autoSend: false,
   autoIssueOnOrderPaid: false,
   sendEmailToCustomer: true,
-  storeWebUrl: "https://bodykitmerkezi.com",
+  storeWebUrl: "https://kombingo.com",
 }
 
 export function readEfaturaConfig(): EfaturaConfig {
@@ -558,7 +558,7 @@ function mapRemoteTrendyolDocToRecord(
     totalAmount,
     paymentMethod: "Kredi Kartı / Online",
     carrierName: "Anlaşmalı Kargo",
-    storeWebUrl: config.storeWebUrl || "https://bodykitmerkezi.com",
+    storeWebUrl: config.storeWebUrl || "https://kombingo.com",
     items: [
       {
         title: `Fatura Kalemi (${invoiceNumber})`,
@@ -899,7 +899,7 @@ async function createInvoiceOnTrendyol(
   const purchaseUrlClean = (
     record.storeWebUrl ||
     config.storeWebUrl ||
-    "https://bodykitmerkezi.com"
+    "https://kombingo.com"
   )
     .trim()
     .slice(0, 255)
@@ -1848,7 +1848,7 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
         const vatAmountTL = Number((grossTotalTL - netTotalTL).toFixed(2))
 
         return {
-          title: it.title || "Oto Aksesuar / Bodykit Ürünü",
+          title: it.title || "Tekstil / Giyim Ürünü",
           sku: it.variant?.sku || it.sku || "BKM-URUN",
           quantity: qty,
           unitPrice: unitPriceTL,
@@ -1960,7 +1960,7 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
         totalAmount: finalTotalTL,
         paymentMethod: payMethod,
         carrierName,
-        storeWebUrl: config.storeWebUrl || "https://bodykitmerkezi.com",
+        storeWebUrl: config.storeWebUrl || "https://kombingo.com",
         items: mappedItems,
         createdAt: new Date().toISOString(),
       }

@@ -112,7 +112,7 @@ const ProductReviews: React.FC<ProductReviewsProps> = ({ product }) => {
 
   const fetchReviews = async () => {
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000"
+      const backendUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "https://api.kombingo.com"
       const publishableKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
       const headers: Record<string, string> = {}
       if (publishableKey) {
@@ -180,7 +180,7 @@ const ProductReviews: React.FC<ProductReviewsProps> = ({ product }) => {
 
     setSubmitting(true)
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000"
+      const backendUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "https://api.kombingo.com"
       const publishableKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
       const headers: Record<string, string> = { "Content-Type": "application/json" }
       if (publishableKey) {

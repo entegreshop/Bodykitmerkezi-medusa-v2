@@ -39,7 +39,7 @@ function detectDeviceCategory(): "mobile" | "desktop" {
 function sendGaRealtimeHeartbeat(urlPath: string) {
   try {
     const backendUrl =
-      process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000"
+      process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "https://api.kombingo.com"
     const publishableKey =
       process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
 

@@ -1000,10 +1000,10 @@ const PaymentSettingsPage = () => {
                   </thead>
                   <tbody className="divide-y divide-[#ebedf2] text-[#48465b]">
                     {[
-                      { email: "info@bodykitmerkezi.com", quota: "420 MB / 5 GB" },
-                      { email: "siparis@bodykitmerkezi.com", quota: "1.1 GB / 5 GB" },
-                      { email: "destek@bodykitmerkezi.com", quota: "280 MB / 5 GB" },
-                      { email: "muhasebe@bodykitmerkezi.com", quota: "640 MB / 5 GB" },
+                      { email: "info@kombingo.com", quota: "420 MB / 5 GB" },
+                      { email: "siparis@kombingo.com", quota: "1.1 GB / 5 GB" },
+                      { email: "destek@kombingo.com", quota: "280 MB / 5 GB" },
+                      { email: "muhasebe@kombingo.com", quota: "640 MB / 5 GB" },
                     ].map((acct) => (
                       <tr key={acct.email}>
                         <td className="py-2.5 px-3 font-semibold">{acct.email}</td>

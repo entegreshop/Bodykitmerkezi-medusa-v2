@@ -1032,7 +1032,7 @@ export const EntegreShopHeaderBar = ({
             </div>
 
             <a
-              href="https://bodykitmerkezi.com"
+              href="https://kombingo.com"
               target="_blank"
               rel="noreferrer"
               style={{
@@ -3013,7 +3013,7 @@ const EntegreShopDashboardPage = () => {
                   </div>
                 </div>
 
-                {/* HAREKET EDEN ÇEMBER (https://api.bodykitmerkezi.com/app/dashboard İLE BİREBİR) */}
+                {/* HAREKET EDEN ÇEMBER (https://api.kombingo.com/app/dashboard İLE BİREBİR) */}
                 <div
                   style={{
                     display: "flex",
@@ -4060,7 +4060,7 @@ const EntegreShopDashboardPage = () => {
             </div>
 
             <div style={{ fontSize: "16px", fontWeight: 700, color: "#0f172a", marginBottom: "20px" }}>
-              bodykitmerkezi.com
+              kombingo.com
             </div>
 
             <div style={{ borderTop: "1px solid #f1f5f9" }}>

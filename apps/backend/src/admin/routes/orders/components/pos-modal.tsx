@@ -148,7 +148,7 @@ export const PosModal = ({ isOpen, onOpenChange, onOrderCreated }: PosModalProps
             id: "local_" + Date.now(),
             display_id: Math.floor(Math.random() * 90000) + 10000 + "",
             platform: "Hızlı Satış (POS)",
-            store: "Cizgibutik",
+            store: "Kombingo",
             order_tag: customerForm.orderLabel || "Hızlı Satış",
             customer: {
               first_name: customerForm.fullName || "Ziyaretçi",
