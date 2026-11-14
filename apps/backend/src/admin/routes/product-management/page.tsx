@@ -2083,7 +2083,7 @@ const IkasProductsPage = () => {
                                   <button
                                     type="button"
                                     onClick={() =>
-                                      window.open(`https://kombingo.com/marka/${item.slug || slugify(item.name)}`, "_blank")
+                                      window.open(`https://bodykitmerkezi.com/marka/${item.slug || slugify(item.name)}`, "_blank")
                                     }
                                     className="w-7 h-7 rounded bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 flex items-center justify-center shadow-2xs cursor-pointer transition-colors"
                                     title="Mağazada Görüntüle"
@@ -2618,7 +2618,7 @@ const IkasProductsPage = () => {
                                   <button
                                     type="button"
                                     onClick={() =>
-                                      window.open(`https://kombingo.com/?q=${encodeURIComponent(item.keyword)}`, "_blank")
+                                      window.open(`https://bodykitmerkezi.com/?q=${encodeURIComponent(item.keyword)}`, "_blank")
                                     }
                                     className="w-7 h-7 rounded bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 flex items-center justify-center shadow-2xs cursor-pointer transition-colors"
                                     title="Mağazada Arama Sonucunu Gör"
@@ -4236,7 +4236,7 @@ const IkasProductsPage = () => {
                                 <button
                                   type="button"
                                   onClick={() =>
-                                    window.open(`https://kombingo.com/categories/${cat.handle || slugify(cat.name)}`, "_blank")
+                                    window.open(`https://bodykitmerkezi.com/categories/${cat.handle || slugify(cat.name)}`, "_blank")
                                   }
                                   className="w-7 h-6 rounded bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 flex items-center justify-center transition cursor-pointer"
                                   title="Kategori Bağlantısı"
@@ -4887,7 +4887,7 @@ const IkasProductsPage = () => {
                                       type="button"
                                       onClick={() =>
                                         window.open(
-                                          `https://kombingo.com/products/${prod.handle || slugify(prod.title)}`,
+                                          `https://bodykitmerkezi.com/products/${prod.handle || slugify(prod.title)}`,
                                           "_blank"
                                         )
                                       }
@@ -5713,7 +5713,7 @@ const IkasProductsPage = () => {
                   type="text"
                   value={editingSearchResult.mapped_keyword}
                   onChange={(e) => setEditingSearchResult({ ...editingSearchResult, mapped_keyword: e.target.value })}
-                  placeholder="Örn: kaban, takım, elbise..."
+                  placeholder="Örn: kaban, takım, bodykit..."
                   className="w-full border border-zinc-200 rounded-md px-3.5 py-2 text-xs"
                 />
               </div>
@@ -5772,7 +5772,7 @@ const IkasProductsPage = () => {
                 <label className="text-xs font-semibold text-zinc-700">Sıralama Adı *</label>
                 <input
                   type="text"
-                  placeholder="Örn: Çok Satan Kombinler Üstte"
+                  placeholder="Örn: Çok Satan Bodykitler Üstte"
                   value={editingSmartSort.name}
                   onChange={(e) => setEditingSmartSort({ ...editingSmartSort, name: e.target.value })}
                   className="w-full border border-zinc-200 rounded-md px-3.5 py-2.5 text-xs text-zinc-800"

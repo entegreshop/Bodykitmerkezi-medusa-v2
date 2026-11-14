@@ -1,8 +1,7 @@
 {
-  "name": "kombingo-medusa-v2",
+  "name": "yeni-medusa-projesi",
   "version": "0.0.0",
   "private": true,
-  "packageManager": "npm@10.8.2",
   "engines": {
     "node": ">=20"
   },

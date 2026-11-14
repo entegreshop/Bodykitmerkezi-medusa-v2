@@ -1,7 +1,11 @@
 import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import crypto from "crypto"
 import { readConfig as readPaymentConfig } from "../../../../admin/payment-settings/route"
-import { readConfig as readShippingConfig } from "../../../../admin/shipping-settings/route"
+import {
+  readConfig as readShippingConfig,
+  calculateEffectiveShippingKurus,
+  syncCartShippingMethods
+} from "../../../../admin/shipping-settings/route"
 
 export async function POST(req: MedusaRequest, res: MedusaResponse) {
   try {
@@ -18,6 +22,9 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     if (!cart_id || !cc_number) {
       return res.status(400).json({ success: false, error: "Eksik parametre" })
     }
+
+    // 0. Sync cart shipping method amounts in DB first
+    await syncCartShippingMethods(req.scope, cart_id)
 
     // 1. Fetch Cart
     const query = req.scope.resolve("query")
@@ -66,15 +73,9 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     const rawShippingKurus = Number(cart.shipping_total || 0)
     const itemsNetKurus = Math.max(0, rawTotalKurus - rawShippingKurus)
 
-    let effectiveShippingKurus = rawShippingKurus
-    if (shippingConfig) {
-      const itemsNetTl = itemsNetKurus / 100
-      if (shippingConfig.freeShippingEnabled && itemsNetTl >= Number(shippingConfig.freeShippingThreshold || 0)) {
-        effectiveShippingKurus = 0
-      } else if (shippingConfig.standardShippingEnabled !== false && shippingConfig.standardShippingFee !== undefined) {
-        effectiveShippingKurus = Math.round(Number(shippingConfig.standardShippingFee) * 100)
-      }
-    }
+    const effectiveShippingKurus = shippingConfig
+      ? calculateEffectiveShippingKurus(itemsNetKurus, shippingConfig)
+      : rawShippingKurus
 
     const finalTotalKurus = itemsNetKurus + effectiveShippingKurus
     if (finalTotalKurus <= 0) {
@@ -88,21 +89,11 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
       : Array.isArray(forwardedFor)
         ? forwardedFor[0]
         : ""
-    const cfIp = typeof req.headers["cf-connecting-ip"] === "string" ? req.headers["cf-connecting-ip"].trim() : ""
-    const fallbackClientIp = client_ip && client_ip !== "1.1.1.1" && client_ip !== "127.0.0.1" ? String(client_ip).split(",")[0].trim() : ""
-    const isIpv4 = (ip: string) => /^\d{1,3}(\.\d{1,3}){3}$/.test(ip)
-    const rawIp =
-      (isIpv4(fallbackClientIp) ? fallbackClientIp : "") ||
-      (isIpv4(cfIp) ? cfIp : "") ||
-      (isIpv4(headerIp) ? headerIp : "") ||
-      fallbackClientIp ||
-      cfIp ||
-      headerIp ||
-      (req as any).ip ||
-      "85.105.1.1"
+    const fallbackClientIp = client_ip && client_ip !== "1.1.1.1" ? String(client_ip).split(",")[0].trim() : ""
+    const rawIp = headerIp || fallbackClientIp || (req as any).ip || "85.105.1.1"
     const user_ip = String(rawIp).replace(/^::ffff:/, "").trim() || "85.105.1.1"
 
-    const email = cart.email || "guest@kombingo.com"
+    const email = cart.email || "guest@bodykitmerkezi.com"
     const payment_amount = (finalTotalKurus / 100).toFixed(2)
 
     // PayTR Direct API requires merchant_oid to be STRICTLY alphanumeric
@@ -122,6 +113,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     const user_phone = cart.shipping_address?.phone || "05000000000"
 
     const currency = "TL"
+    const test_mode = (paytrConfig.test_mode && String(paytrConfig.test_mode).startsWith("A")) ? "1" : "0"
 
     // Basket data needs to be a serialized JSON array of arrays
     const user_basket = cart.items.map((item: any) => [
@@ -139,7 +131,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     }
     const user_basket_str = Buffer.from(JSON.stringify(user_basket)).toString("base64")
 
-    const storeUrl = process.env.STORE_URL || (process.env.STORE_CORS ? process.env.STORE_CORS.split(",")[0] : "https://kombingo.com")
+    const storeUrl = process.env.STORE_URL || (process.env.STORE_CORS ? process.env.STORE_CORS.split(",")[0] : "https://bodykitmerkezi.com")
 
     const merchant_ok_url = `${storeUrl}/api/paytr/callback?status=success&cart_id=${cart.id}`
     const merchant_fail_url = `${storeUrl}/api/paytr/callback?status=fail`
@@ -153,9 +145,6 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     const cleanMonth = String(cc_month || "").trim().padStart(2, "0")
     const cleanYear = String(cc_year || "").trim().slice(-2)
     const cleanCvv = String(cc_cvv || "").replace(/\D/g, "")
-
-    const isTestCard = cleanCardNumber.startsWith("9792") || ["4355084355084358", "5406675406675403"].includes(cleanCardNumber)
-    const test_mode = (isTestCard || (paytrConfig.test_mode && String(paytrConfig.test_mode).toLowerCase().startsWith("a"))) ? "1" : "0"
 
     // 5. Calculate HMAC Hash
     const hash_str = merchant_id + user_ip + merchant_oid + email + payment_amount + payment_type + installment_count + currency + test_mode + non_3d + merchant_salt

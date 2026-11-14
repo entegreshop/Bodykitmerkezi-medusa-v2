@@ -1,12 +1,9 @@
 import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import fs from "fs"
 import path from "path"
-import os from "os"
 import crypto from "crypto"
 
 const configFilePath = path.join(process.cwd(), "uploads", "pixel-settings.json")
-const legacyHomeFilePath = path.join(os.homedir(), ".xoox-pixel-settings.json")
-const legacyCwdFilePath = path.join(process.cwd(), ".xoox-pixel-settings.json")
 
 export interface PixelConfig {
   meta_pixel: {
@@ -298,16 +295,8 @@ export async function getGaRealtimeStats(fallbackActiveCarts = 0): Promise<{
 
 export function readConfig(): PixelConfig {
   try {
-    const targetPath = fs.existsSync(configFilePath)
-      ? configFilePath
-      : fs.existsSync(legacyHomeFilePath)
-        ? legacyHomeFilePath
-        : fs.existsSync(legacyCwdFilePath)
-          ? legacyCwdFilePath
-          : null
-
-    if (targetPath) {
-      const content = fs.readFileSync(targetPath, "utf-8")
+    if (fs.existsSync(configFilePath)) {
+      const content = fs.readFileSync(configFilePath, "utf-8")
       const parsed = JSON.parse(content)
       return {
         meta_pixel: { ...defaultData.meta_pixel, ...(parsed.meta_pixel || {}) },

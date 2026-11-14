@@ -2,7 +2,7 @@
 
 import { HttpTypes } from "@medusajs/types"
 import Image from "next/image"
-import { useState, useRef } from "react"
+import { useState } from "react"
 
 type ImageGalleryProps = {
   images: HttpTypes.StoreProductImage[]
@@ -10,7 +10,6 @@ type ImageGalleryProps = {
 
 const ImageGallery = ({ images }: ImageGalleryProps) => {
   const [activeIndex, setActiveIndex] = useState(0)
-  const carouselRef = useRef<HTMLDivElement>(null)
 
   if (!images || images.length === 0) {
     return (
@@ -20,30 +19,12 @@ const ImageGallery = ({ images }: ImageGalleryProps) => {
     )
   }
 
-  const scrollTo = (index: number) => {
-    setActiveIndex(index)
-    if (carouselRef.current) {
-      const scrollLeft = carouselRef.current.clientWidth * index
-      carouselRef.current.scrollTo({ left: scrollLeft, behavior: "smooth" })
-    }
-  }
-
   const handlePrev = () => {
-    const nextIndex = activeIndex === 0 ? images.length - 1 : activeIndex - 1
-    scrollTo(nextIndex)
+    setActiveIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1))
   }
 
   const handleNext = () => {
-    const nextIndex = activeIndex === images.length - 1 ? 0 : activeIndex + 1
-    scrollTo(nextIndex)
-  }
-
-  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const container = e.currentTarget
-    const index = Math.round(container.scrollLeft / container.clientWidth)
-    if (index !== activeIndex) {
-      setActiveIndex(index)
-    }
+    setActiveIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1))
   }
 
   return (
@@ -54,7 +35,7 @@ const ImageGallery = ({ images }: ImageGalleryProps) => {
           {images.map((image, index) => (
             <button
               key={image.id}
-              onClick={() => scrollTo(index)}
+              onClick={() => setActiveIndex(index)}
               className={`relative aspect-[3/4] w-20 medium:w-full overflow-hidden flex-shrink-0 border transition-all ${
                 activeIndex === index
                   ? "border-black shadow-sm"
@@ -62,22 +43,13 @@ const ImageGallery = ({ images }: ImageGalleryProps) => {
               }`}
             >
               {image.url && (
-                image.url.match(/\.(mp4|webm|mov)$/i) ? (
-                  <video
-                    src={image.url}
-                    className="absolute inset-0 w-full h-full object-cover"
-                    muted
-                    playsInline
-                  />
-                ) : (
-                  <Image
-                    alt={`Thumbnail ${index + 1}`}
-                    src={image.url}
-                    fill
-                    className="object-cover"
-                    sizes="80px"
-                  />
-                )
+                <Image
+                  alt={`Thumbnail ${index + 1}`}
+                  src={image.url}
+                  fill
+                  className="object-cover"
+                  sizes="80px"
+                />
               )}
             </button>
           ))}
@@ -86,48 +58,23 @@ const ImageGallery = ({ images }: ImageGalleryProps) => {
 
       {/* Main Image */}
       <div className="relative aspect-[3/4] w-full flex-grow overflow-hidden bg-gray-50 border border-gray-100 group">
-        {/* Scrollable Carousel Container */}
-        <div
-          ref={carouselRef}
-          onScroll={handleScroll}
-          className="w-full h-full flex overflow-x-auto overflow-y-hidden snap-x snap-mandatory scroll-smooth no-scrollbar"
-        >
-          {images.map((image, index) => (
-            <div
-              key={image.id}
-              className="relative w-full h-full flex-shrink-0 snap-center"
-            >
-              {image.url && (
-                image.url.match(/\.(mp4|webm|mov)$/i) ? (
-                  <video
-                    src={image.url}
-                    autoPlay={activeIndex === index}
-                    loop
-                    muted
-                    playsInline
-                    className="absolute inset-0 w-full h-full object-cover"
-                  />
-                ) : (
-                  <Image
-                    alt="Product Image"
-                    src={image.url}
-                    fill
-                    priority={index === 0}
-                    className="object-cover"
-                    sizes="(max-width: 1024px) 100vw, 800px"
-                  />
-                )
-              )}
-            </div>
-          ))}
-        </div>
+        {images[activeIndex]?.url && (
+          <Image
+            alt="Product Image"
+            src={images[activeIndex].url}
+            fill
+            priority
+            className="object-cover"
+            sizes="(max-width: 1024px) 100vw, 800px"
+          />
+        )}
 
         {/* Navigation Buttons */}
         {images.length > 1 && (
           <>
             <button
               onClick={handlePrev}
-              className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center bg-white/70 hover:bg-white text-black transition-colors rounded-full shadow-sm z-20 opacity-0 group-hover:opacity-100 medium:opacity-100"
+              className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center bg-white/70 hover:bg-white text-black transition-colors rounded-full shadow-sm"
               aria-label="Önceki Görsel"
             >
               <svg
@@ -145,7 +92,7 @@ const ImageGallery = ({ images }: ImageGalleryProps) => {
             </button>
             <button
               onClick={handleNext}
-              className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center bg-white/70 hover:bg-white text-black transition-colors rounded-full shadow-sm z-20 opacity-0 group-hover:opacity-100 medium:opacity-100"
+              className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center bg-white/70 hover:bg-white text-black transition-colors rounded-full shadow-sm"
               aria-label="Sonraki Görsel"
             >
               <svg

@@ -57,9 +57,9 @@ const SmsSettingsPage = () => {
 
   // E-Posta state
   const [mailActive, setMailActive] = useState(true)
-  const [mailAdmin, setMailAdmin] = useState("info@kombingo.com")
-  const [mailStoreName, setMailStoreName] = useState("KOMBİNGO")
-  const [mailReplyTo, setMailReplyTo] = useState("info@kombingo.com")
+  const [mailAdmin, setMailAdmin] = useState("info@bodykitmerkezi.com")
+  const [mailStoreName, setMailStoreName] = useState("BODYKİT MERKEZİ")
+  const [mailReplyTo, setMailReplyTo] = useState("info@bodykitmerkezi.com")
   const [mailService, setMailService] = useState("Varsayılan")
 
   // WhatsApp state

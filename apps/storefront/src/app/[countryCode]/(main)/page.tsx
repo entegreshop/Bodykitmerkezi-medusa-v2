@@ -4,23 +4,45 @@ import Hero from "@modules/home/components/hero"
 import PromoBanners from "@modules/home/components/promo-banners"
 import TrustBadges from "@modules/home/components/trust-badges"
 import CategoryTabs from "@modules/home/components/category-tabs"
-import ProductPreview from "@modules/products/components/product-preview"
-import InteractiveLink from "@modules/common/components/interactive-link"
 import { Text } from "@medusajs/ui"
 import InfiniteProducts from "@modules/store/components/infinite-products"
 import { listCollections } from "@lib/data/collections"
 import { getRegion } from "@lib/data/regions"
 import { getDictionary } from "@lib/util/get-dictionary"
-import { getCategoryByHandle } from "@lib/data/categories"
+import {
+  normalizeCategorySlug,
+  resolveCategoriesByHandle,
+} from "@lib/data/categories"
 import { listProducts } from "@lib/data/products"
 
-export const metadata: Metadata = {
-  title: "XOOX Medusa Storefront",
-  description: "A performant international storefront for XOOX Commerce.",
+export async function generateMetadata(): Promise<Metadata> {
+  const config = await getLogoConfig()
+  return {
+    title: config?.siteTitle || "Bodykit Merkezi | Araç Tasarım & Modifiye",
+    description: "Türkiye'nin en büyük body kit ve araç modifiye merkezi. Bodykit Merkezi ile aracınızı baştan yaratın.",
+  }
 }
 
 const NEXT_PUBLIC_MEDUSA_BACKEND_URL = process.env.MEDUSA_BACKEND_URL || "http://localhost:9000"
 const NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
+
+async function getLogoConfig() {
+  try {
+    const headers: Record<string, string> = {}
+    if (NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY) {
+      headers["x-publishable-api-key"] = NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
+    }
+    const res = await fetch(`${NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/logo-config`, {
+      cache: "no-store",
+      headers,
+    })
+    const data = await res.json()
+    return data?.config || null
+  } catch (err) {
+    console.error("Failed to fetch logo config in Page:", err)
+    return null
+  }
+}
 
 async function getHeroConfig() {
   try {
@@ -54,61 +76,162 @@ export default async function Home(props: {
     fields: "id, handle, title",
   })
 
-  if (!collections || !region) {
+  if (!region) {
     return null
   }
 
+  const safeCollections = collections || []
   const dict = await getDictionary(countryCode)
   const config = await getHeroConfig()
 
   const marqueeText = config?.scrolling_text_home
   const repeatedText = marqueeText ? Array(8).fill(marqueeText).join("\u00A0\u00A0\u00A0\u00A0\u00A0•\u00A0\u00A0\u00A0\u00A0\u00A0") + "\u00A0\u00A0\u00A0\u00A0\u00A0•\u00A0\u00A0\u00A0\u00A0\u00A0" : ""
 
-  const categoryQuery = searchParams.category || "cok-satanlar"
+  const categoryQuery = searchParams.category || "yeni-gelenler"
+  const normCategoryQuery = normalizeCategorySlug(categoryQuery)
   
   let products: any[] = []
   let count = 0
-  let sectionTitle = "Çok Satanlar"
-  let viewAllLink = "/store"
-  let activeCategoryId: string | undefined = undefined
+  let activeCategoryId: string | string[] | undefined = undefined
   let activeCollectionId: string | undefined = undefined
 
-  if (categoryQuery === "cok-satanlar") {
-    const cokSatanlarCollection = collections.find(
-      (c) => c.handle === "çok-satanlar" || c.handle === "cok-satanlar"
-    ) || collections[0]
-    
-    if (cokSatanlarCollection) {
-      activeCollectionId = cokSatanlarCollection.id
+  if (normCategoryQuery === "yenigelenler" || normCategoryQuery === "news") {
+    const defaultCollection = safeCollections.find(
+      (c) =>
+        normalizeCategorySlug(c.handle || "") === "yenigelenler" ||
+        normalizeCategorySlug(c.handle || "") === "news" ||
+        normalizeCategorySlug(c.title || "") === "yenigelenler"
+    )
+
+    if (defaultCollection) {
       const res = await listProducts({
         regionId: region.id,
         queryParams: {
-          collection_id: [cokSatanlarCollection.id],
+          collection_id: [defaultCollection.id],
           fields: "*variants.calculated_price",
           limit: 12,
         },
       })
-      products = res.response.products
-      count = res.response.count
-      sectionTitle = cokSatanlarCollection.title
-      viewAllLink = `/collections/${cokSatanlarCollection.handle}`
+      if (res.response.products.length > 0) {
+        activeCollectionId = defaultCollection.id
+        products = res.response.products
+        count = res.response.count
+      }
+    }
+
+    if (products.length === 0) {
+      const fallbackRes = await listProducts({
+        regionId: region.id,
+        queryParams: {
+          fields: "*variants.calculated_price",
+          limit: 12,
+          order: "-created_at",
+        } as any,
+      })
+      products = fallbackRes.response.products
+      count = fallbackRes.response.count
+    }
+  } else if (normCategoryQuery === "coksatanlar") {
+    const bestSellerCollection = safeCollections.find(
+      (c) =>
+        normalizeCategorySlug(c.handle || "") === "coksatanlar" ||
+        normalizeCategorySlug(c.title || "") === "coksatanlar"
+    )
+
+    if (bestSellerCollection) {
+      const res = await listProducts({
+        regionId: region.id,
+        queryParams: {
+          collection_id: [bestSellerCollection.id],
+          fields: "*variants.calculated_price",
+          limit: 12,
+        },
+      })
+      if (res.response.products.length > 0) {
+        activeCollectionId = bestSellerCollection.id
+        products = res.response.products
+        count = res.response.count
+      }
+    }
+
+    if (products.length === 0) {
+      const fallbackRes = await listProducts({
+        regionId: region.id,
+        queryParams: {
+          fields: "*variants.calculated_price",
+          limit: 12,
+          order: "title",
+        } as any,
+      })
+      products = fallbackRes.response.products
+      count = fallbackRes.response.count
     }
   } else {
-    const categoryObj = await getCategoryByHandle([categoryQuery])
-    if (categoryObj) {
-      activeCategoryId = categoryObj.id
-      const res = await listProducts({
+    const matchedCategories = await resolveCategoriesByHandle(categoryQuery)
+    if (matchedCategories.length > 0) {
+      const catIds = matchedCategories.map((c) => c.id)
+      activeCategoryId = catIds.length === 1 ? catIds[0] : catIds
+
+      if (normCategoryQuery === "aydinlatma") {
+        // Fetch category products and prioritize lighting/exterior trim items first
+        const res = await listProducts({
+          regionId: region.id,
+          queryParams: {
+            category_id: catIds,
+            fields: "*variants.calculated_price",
+            limit: 60,
+          },
+        })
+        const allCatProducts = res.response.products || []
+        const lightingRegex = /far|stop|led|sinyal|sis|aydınlatma|aydinlatma|lamba|çakar|cakar|moonvisor|vizör|vizor|panjur|vent/i
+        const prioritized = [
+          ...allCatProducts.filter((p) => lightingRegex.test(p.title || "")),
+          ...allCatProducts.filter((p) => !lightingRegex.test(p.title || "")),
+        ]
+        products = prioritized.slice(0, 12)
+        count = res.response.count
+      } else {
+        const res = await listProducts({
+          regionId: region.id,
+          queryParams: {
+            category_id: catIds,
+            fields: "*variants.calculated_price",
+            limit: 12,
+          },
+        })
+        products = res.response.products
+        count = res.response.count
+      }
+    }
+
+    // Keyword search fallback if no category matched or category has 0 products
+    if (products.length === 0) {
+      const searchRes = await listProducts({
         regionId: region.id,
         queryParams: {
-          category_id: [categoryObj.id],
+          q: categoryQuery.replace(/-/g, " "),
+          fields: "*variants.calculated_price",
+          limit: 12,
+        } as any,
+      }).catch(() => null)
+
+      if (searchRes && searchRes.response.products.length > 0) {
+        products = searchRes.response.products
+        count = searchRes.response.count
+      }
+    }
+
+    // Final safety fallback so a tab never displays empty
+    if (products.length === 0) {
+      const fallbackRes = await listProducts({
+        regionId: region.id,
+        queryParams: {
           fields: "*variants.calculated_price",
           limit: 12,
         },
       })
-      products = res.response.products
-      count = res.response.count
-      sectionTitle = categoryObj.name
-      viewAllLink = `/categories/${categoryObj.handle}`
+      products = fallbackRes.response.products
+      count = fallbackRes.response.count
     }
   }
 
@@ -160,6 +283,7 @@ export default async function Home(props: {
 
           {products && products.length > 0 ? (
             <InfiniteProducts
+              key={categoryQuery}
               initialProducts={products}
               count={count}
               region={region}

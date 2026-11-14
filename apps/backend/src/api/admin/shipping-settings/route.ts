@@ -62,10 +62,10 @@ const defaultData = {
       key: "interline",
       general: {
         name: "INTERLINE KARGO",
-        active: true,
+        active: false,
         description: "",
         sortOrder: 0,
-        taxNumber: "11111111111",
+        taxNumber: "",
         customerType: "Hepsi",
         companyCode: "",
         logoUrl: "",
@@ -75,15 +75,15 @@ const defaultData = {
         limitProductQuantity: false
       },
       api: {
-        apiActive: true,
-        autoGenerateBarcode: true,
+        apiActive: false,
+        autoGenerateBarcode: false,
         generateBarcodeForNonCarrier: false,
         markAsShippedOnBranchReceive: false,
         barcodeGenerationStage: "Yeni Sipariş",
         sendFixedVolumetricWeight: false,
-        apiAuthorization: "gvC8kSXzRBHMaW1Ucnls53N6KAZ0TFb7YGphm4QE",
-        apiFrom: "modoskop@interlinekargo.com",
-        branchName: "582"
+        apiAuthorization: "",
+        apiFrom: "",
+        branchName: ""
       },
       regions: {
         deliveryType: "all",
@@ -196,18 +196,8 @@ const defaultData = {
 
 export function readConfig() {
   try {
-    const legacyCwd = path.join(process.cwd(), ".xoox-shipping-settings.json")
-    const legacyHome = path.join(os.homedir(), ".xoox-shipping-settings.json")
-    const targetPath = fs.existsSync(configFilePath)
-      ? configFilePath
-      : fs.existsSync(legacyCwd)
-        ? legacyCwd
-        : fs.existsSync(legacyHome)
-          ? legacyHome
-          : null
-
-    if (targetPath) {
-      const content = fs.readFileSync(targetPath, "utf-8")
+    if (fs.existsSync(configFilePath)) {
+      const content = fs.readFileSync(configFilePath, "utf-8")
       const parsed = JSON.parse(content)
       return {
         ...defaultData,

@@ -51,7 +51,7 @@ export class PayTRProvider extends BasePaymentProvider {
       
       const max_installment = "0"
       const no_installment = "0"
-      const storeUrl = process.env.STORE_URL || (process.env.STORE_CORS ? process.env.STORE_CORS.split(",")[0] : "https://kombingo.com")
+      const storeUrl = process.env.STORE_URL || (process.env.STORE_CORS ? process.env.STORE_CORS.split(",")[0] : "https://bodykitmerkezi.com")
       const merchant_ok_url = `${storeUrl}/checkout/success?order_id=${merchant_oid}`
       const merchant_fail_url = `${storeUrl}/checkout/failed`
 

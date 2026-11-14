@@ -141,7 +141,7 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
     const defaultBankHolder =
       paymentConfig?.bank_transfer?.account_holder ||
       paymentConfig?.eft?.account_holder ||
-      "Kombingo"
+      "Bodykit Merkezi"
     const defaultBankName =
       paymentConfig?.bank_transfer?.bank_name ||
       paymentConfig?.eft?.bank_name ||

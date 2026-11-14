@@ -50,18 +50,8 @@ const defaultPages = {
 
 function readConfig() {
   try {
-    const legacyHome = path.join(os.homedir(), ".xoox-pages-config.json")
-    const legacyCwd = path.join(process.cwd(), ".xoox-pages-config.json")
-    const targetPath = fs.existsSync(configFilePath)
-      ? configFilePath
-      : fs.existsSync(legacyHome)
-        ? legacyHome
-        : fs.existsSync(legacyCwd)
-          ? legacyCwd
-          : null
-
-    if (targetPath) {
-      const content = fs.readFileSync(targetPath, "utf-8")
+    if (fs.existsSync(configFilePath)) {
+      const content = fs.readFileSync(configFilePath, "utf-8")
       return JSON.parse(content)
     }
   } catch (err) {

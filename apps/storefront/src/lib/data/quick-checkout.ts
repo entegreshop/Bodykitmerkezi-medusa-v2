@@ -54,7 +54,6 @@ export type QuickCheckoutFormData = {
   cc_month?: string
   cc_year?: string
   cc_cvv?: string
-  client_ip?: string
 }
 
 export async function processQuickCheckout(data: QuickCheckoutFormData) {
@@ -160,35 +159,49 @@ export async function processQuickCheckout(data: QuickCheckoutFormData) {
     )
     logToFile("Metadata guncellendi");
 
+    // Retrieve cart to check if it already has a shipping method (it might have been cleared by address update)
+    // We MUST use client.fetch with cache: "no-store" because sdk.store.cart.retrieve is cached by Next.js!
+    const { cart: currentCart } = await sdk.client.fetch<{ cart: HttpTypes.StoreCart }>(
+        `/store/carts/${targetCartId}`,
+        { query: { fields: "*shipping_methods" }, headers, cache: "no-store" }
+    );
+
     // 3. Kargo Yontemi Secimi
-    logToFile("3. Kargo secenekleri aliniyor...");
-    const shippingOptsParams = { cart_id: targetCartId }
-    const { shipping_options } = await sdk.client.fetch<{ shipping_options: HttpTypes.StoreCartShippingOption[] }>(
-        "/store/shipping-options",
-        { query: shippingOptsParams, headers, cache: "no-store" }
-    )
+    if (!currentCart.shipping_methods || currentCart.shipping_methods.length === 0) {
+        logToFile("3. Kargo secenekleri aliniyor...");
+        const shippingOptsParams = { cart_id: targetCartId }
+        const { shipping_options } = await sdk.client.fetch<{ shipping_options: HttpTypes.StoreCartShippingOption[] }>(
+            "/store/shipping-options",
+            { query: shippingOptsParams, headers, cache: "no-store" }
+        )
 
-    if (shipping_options && shipping_options.length > 0) {
-        const methodToUse = shipping_options.find(so => so.price_type === 'calculated') || shipping_options[shipping_options.length - 1]
-        console.log("[QuickCheckout] 3. Kargo secildi:", methodToUse.id)
-        
-        if (methodToUse.price_type === 'calculated') {
-             await sdk.client.fetch(
-                `/store/shipping-options/${methodToUse.id}/calculate`,
-                { method: "POST", body: { cart_id: targetCartId }, headers }
-            ).catch(e => console.error("Kargo hesaplama uyarisi:", e.message))
-        }
+        if (shipping_options && shipping_options.length > 0) {
+            logToFile("Kargo Secenekleri bulundu: " + JSON.stringify(shipping_options.map(s => ({id: s.id, name: s.name, amount: s.amount}))))
+            // Pick the first shipping option, which is usually the default/standard one. 
+            // Avoid picking the last one as it might be a pickup method or belong to a different profile.
+            const methodToUse = shipping_options.find(so => so.price_type === 'calculated') || shipping_options[0]
+            console.log("[QuickCheckout] 3. Kargo secildi:", methodToUse.id)
+            
+            if (methodToUse.price_type === 'calculated') {
+                    await sdk.client.fetch(
+                    `/store/shipping-options/${methodToUse.id}/calculate`,
+                    { method: "POST", body: { cart_id: targetCartId }, headers }
+                ).catch(e => console.error("Kargo hesaplama uyarisi:", e.message))
+            }
 
-        try {
-            await sdk.store.cart.addShippingMethod(
-                targetCartId,
-                { option_id: methodToUse.id },
-                {},
-                headers
-            )
-        } catch(e: any) {
-            throw new Error(`2. Kargo secenekleri ayarlanamadi: ${e.message || JSON.stringify(e)}`)
+            try {
+                await sdk.store.cart.addShippingMethod(
+                    targetCartId,
+                    { option_id: methodToUse.id },
+                    {},
+                    headers
+                )
+            } catch(e: any) {
+                throw new Error(`2. Kargo secenekleri ayarlanamadi: ${e.message || JSON.stringify(e)}`)
+            }
         }
+    } else {
+        logToFile("3. Kargo zaten secilmis, atliyor...");
     }
 
     // 4. Odeme Yontemi Secimi
@@ -197,13 +210,13 @@ export async function processQuickCheckout(data: QuickCheckoutFormData) {
     // Kapıda ödeme bedelini sepete işle (Eğer COD seçilmişse ve limiti geçmiyorsa)
     try {
         logToFile("Fetching payment-cod/apply...");
-        const backendUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "https://api.kombingo.com"
-        const publishableKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
+        const backendUrl = process.env.MEDUSA_BACKEND_URL || process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "https://api.bodykitmerkezi.com"
         await fetchWithTimeout(`${backendUrl}/store/custom/payment-cod/apply`, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "x-publishable-api-key": publishableKey
+            headers: { 
+                "Content-Type": "application/json", 
+                "x-publishable-api-key": process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "",
+                ...headers 
             },
             body: JSON.stringify({ cart_id: targetCartId, method_id: data.payment_method })
         }, 10000)
@@ -231,46 +244,47 @@ export async function processQuickCheckout(data: QuickCheckoutFormData) {
 
     try {
         logToFile("Retrieving cart...");
-        const { cart } = await sdk.store.cart.retrieve(targetCartId);
+        const { cart } = await sdk.client.fetch<{ cart: HttpTypes.StoreCart }>(
+            `/store/carts/${targetCartId}`,
+            { query: { fields: "*shipping_methods" }, headers, cache: "no-store" }
+        );
+
+        if (!cart.shipping_methods || cart.shipping_methods.length === 0) {
+            throw new Error("Kargo yöntemi sepetinize eklenemedi. Lütfen adresinizi kontrol edip tekrar deneyin.");
+        }
         
-        let providerIdsToTry: string[] = [];
-        if (data.payment_method === "credit_card") {
-            providerIdsToTry = ["pp_PAYTR_PAYTR", "pp_custom-payment_paytr", "pp_custom-payment_PAYTR", "pp_PAYTR", "PAYTR", "pp_paytr", "paytr"];
-        } else if (data.payment_method === "havale") {
-            providerIdsToTry = ["pp_BANK-TRANSFER_BANK-TRANSFER", "pp_custom-payment_bank-transfer", "pp_custom-payment_BANK-TRANSFER", "pp_BANK-TRANSFER", "BANK-TRANSFER", "pp_bank_transfer", "bank_transfer"];
-        } else if (data.payment_method === "cash_on_delivery" || data.payment_method === "cod_cc") {
-            // Eger cod_cc secildiyse, oncelikli olarak card-on-delivery'yi dene.
-            if (data.payment_method === "cod_cc") {
-               providerIdsToTry = ["pp_CARD-ON-DELIVERY_CARD-ON-DELIVERY", "pp_custom-payment_card-on-delivery", "pp_custom-payment_CARD-ON-DELIVERY", "pp_CARD-ON-DELIVERY", "CARD-ON-DELIVERY", "pp_CASH-ON-DELIVERY_CASH-ON-DELIVERY", "pp_custom-payment_cash-on-delivery", "pp_custom-payment_CASH-ON-DELIVERY", "pp_CASH-ON-DELIVERY", "CASH-ON-DELIVERY", "pp_cod_cash", "cod_cash"];
-            } else {
-               providerIdsToTry = ["pp_CASH-ON-DELIVERY_CASH-ON-DELIVERY", "pp_custom-payment_cash-on-delivery", "pp_custom-payment_CASH-ON-DELIVERY", "pp_CASH-ON-DELIVERY", "CASH-ON-DELIVERY", "pp_cod_cash", "cod_cash"];
-            }
-        } else {
-            providerIdsToTry = ["pp_system_default"];
+        if (cart.shipping_total === null || cart.shipping_total === undefined) {
+            throw new Error("Kargo ücreti hesaplanamadı.");
         }
 
-        let sessionInitiated = false;
-        let lastError = null;
-
-        for (const pId of providerIdsToTry) {
-            try {
-                logToFile("Trying providerId: " + pId);
-                await sdk.store.payment.initiatePaymentSession(cart as any, { provider_id: pId }, {}, headers);
-                logToFile("Success with providerId: " + pId);
-                sessionInitiated = true;
-                break;
-            } catch (e: any) {
-                logToFile("Failed providerId: " + pId + " - " + e.message);
-                lastError = e;
-            }
+        if (cart.total === null || cart.total === undefined || cart.total <= 0) {
+            throw new Error("Sepet tutarı geçersiz.");
         }
+        
+        // 4. Payment Session Başlat
+        logToFile("4. Payment session baslatiliyor");
+        let providerId = "pp_system_default";
+        // We use pp_system_default for credit_card because we handle PayTR completely externally via Direct API and our own Webhook.
+        // pp_system_default automatically approves the payment when completeCartWorkflow is called.
+        if (data.payment_method === "credit_card") providerId = "pp_system_default"
+        else if (data.payment_method === "havale") providerId = "pp_bank-transfer_bank-transfer"
+        else if (data.payment_method === "cash_on_delivery" || data.payment_method === "cod_cc") providerId = "pp_cash-on-delivery_cash-on-delivery"
 
-        if (!sessionInitiated) {
-            throw new Error(`Kabul edilen ödeme altyapısı bulunamadı. Lütfen mağaza yöneticisiyle iletişime geçin. (Hata: ${lastError?.message || "Bilinmiyor"})`);
-        }
+        logToFile("Initiating payment session with providerId: " + providerId);
+        await sdk.store.payment.initiatePaymentSession(cart as any, { provider_id: providerId }, {}, headers)
+        logToFile("Payment session initiated");
     } catch(e: any) {
-        logToFile("Payment session genel hatasi: " + e.message);
-        throw new Error(`Ödeme başlatılamadı: ${e.message}`);
+        logToFile("Payment session hatasi 1: " + e.message);
+        try {
+           const { cart } = await sdk.client.fetch<{ cart: HttpTypes.StoreCart }>(
+               `/store/carts/${targetCartId}`,
+               { headers, cache: "no-store" }
+           );
+           await sdk.store.payment.initiatePaymentSession(cart as any, { provider_id: "pp_system_default" }, {}, headers)
+        } catch(fallbackErr: any) {
+           console.error("Payment session hatasi 2:", fallbackErr.message)
+           throw new Error(`Ödeme başlatılamadı (Ana Hata): ${e.message} | (Yedek Hata): ${fallbackErr.message}`)
+        }
     }
 
     // 5. Siparisi Tamamla
@@ -280,27 +294,14 @@ export async function processQuickCheckout(data: QuickCheckoutFormData) {
         logToFile("Kredi Kartı (PayTR) seçildi, Direct API çağrısı yapılıyor...");
         
         try {
-            const backendUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "https://api.kombingo.com";
-            const publishableKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "";
-            let clientIp = data.client_ip || "1.1.1.1";
-            if (!data.client_ip || data.client_ip === "1.1.1.1") {
-                try {
-                    const { headers: nextHeaders } = await import("next/headers");
-                    const reqHeaders = await nextHeaders();
-                    clientIp =
-                        reqHeaders.get("cf-connecting-ip") ||
-                        reqHeaders.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-                        reqHeaders.get("x-real-ip") ||
-                        "1.1.1.1";
-                } catch {}
-            }
-
+            const backendUrl = process.env.MEDUSA_BACKEND_URL || process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "https://api.bodykitmerkezi.com";
             logToFile(`Fetching ${backendUrl}/store/custom/paytr/direct...`);
             const directApiRes = await fetchWithTimeout(`${backendUrl}/store/custom/paytr/direct`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-publishable-api-key': publishableKey
+                headers: { 
+                    'Content-Type': 'application/json', 
+                    'x-publishable-api-key': process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "",
+                    ...headers 
                 },
                 body: JSON.stringify({ 
                     cart_id: targetCartId,
@@ -309,7 +310,7 @@ export async function processQuickCheckout(data: QuickCheckoutFormData) {
                     cc_month: data.cc_month,
                     cc_year: data.cc_year,
                     cc_cvv: data.cc_cvv,
-                    client_ip: clientIp
+                    client_ip: headers['x-forwarded-for'] || '1.1.1.1' // Provide IP if possible
                 })
             }, 20000);
             logToFile(`directApiRes status: ${directApiRes.status}`);

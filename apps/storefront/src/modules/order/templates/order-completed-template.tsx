@@ -2,6 +2,7 @@ import { Heading } from "@medusajs/ui"
 import { cookies as nextCookies } from "next/headers"
 import { HttpTypes } from "@medusajs/types"
 import { convertToLocale } from "@lib/util/money"
+import { isDefaultOptionValue } from "@lib/util/product"
 import { OrderDetails } from "./order-details"
 import ClearCartOnCompleted from "../components/clear-cart"
 import PurchaseTracker from "../components/purchase-tracker"
@@ -10,50 +11,55 @@ type OrderCompletedTemplateProps = {
   order: HttpTypes.StoreOrder
 }
 
+async function getShippingConfig() {
+  try {
+    const backendUrl =
+      process.env.MEDUSA_BACKEND_URL ||
+      process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL ||
+      "https://api.bodykitmerkezi.com"
+    const publishableKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
+    const res = await fetch(`${backendUrl}/store/shipping-settings`, {
+      headers: { "x-publishable-api-key": publishableKey },
+      cache: "no-store",
+    })
+    if (res.ok) {
+      const data = await res.json()
+      return data?.config || null
+    }
+  } catch (e) {}
+  return null
+}
+
 export default async function OrderCompletedTemplate({
   order,
 }: OrderCompletedTemplateProps) {
-  const metadata = (order.metadata || {}) as any
-  const backendUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000"
-  const publishableKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
-  const fetchOptions = { headers: { "x-publishable-api-key": publishableKey }, next: { revalidate: 300 } }
-  
-  let dynamicShippingCost = 6000 // default 60 TL
-  let dynamicCodFee = 7000 // default 70 TL
-  let freeShippingLimit = 300000 // default 3000 TL
-  let isFreeShippingEnabled = false
-  
-  try {
-     const [shipRes, codRes] = await Promise.all([
-        fetch(`${backendUrl}/store/custom/shipping-settings`, fetchOptions),
-        fetch(`${backendUrl}/store/custom/payment-cod-cc`, fetchOptions)
-     ])
-     const shipData = await shipRes.json()
-     if (shipData?.settings?.shipping_settings) {
-         const ss = shipData.settings.shipping_settings;
-         if (ss.standard_rate) dynamicShippingCost = parseFloat(ss.standard_rate) * 100
-         if (ss.free_shipping_limit) freeShippingLimit = parseFloat(ss.free_shipping_limit) * 100
-         isFreeShippingEnabled = ss.free_shipping_enabled
-     }
-     const codData = await codRes.json()
-     if (codData?.settings?.payment_cod_cc?.additional_fee) {
-         dynamicCodFee = parseFloat(codData.settings.payment_cod_cc.additional_fee) * 100
-     }
-  } catch (e) {}
+  const metadata: any = order.metadata || {}
+  const shippingConfig = await getShippingConfig()
 
-  const isQuickCheckout = !!metadata.payment_option;
-  const numericalPrice = (order.item_subtotal ?? 0) - (order.discount_total ?? 0);
-  
-  // Determine final shipping cost based on free shipping criteria
-  const isFreeShipping = isFreeShippingEnabled && numericalPrice >= freeShippingLimit;
-  const finalShippingAmount = isQuickCheckout ? (isFreeShipping ? 0 : dynamicShippingCost) : (order.shipping_total ?? 0);
+  const rawShippingAmount = Number(order.shipping_total ?? 0)
+  const itemSubtotal = Number(order.item_subtotal ?? 0)
+  const discountTotal = Number(order.discount_total ?? 0)
+  const itemsNet = Math.max(0, itemSubtotal - discountTotal)
 
-  // Determine final COD fee based on payment method
-  const isCod = metadata.payment_option === 'cash_on_delivery' || metadata.payment_option === 'card_on_delivery'
-  const finalCodFeeAmount = isQuickCheckout && isCod ? dynamicCodFee : 0
+  let finalShippingAmount = rawShippingAmount
+  if (metadata.free_shipping_applied === true || metadata.original_shipping_subtotal === 0) {
+    finalShippingAmount = 0
+  } else if (shippingConfig) {
+    if (shippingConfig.standardShippingEnabled === false) {
+      finalShippingAmount = 0
+    } else if (
+      shippingConfig.freeShippingEnabled &&
+      itemsNet / 100 >= Number(shippingConfig.freeShippingThreshold || 0)
+    ) {
+      finalShippingAmount = 0
+    }
+  }
 
-  // Calculate overall grand total
-  const finalGrandTotal = isQuickCheckout ? (numericalPrice + finalShippingAmount + finalCodFeeAmount) : (order.total ?? 0);
+  const isFreeShipping = finalShippingAmount === 0
+  const finalGrandTotal = Math.max(
+    0,
+    Number(order.total ?? 0) - rawShippingAmount + finalShippingAmount
+  )
 
   const formatAddress = (addr: any) => {
     if (!addr) return null
@@ -104,27 +110,33 @@ export default async function OrderCompletedTemplate({
           
           {/* Items */}
           <div className="p-6 flex flex-col gap-6 border-b border-gray-200">
-            {order.items?.map((item) => (
-              <div key={item.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex gap-4 items-center flex-1">
-                  <div className="w-[80px] h-[100px] relative bg-gray-100 flex-shrink-0">
-                    {item.thumbnail && (
-                      <img src={item.thumbnail} alt={item.title} className="absolute inset-0 w-full h-full object-cover" />
-                    )}
+            {order.items?.map((item) => {
+              const variantTitle = item.variant_title || item.variant?.title
+              const showVariantTitle = variantTitle && !isDefaultOptionValue(variantTitle)
+              return (
+                <div key={item.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex gap-4 items-center flex-1">
+                    <div className="w-[80px] h-[100px] relative bg-gray-100 flex-shrink-0">
+                      {item.thumbnail && (
+                        <img src={item.thumbnail} alt={item.title} className="absolute inset-0 w-full h-full object-cover" />
+                      )}
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium text-gray-800">{item.title}</span>
+                      {showVariantTitle && (
+                        <span className="text-xs text-gray-500 mt-1 uppercase">VARYANT: {variantTitle}</span>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex flex-col">
-                    <span className="text-sm font-medium text-gray-800">{item.title}</span>
-                    <span className="text-xs text-gray-500 mt-1 uppercase">BEDEN: {item.variant_title || item.variant?.title}</span>
+                  <div className="flex items-center justify-between sm:justify-end gap-12 sm:w-1/2">
+                    <span className="text-sm text-gray-600 whitespace-nowrap">{item.quantity} Ad. x</span>
+                    <span className="text-base font-semibold text-[#28a745] whitespace-nowrap">
+                      {convertToLocale({ amount: item.total ?? 0, currency_code: order.currency_code })}
+                    </span>
                   </div>
                 </div>
-                <div className="flex items-center justify-between sm:justify-end gap-12 sm:w-1/2">
-                  <span className="text-sm text-gray-600 whitespace-nowrap">{item.quantity} Ad. x</span>
-                  <span className="text-base font-semibold text-[#28a745] whitespace-nowrap">
-                    {convertToLocale({ amount: item.total ?? 0, currency_code: order.currency_code })}
-                  </span>
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
 
           {/* Footer 3 cols */}
@@ -152,22 +164,8 @@ export default async function OrderCompletedTemplate({
 
               <div className="flex justify-between font-bold text-gray-800">
                 <span>Kargo</span>
-                <span>{isFreeShipping ? "Ücretsiz" : convertToLocale({ amount: finalShippingAmount, currency_code: order.currency_code })}</span>
+                <span>{isFreeShipping ? "Karşı Ödemeli" : convertToLocale({ amount: finalShippingAmount, currency_code: order.currency_code })}</span>
               </div>
-
-              {metadata.payment_option === 'card_on_delivery' && (
-                <div className="flex justify-between font-bold text-gray-800">
-                  <span>Kapıda Kredi Kartı Ödemesi</span>
-                  <span>+ {convertToLocale({ amount: finalCodFeeAmount, currency_code: order.currency_code })}</span>
-                </div>
-              )}
-
-              {metadata.payment_option === 'cash_on_delivery' && (
-                <div className="flex justify-between font-bold text-gray-800">
-                  <span>Kapıda Nakit Ödeme</span>
-                  <span>+ {convertToLocale({ amount: finalCodFeeAmount, currency_code: order.currency_code })}</span>
-                </div>
-              )}
 
               <div className="flex justify-between font-bold text-gray-900 mt-2 text-base border-t pt-2">
                 <span>Genel Toplam</span>
@@ -184,4 +182,3 @@ export default async function OrderCompletedTemplate({
     </div>
   )
 }
-

@@ -27,8 +27,7 @@ export async function GET(
     }
 
     const fileContent = fs.readFileSync(configFilePath, "utf-8")
-    const raw = JSON.parse(fileContent)
-    const config = raw?.config ? { ...raw, ...raw.config } : raw
+    const config = JSON.parse(fileContent)
 
     res.json({ config })
   } catch (error) {

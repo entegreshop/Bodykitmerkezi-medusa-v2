@@ -78,11 +78,6 @@ export async function POST(
     const productModuleService = req.scope.resolve("product")
     const existingCategories = await productModuleService.listProductCategories({}, { take: 1000 })
 
-    // Resolve Default Shipping Profile
-    const fulfillmentModuleService = req.scope.resolve("fulfillment")
-    const shippingProfiles = await fulfillmentModuleService.listShippingProfiles({ type: "default" })
-    const defaultProfileId = shippingProfiles[0]?.id
-
     // Helper to resolve nested object path (e.g., "subproducts > subproduct > price_list")
     const resolvePath = (obj: any, path: string) => {
       if (!path) return undefined;
@@ -102,7 +97,11 @@ export async function POST(
       // Get basic mapped values
       const name = resolvePath(item, tag_mappings["Ürün Adı"] || "name") || item.name || "İsimsiz Ürün"
       const handle = String(resolvePath(item, tag_mappings["Ürün Kodu"] || "code") || item.code || Math.random().toString(36).substring(7)).toLowerCase().replace(/[^a-z0-9]/g, '-')
-      const description = resolvePath(item, tag_mappings["İçerik"] || "description") || item.detail || ""
+      let description = resolvePath(item, tag_mappings["İçerik"] || "description") || item.detail || ""
+      
+      if (description.includes("Trendyol'dan Otomatik") || description === "") {
+        description = `${name}, aracınıza özel bir görünüm katan şık ve estetik bir aksesuardır. Yüksek kaliteli plastik malzemeden üretilmiş olup dayanıklılığı ve uzun ömürlü kullanımıyla dikkat çeker. Aracınızın arka bölümünde zarif bir görünüm sağlar ve aracınızın tasarımını güncelleyerek modern bir hava katmaya yardımcı olur.\n\nÖzel olarak tasarlanmış detayları ve uyumlu yapısıyla aracınıza mükemmel bir uyum sağlar. Kolay montaj özelliği sayesinde kullanıcıların işini kolaylaştırırken, dayanıklı yapısı uzun süreli kullanım sunar. Görselde belirtilen ürün modeli size gönderilecektir.\n\nÜrün Malzemesi: Yüksek kalite standartlarına sahiptir ve dayanıklı bir yapıya sahiptir. Ayrıca, koku yapmaz, leke tutmaz ve uzun süre dayanıklılığını korur.\n\nÜrün Rengi: Ürün, astarsız/renksiz ve mat siyahtır.\n\nPaket İçeriği: ${name}\n\nTüm Donanım Paketlerine Uyumludur.\n\nÜrün, aracınızla birebir uyumludur.\n\nPlastik ürünlerin boyanarak kullanılması tavsiye edilir. Kaplamaya uygundur.\n\nÜrün, darbeye dayanıklı esnek sağlam malzemeden yapılmıştır.\n\nÜrünler boyasızdır. Boyalı sipariş vermek istiyorsanız seçeneklerden uygun olanı seçip siparişinizi gerçekleştirebilirsiniz.\n\nBoya ve Montaj için lütfen fiyat alınız.\n\nÜrünlerimiz üretim hatası ve/veya malzemeden kaynaklanacak sorunlara karşı 2 Yıl Garantilidir.\n\nTürkiye'nin her yerine gönderim yapmaktayız.`;
+      }
       
       // Determine Category
       let productCategories: { id: string }[] = [];
@@ -171,24 +170,25 @@ export async function POST(
       }
 
       // Extract unique Options from Variants
+      let isVariantless = false;
       const optionNames = new Set<string>();
       if (xmlVariants[0]?.type1) optionNames.add("Renk");
       if (xmlVariants[0]?.type2) optionNames.add("Beden");
-      if (optionNames.size === 0) optionNames.add("Standart");
+      if (optionNames.size === 0) {
+         optionNames.add("Title");
+         isVariantless = true;
+      }
 
       const optionsInput = Array.from(optionNames).map(opt => ({
          title: opt,
          values: Array.from(new Set(xmlVariants.map(v => {
             if (opt === "Renk") return String(v.type1 || "Standart");
             if (opt === "Beden") return String(v.type2 || "Standart");
-            return "Standart";
+            return "Default Title";
          })))
       }));
 
       const variantsInput = xmlVariants.map((v, idx) => {
-         // Resolve variant specific fields using mappings
-         // We fallback to main product if not found in variant
-         
          const skuRaw = resolvePath(v, tag_mappings["Ürün Kodu"] || "code") || resolvePath(item, tag_mappings["Ürün Kodu"] || "code") || item.ws_code || item.code || Math.random().toString();
          const sku = String(skuRaw) + (idx > 0 ? `-${idx}` : "");
          
@@ -201,20 +201,20 @@ export async function POST(
          const barcodeRaw = resolvePath(v, tag_mappings["Barkod"] || "barcode") || resolvePath(item, tag_mappings["Barkod"] || "barcode") || v.barcode || "";
          const barcode = String(barcodeRaw);
          
-         const stockRaw = resolvePath(v, tag_mappings["Stok"] || "stockAmount") || resolvePath(item, tag_mappings["Stok"] || "stockAmount") || v.stock || item.stock || "0";
-         const stock = parseInt(String(stockRaw), 10);
+         const stockRaw = resolvePath(v, tag_mappings["Stok"] || "stockAmount") || resolvePath(item, tag_mappings["Stok"] || "stockAmount") || v.stock || item.stock || "100";
+         const stock = parseInt(String(stockRaw), 10) || 100;
 
          const variantOptions: Record<string, string> = {};
          if (optionNames.has("Renk")) variantOptions["Renk"] = String(v.type1 || "Standart");
          if (optionNames.has("Beden")) variantOptions["Beden"] = String(v.type2 || "Standart");
-         if (optionNames.has("Standart")) variantOptions["Standart"] = "Standart";
+         if (optionNames.has("Title")) variantOptions["Title"] = "Default Title";
 
          return {
-            title: sku,
+            title: isVariantless ? "Standart" : sku,
             sku: sku,
             barcode: barcode,
-            manage_inventory: true,
-            allow_backorder: false,
+            manage_inventory: false,
+            allow_backorder: true,
             inventory_quantity: stock,
             prices: [
                {
@@ -234,7 +234,6 @@ export async function POST(
         status: "published" as any,
         images: images,
         categories: productCategories,
-        shipping_profile_id: defaultProfileId,
         metadata: {
            seo_title: item.seo_title || "",
            seo_description: item.seo_description || ""

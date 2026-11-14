@@ -77,7 +77,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
         const safeFilename = `review-${Date.now()}-${base || "media"}${ext}`
         fs.writeFileSync(path.join(uploadDir, safeFilename), buffer)
 
-        const host = req.headers["x-forwarded-host"] || req.headers.host || "api.kombingo.com"
+        const host = req.headers["x-forwarded-host"] || req.headers.host || "api.bodykitmerkezi.com"
         const protocol = req.headers["x-forwarded-proto"] || "https"
         mediaUrl = `${protocol}://${host}/uploads/${safeFilename}`
         if (

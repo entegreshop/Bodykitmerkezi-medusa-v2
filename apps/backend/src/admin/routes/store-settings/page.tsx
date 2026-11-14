@@ -49,21 +49,22 @@ interface StoreConfigState {
 }
 
 const DEFAULT_CONFIG: StoreConfigState = {
-  storeTitle: "Kombingo | Kadın Giyim, Elbise, Takım ve Yeni Sezon Kombinler",
+  storeTitle: "BodyKit Merkezi | Oto Modifiye & Aksesuar",
   logoUrl: "/images/logo-main.png",
   faviconUrl: "/favicon.ico",
-  footerDescription: "Yeni sezon kadın giyim, elbise, ikili takım, dış giyim ve kombin modellerini en uygun fiyatlarla keşfedin.",
-  copyrightText: "© 2026 Kombingo. Tüm hakları saklıdır.",
-  phone: "0532 337 00 81",
-  whatsapp: "905323370081",
-  email: "hakkisahin9@gmail.com",
-  address: "MERKEZ MAH. MUALLİM NACİ SK. MERVE NO: 9 GÜNGÖREN/ İSTANBUL",
+  footerDescription:
+    "Türkiye'nin en kapsamlı oto body kit, tampon, spoiler, difüzör ve modifiye aksesuarları mağazası.",
+  copyrightText: "© 2026 BodyKit Merkezi. Tüm hakları saklıdır.",
+  phone: "0552 001 99 66",
+  whatsapp: "905520019966",
+  email: "info@bodykitmerkezi.com",
+  address: "İkitelli OSB Oto Sanayi Sitesi Başakşehir / İstanbul",
   workingHours: "Pzt - Cmt: 09:00 - 19:00",
   socialLinks: {
-    instagram: "https://instagram.com/kombingo",
-    facebook: "https://facebook.com/kombingo",
-    youtube: "https://youtube.com/@kombingo",
-    tiktok: "https://tiktok.com/@kombingo",
+    instagram: "https://instagram.com/bodykitmerkezi",
+    facebook: "https://facebook.com/bodykitmerkezi",
+    youtube: "https://youtube.com/@bodykitmerkezi",
+    tiktok: "https://tiktok.com/@bodykitmerkezi",
   },
 }
 
@@ -450,7 +451,7 @@ const StoreSettingsPage = () => {
                   </div>
                   <div className="quka-field">
                     <label>Alan Adı (Domain)</label>
-                    <input className="quka-input" defaultValue="https://www.kombingo.com" />
+                    <input className="quka-input" defaultValue="https://www.bodykitmerkezi.com" />
                   </div>
                   <div className="quka-field" style={{ gridColumn: "span 2" }}>
                     <label>Footer Açıklama Metni</label>
@@ -776,7 +777,7 @@ const StoreSettingsPage = () => {
                     <input
                       className="quka-input"
                       readOnly
-                      defaultValue="https://api.kombingo.com/feeds/b2b-products.xml"
+                      defaultValue="https://api.bodykitmerkezi.com/feeds/b2b-products.xml"
                     />
                   </div>
                 </div>
@@ -887,7 +888,7 @@ const StoreSettingsPage = () => {
               <textarea
                 className="quka-textarea"
                 rows={16}
-                defaultValue={`MADDE 1 - TARAFLAR\n\n1.1. SATICI BİLGİLERİ:\nUnvanı: Kombingo Tekstil ve E-Ticaret\nAdres: ${config.address}\nTelefon: ${config.phone}\nE-Posta: ${config.email}\n\n1.2. ALICI BİLGİLERİ:\nAdı Soyadı / Unvanı: {ALICI_AD_SOYAD}\nTeslimat Adresi: {TESLIMAT_ADRESI}\nTelefon: {ALICI_TELEFON}\nE-Posta: {ALICI_EPOSTA}\n\nMADDE 2 - SÖZLEŞMENİN KONUSU\nİşbu sözleşmenin konusu, ALICI'nın SATICI'ya ait www.kombingo.com internet sitesinden elektronik ortamda siparişini yaptığı aşağıda nitelikleri ve satış fiyatı belirtilen ürünün satışı ve teslimi ile ilgili olarak 6502 sayılı Tüketicinin Korunması Hakkında Kanun ve Mesafeli Sözleşmeler Yönetmeliği hükümleri gereğince tarafların hak ve yükümlülüklerinin saptanmasıdır.`}
+                defaultValue={`MADDE 1 - TARAFLAR\n\n1.1. SATICI BİLGİLERİ:\nUnvanı: BodyKit Merkezi Otomotiv Aksesuar San. ve Tic. Ltd. Şti.\nAdres: ${config.address}\nTelefon: ${config.phone}\nE-Posta: ${config.email}\n\n1.2. ALICI BİLGİLERİ:\nAdı Soyadı / Unvanı: {ALICI_AD_SOYAD}\nTeslimat Adresi: {TESLIMAT_ADRESI}\nTelefon: {ALICI_TELEFON}\nE-Posta: {ALICI_EPOSTA}\n\nMADDE 2 - SÖZLEŞMENİN KONUSU\nİşbu sözleşmenin konusu, ALICI'nın SATICI'ya ait www.bodykitmerkezi.com internet sitesinden elektronik ortamda siparişini yaptığı aşağıda nitelikleri ve satış fiyatı belirtilen ürünün satışı ve teslimi ile ilgili olarak 6502 sayılı Tüketicinin Korunması Hakkında Kanun ve Mesafeli Sözleşmeler Yönetmeliği hükümleri gereğince tarafların hak ve yükümlülüklerinin saptanmasıdır.`}
               />
             </div>
           </div>
@@ -1359,8 +1360,8 @@ const StoreSettingsPage = () => {
               </thead>
               <tbody>
                 <tr>
-                  <td style={{ fontWeight: 600 }}>Kombingo Admin</td>
-                  <td>info@kombingo.com</td>
+                  <td style={{ fontWeight: 600 }}>BodyKit Merkezi Admin</td>
+                  <td>info@bodykitmerkezi.com</td>
                   <td>0552 001 99 66</td>
                   <td>Süper Yönetici (Tam Yetki)</td>
                   <td><span className="quka-badge-success">SMS + E-Posta</span></td>
@@ -1368,7 +1369,7 @@ const StoreSettingsPage = () => {
                 </tr>
                 <tr>
                   <td style={{ fontWeight: 600 }}>Depo & Kargo Operasyon</td>
-                  <td>depo@kombingo.com</td>
+                  <td>depo@bodykitmerkezi.com</td>
                   <td>0552 001 99 67</td>
                   <td>Sipariş ve Kargo Sorumlusu</td>
                   <td><span className="quka-badge-muted">Standart</span></td>
@@ -1376,7 +1377,7 @@ const StoreSettingsPage = () => {
                 </tr>
                 <tr>
                   <td style={{ fontWeight: 600 }}>Katalog & Pazaryeri Uzmanı</td>
-                  <td>katalog@kombingo.com</td>
+                  <td>katalog@bodykitmerkezi.com</td>
                   <td>0552 001 99 68</td>
                   <td>Ürün, Kategori ve Pazaryeri</td>
                   <td><span className="quka-badge-muted">Standart</span></td>
@@ -1407,7 +1408,7 @@ const StoreSettingsPage = () => {
                     EntegreShop Enterprise Плюс (Tam Paket)
                   </div>
                   <div style={{ fontSize: 13, color: "#cbd5e1", marginTop: 4 }}>
-                    Lisans Anahtarı: <code>ENT-BKM-2026-PRO-99482</code> • Alan Adı: <strong>kombingo.com</strong>
+                    Lisans Anahtarı: <code>ENT-BKM-2026-PRO-99482</code> • Alan Adı: <strong>bodykitmerkezi.com</strong>
                   </div>
                 </div>
                 <div style={{ textAlign: "right" }}>

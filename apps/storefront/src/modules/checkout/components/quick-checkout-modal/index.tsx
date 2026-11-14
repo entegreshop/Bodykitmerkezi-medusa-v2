@@ -78,19 +78,20 @@ export default function QuickCheckoutModal({
   };
 
   // COD Settings
-  const [codSettings, setCodSettings] = useState({ is_active: true, additional_fee: 70, min_amount: 3000 });
-  const [codCcSettings, setCodCcSettings] = useState({ is_active: false, additional_fee: 70, min_amount: 3000 });
+  const [codSettings, setCodSettings] = useState({ is_active: false, additional_fee: 40, min_amount: 10000 });
+  const [codCcSettings, setCodCcSettings] = useState({ is_active: false, additional_fee: 40, min_amount: 10000 });
   const [paymentSettings, setPaymentSettings] = useState({
      bank_active: true,
+     bank_instructions: "",
      paytr_active: true,
   });
   const hasTrackedPaymentRef = useRef(false);
 
   // Shipping Settings
   const [shippingSettings, setShippingSettings] = useState({
-     standard_rate: 60,
+     standard_rate: 0,
      free_shipping_limit: 3000,
-     free_shipping_enabled: true
+     free_shipping_enabled: false
   });
 
   // --- PRICE PRE-CALCULATION FOR META EVENTS ---
@@ -98,27 +99,38 @@ export default function QuickCheckoutModal({
   let numericalPrice = 0;
   let cartSubtotal = 0;
   let cartDiscount = 0;
+  let kargoFiyatiStr = "Sonraki Adımda Hesaplanacak";
   
   if (mode === "product" && product) {
      const v = product.variants?.find((vx: any) => vx.id === variantId) || product.variants?.[0] as any
      numericalPrice = ((v?.calculated_price?.calculated_amount || 0) / 100) * quantity;
      priceStr = v?.calculated_price?.calculated_amount ? `${(numericalPrice).toLocaleString("tr-TR", {minimumFractionDigits: 2, maximumFractionDigits: 2})} TL` : "Detaylı Ücret Seçilmedi"
   } else if (mode === "cart" && cart) {
-     numericalPrice = (cart.total || 0) / 100;
-     cartSubtotal = ((cart.item_subtotal || 0) + (cart.tax_total || 0)) / 100; // Ara toplam ve vergi (indirimsiz tutarı görebilmek için)
-     cartDiscount = (cart.discount_total || cart.discount_subtotal || 0) / 100;
-     // Eğer indirim varsa Sepet fiyatı kısmında asıl fiyatı gösterelim, aşağıda indirimi düşeriz.
-     priceStr = `${(cartDiscount > 0 ? (numericalPrice + cartDiscount) : numericalPrice).toLocaleString("tr-TR", {minimumFractionDigits: 2, maximumFractionDigits: 2})} TL`
+     cartSubtotal = (cart.item_subtotal ?? cart.subtotal ?? 0) / 100;
+     cartDiscount = (cart.discount_total ?? cart.discount_subtotal ?? 0) / 100;
+     numericalPrice = Math.max(0, cartSubtotal - cartDiscount);
+     
+     priceStr = `${cartSubtotal.toLocaleString("tr-TR", {minimumFractionDigits: 2, maximumFractionDigits: 2})} TL`;
   }
 
-  let kargoFiyati = shippingSettings.standard_rate;
-  if (shippingSettings.free_shipping_enabled && numericalPrice >= shippingSettings.free_shipping_limit) {
-      kargoFiyati = 0;
-  }
-  
   const isCodActive = formData.payment_method === "cash_on_delivery";
   const isCodCcActive = formData.payment_method === "cod_cc";
-  const finalValue = numericalPrice > 0 ? numericalPrice + kargoFiyati + (isCodActive ? codSettings.additional_fee : (isCodCcActive ? codCcSettings.additional_fee : 0)) : 0;
+  const codFee = isCodActive ? codSettings.additional_fee : (isCodCcActive ? codCcSettings.additional_fee : 0);
+  
+  let calculatedShipping = 0;
+  if (shippingSettings.free_shipping_enabled && numericalPrice >= shippingSettings.free_shipping_limit) {
+      calculatedShipping = 0;
+  } else {
+      calculatedShipping = shippingSettings.standard_rate;
+  }
+  
+  if (calculatedShipping === 0) {
+      kargoFiyatiStr = "Karşı Ödemeli";
+  } else {
+      kargoFiyatiStr = `${calculatedShipping.toLocaleString("tr-TR", {minimumFractionDigits: 2, maximumFractionDigits: 2})} TL`;
+  }
+  
+  const finalValue = numericalPrice > 0 ? numericalPrice + codFee + calculatedShipping : 0;
   const totalWithShippingStr = numericalPrice > 0 ? `${finalValue.toLocaleString("tr-TR", {minimumFractionDigits: 2, maximumFractionDigits: 2})} TL` : priceStr;
 
   useEffect(() => {
@@ -126,7 +138,7 @@ export default function QuickCheckoutModal({
     
     // Dynamic Shipping & COD Fetch
     if (isOpen) {
-       const MEDUSA_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "https://api.kombingo.com";
+       const MEDUSA_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "https://api.bodykitmerkezi.com";
        const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "";
        
        const fetchOptions = {
@@ -138,7 +150,7 @@ export default function QuickCheckoutModal({
           .then(data => {
              if (data?.settings) {
                 setCodSettings({
-                   is_active: data.settings.is_active,
+                   is_active: Boolean(data.settings.is_active),
                    additional_fee: parseFloat(data.settings.additional_fee) || 0,
                    min_amount: parseFloat(data.settings.min_amount) || Infinity
                 })
@@ -158,20 +170,29 @@ export default function QuickCheckoutModal({
                   }
                   
                   setPaymentSettings({
-                     bank_active: data.settings.payment_bank?.active !== false, // default true if undefined
+                     bank_active: data.settings.payment_bank?.active !== false,
+                     bank_instructions: data.settings.payment_bank?.instructions || "",
                      paytr_active: data.settings.payment_paytr?.active !== false,
                   });
+                  if (data.settings.payment_cod) {
+                     setCodSettings({
+                        is_active: Boolean(data.settings.payment_cod.is_active),
+                        additional_fee: parseFloat(data.settings.payment_cod.additional_fee) || 0,
+                        min_amount: parseFloat(data.settings.payment_cod.min_amount) || Infinity
+                     });
+                  }
                   if (data.settings.payment_cod_cc) {
                      setCodCcSettings({
-                        is_active: data.settings.payment_cod_cc.is_active ?? false,
+                        is_active: Boolean(data.settings.payment_cod_cc.is_active),
                         additional_fee: parseFloat(data.settings.payment_cod_cc.additional_fee) || 0,
                         min_amount: parseFloat(data.settings.payment_cod_cc.min_amount) || Infinity
                      });
                   }
                   
                   if (data.settings.shipping_settings) {
+                     const parsedRate = parseFloat(data.settings.shipping_settings.standard_rate);
                      setShippingSettings({
-                        standard_rate: parseFloat(data.settings.shipping_settings.standard_rate) || 60,
+                        standard_rate: Number.isFinite(parsedRate) ? parsedRate : 100,
                         free_shipping_limit: parseFloat(data.settings.shipping_settings.free_shipping_limit) || 3000,
                         free_shipping_enabled: data.settings.shipping_settings.free_shipping_enabled !== false
                      });
@@ -246,23 +267,13 @@ export default function QuickCheckoutModal({
     setError("")
 
     try {
-        let clientIpv4 = ""
-        if (formData.payment_method === "credit_card") {
-            try {
-                const ipRes = await fetch("https://api.ipify.org?format=json", { signal: AbortSignal.timeout(2500) })
-                const ipData = await ipRes.json()
-                if (ipData?.ip) clientIpv4 = ipData.ip
-            } catch {}
-        }
-
         // Doğrudan Server Action çağrılır
         const result = await processQuickCheckout({
             ...formData,
             country_code: region.countries?.[0]?.iso_2 || "tr",
             cart_id: cart?.id,
             variant_id: variantId,
-            quantity: quantity,
-            client_ip: clientIpv4 || undefined
+            quantity: quantity
         })
 
         if (result.success) {
@@ -503,10 +514,10 @@ export default function QuickCheckoutModal({
                      <span className="text-[15px] font-medium text-black">Standart Kargo</span>
                    </label>
                    <span className="text-[15px] font-bold text-gray-900">
-                     {kargoFiyati === 0 ? "Ücretsiz" : `₺${kargoFiyati.toLocaleString("tr-TR", {minimumFractionDigits: 2})}`}
+                     {kargoFiyatiStr}
                    </span>
                  </div>
-                 {shippingSettings.free_shipping_enabled && kargoFiyati > 0 && numericalPrice > 0 && (
+                 {shippingSettings.free_shipping_enabled && numericalPrice > 0 && numericalPrice < shippingSettings.free_shipping_limit && (
                     <div className="bg-gray-50 p-3 border-t border-gray-200 text-sm text-gray-600 font-medium text-center">
                        {`₺${(shippingSettings.free_shipping_limit - numericalPrice).toLocaleString("tr-TR", {minimumFractionDigits: 2})} daha alışveriş yapın, kargonuz ücretsiz olsun!`}
                     </div>
@@ -520,7 +531,12 @@ export default function QuickCheckoutModal({
             <div className="pt-2">
               <h2 className="text-2xl font-bold mb-6">Ödeme</h2>
               <div className="space-y-4">
-                 {["cash_on_delivery:Kapıda Nakit Ödeme", "cod_cc:Kapıda Kredi Kartı ile Ödeme", "havale:Havale / EFT", "credit_card:Kredi / Banka Kartı (PayTR)"].map(m => {
+                 {[
+                    "credit_card:Kredi / Banka Kartı (PayTR)",
+                    "havale:Havale / EFT",
+                    "cash_on_delivery:Kapıda Ödeme (Nakit)",
+                    "cod_cc:Kapıda Ödeme (Kredi Kartı)"
+                 ].map(m => {
                     const [val, label] = m.split(":")
                     if (val === 'cash_on_delivery' && (!codSettings.is_active || numericalPrice > codSettings.min_amount)) {
                         return null;
@@ -546,6 +562,12 @@ export default function QuickCheckoutModal({
                             <span className="text-[15px] text-black tracking-wide">{label}</span>
                           </label>
                           
+                          {isSelected && val === "havale" && paymentSettings.bank_instructions && (
+                              <div className="p-4 pt-0 text-xs text-gray-700 whitespace-pre-line leading-relaxed font-medium bg-gray-50 border-t border-gray-200">
+                                 {paymentSettings.bank_instructions}
+                              </div>
+                          )}
+
                           {isSelected && val === "credit_card" && (
                               <div className="p-4 pt-0 space-y-3.5 bg-gray-50">
                                  <input type="text" name="cc_owner" required placeholder="Kart Üzerindeki İsim" className="w-full border border-gray-300 p-3.5 text-sm rounded-md bg-white outline-none focus:border-black" value={formData.cc_owner} onChange={handleInputChange} />
@@ -609,7 +631,6 @@ export default function QuickCheckoutModal({
                                     </div>
                                     <div className="space-y-0.5 text-center px-0.5">
                                        <p className="text-[12px] text-[#6b7280] truncate font-medium">{priceStr}</p>
-                                       <p className="text-[11px] text-[#8c8c8c]">Variant: {product.variants?.find((v:any) => v.id === preselectedVariantId)?.title?.split(" ")?.[0] || "Standart"}</p>
                                     </div>
                                  </div>
                               )}
@@ -624,7 +645,6 @@ export default function QuickCheckoutModal({
                                     </div>
                                     <div className="space-y-0.5 text-center px-0.5">
                                        <p className="text-[12px] text-[#6b7280] truncate font-medium">{((item.unit_price || 0) / 100).toLocaleString("tr-TR", {minimumFractionDigits: 2, maximumFractionDigits: 2})} TL</p>
-                                       <p className="text-[11px] text-[#8c8c8c]">Variant: {item.variant?.title?.split(" ")?.[0] || "Std"}</p>
                                     </div>
                                  </div>
                               ))}
@@ -646,7 +666,7 @@ export default function QuickCheckoutModal({
                         )}
                         <div className="flex justify-between text-[#6b7280]">
                            <span>Kargo</span>
-                           <span>60,00 TL</span>
+                           <span>{kargoFiyatiStr}</span>
                         </div>
                         {isCodActive && codSettings.additional_fee > 0 && (
                            <div className="flex justify-between text-[#6b7280]">

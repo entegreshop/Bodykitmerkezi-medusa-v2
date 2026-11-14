@@ -36,10 +36,10 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
 
     // Artık dosyaları Storefront'tan değil, kendi yazdığımız Backend rotasından okuyacağız!
     // Bu yüzden URL direkt olarak Backend adresimiz olmalı.
-    const host = req.headers["x-forwarded-host"] || req.headers.host || "api.kombingo.com"
+    const host = req.headers["x-forwarded-host"] || req.headers.host || "api.bodykitmerkezi.com"
     const protocol = req.headers["x-forwarded-proto"] || "https"
     
-    // Doğru URL: https://api.kombingo.com/uploads/dosya.mp4
+    // Doğru URL: https://api.bodykitmerkezi.com/uploads/dosya.mp4
     const publicUrl = `${protocol}://${host}/uploads/${safeFilename}`
 
     res.json({

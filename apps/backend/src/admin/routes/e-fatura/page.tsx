@@ -151,7 +151,7 @@ export function openGibInvoicePrintWindow(
   const supplierEmail = config.supplierEmail || "hakkisahin9@gmail.com"
   const supplierMersis = config.supplierMersis || "0705060035500001"
   const supplierTicaretSicil = config.supplierTicaretSicil || "-"
-  const storeWebUrl = config.storeWebUrl || "https://kombingo.com"
+  const storeWebUrl = config.storeWebUrl || "https://bodykitmerkezi.com"
 
   const pagesHtml = invoices
     .map((inv) => {
@@ -539,12 +539,12 @@ const EfaturaPage = () => {
   const [config, setConfig] = useState<EfaturaConfig>({
     active: true,
     environment: "production",
-    email: "hakkisahin9@gmail.com",
+    email: "info@silabutik.com",
     password: "",
-    companyId: "94727",
-    supplierVkn: "7050600355",
+    companyId: "894512",
+    supplierVkn: "33010624322",
     supplierName: "ÖZSE MODA TEKSTİL KAFE GIDA İNŞAAT SANAYİ TİCARET LİMİTED ŞİRKETİ",
-    supplierTaxOffice: "Güngören Vergi Dairesi Müdürlüğü",
+    supplierTaxOffice: "Şişli",
     supplierAddress: "MERKEZ MAH. MUALLİM NACİ SK. MERVE NO: 9 GÜNGÖREN/ İSTANBUL",
     supplierCity: "İstanbul",
     supplierDistrict: "Güngören",
@@ -552,11 +552,11 @@ const EfaturaPage = () => {
     supplierEmail: "hakkisahin9@gmail.com",
     supplierMersis: "0705060035500001",
     supplierTicaretSicil: "",
-    earchivePrefix: "BKM",
-    einvoicePrefix: "EFT",
-    defaultVatRate: 20,
+    earchivePrefix: "TYA",
+    einvoicePrefix: "TYF",
+    defaultVatRate: 10,
     autoSend: false,
-    storeWebUrl: "https://kombingo.com",
+    storeWebUrl: "https://bodykitmerkezi.com",
   })
 
   const fetchEfaturaData = async () => {

@@ -2,8 +2,32 @@ import { listCategories } from "@lib/data/categories"
 import { Text, clx } from "@medusajs/ui"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 
+const NEXT_PUBLIC_MEDUSA_BACKEND_URL = process.env.MEDUSA_BACKEND_URL || "http://localhost:9000"
+const NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
+
+async function getLogoConfig() {
+  try {
+    const headers: Record<string, string> = {}
+    if (NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY) {
+      headers["x-publishable-api-key"] = NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
+    }
+    const res = await fetch(`${NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/logo-config`, {
+      cache: "no-store",
+      headers,
+    })
+    const data = await res.json()
+    return data?.config || null
+  } catch (err) {
+    console.error("Failed to fetch logo config in Footer:", err)
+    return null
+  }
+}
+
 export default async function Footer() {
-  const productCategories = await listCategories()
+  const [productCategories, logoConfig] = await Promise.all([
+    listCategories(),
+    getLogoConfig()
+  ])
 
   return (
     <footer className="border-t border-gray-200 w-full bg-white mt-16">
@@ -79,11 +103,19 @@ export default async function Footer() {
           <div className="flex flex-col gap-y-4">
             <span className="font-bold text-[15px] text-black">Bize Ulaşın</span>
             <div className="flex flex-col gap-y-3 text-gray-500 text-[13px] leading-relaxed">
-              <p className="font-semibold text-gray-800">ÖZSE MODA TEKSTİL LTD. ŞTİ.</p>
-              <p>Adres: Merkez Mahallesi Merter Sokak NO 44 Güngören / İstanbul</p>
-              <p>Tel: +90 530 456 43 77</p>
-              <p>E-posta: info@kombingo.com</p>
-              <p>Hafta içi 09.00 - 19.00, Cumartesi 10.00 - 17.00 saatleri arasında ulaşabilirsiniz.</p>
+              <p className="font-semibold text-gray-800">{logoConfig?.contactCompany || "ÖZSE MODA TEKSTİL LTD. ŞTİ."}</p>
+              {logoConfig?.contactAddress && <p>Adres: {logoConfig.contactAddress}</p>}
+              {logoConfig?.contactPhone && <p>{logoConfig.contactPhone}</p>}
+              {logoConfig?.contactEmail && <p>E-posta: {logoConfig.contactEmail}</p>}
+              {logoConfig?.contactHours && <p>{logoConfig.contactHours}</p>}
+              {!logoConfig?.contactCompany && (
+                <>
+                  <p>Adres: Merkez Mahallesi Merter Sokak NO 44 Güngören / İstanbul</p>
+                  <p>Tel: +90 530 456 43 77</p>
+                  <p>E-posta: info@kombingo.com</p>
+                  <p>Hafta içi 09.00 - 19.00, Cumartesi 10.00 - 17.00 saatleri arasında ulaşabilirsiniz.</p>
+                </>
+              )}
             </div>
           </div>
 
@@ -93,7 +125,7 @@ export default async function Footer() {
         <div className="flex flex-col md:flex-row items-center justify-between py-6 gap-y-4">
           <div className="flex flex-col text-[11px] text-gray-500 text-center md:text-left gap-y-1">
             <span>Tüm bilgileriniz 256 bit SSL Sertifikası ile korunmaktadır.</span>
-            <span>© {new Date().getFullYear()} Kombingo.com Tüm Hakları Saklıdır</span>
+            <span>{logoConfig?.footerCopyrightText || `© ${new Date().getFullYear()} Kombingo.com Tüm Hakları Saklıdır`}</span>
           </div>
           
           <div className="flex items-center gap-x-2">

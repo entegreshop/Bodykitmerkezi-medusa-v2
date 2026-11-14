@@ -43,4 +43,4 @@ RUN cp -r .medusa/server/public ./public || true
 EXPOSE 9000
 
 # 6. Hatalı db komutlarını es geçip DOĞRUDAN sunucuyu (0.0.0.0 üzerinden) başlatıyoruz!
-CMD ["npx", "medusa", "start", "-H", "0.0.0.0", "-p", "9000"]
+CMD ["npx", "medusa", "start", "-H", "0.0.0.0"]

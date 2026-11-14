@@ -20,15 +20,7 @@ export default function CategoryTabs({
   const [showLeftArrow, setShowLeftArrow] = useState(false)
   const [showRightArrow, setShowRightArrow] = useState(true)
 
-  // Prepend default bestseller tab
-  const allTabs = [
-    {
-      name: "ÇOK SATANLAR",
-      handle: "cok-satanlar",
-      icon: `<svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>`,
-    },
-    ...categories,
-  ]
+  const allTabs = categories
 
   const checkScrollLimits = () => {
     const el = scrollContainerRef.current
@@ -63,7 +55,7 @@ export default function CategoryTabs({
     })
   }
 
-  const activeTab = activeCategory || "cok-satanlar"
+  const activeTab = activeCategory || "yeni-gelenler"
 
   return (
     <div className="relative w-full bg-white py-6 select-none group/carousel border-b border-zinc-100">
@@ -106,7 +98,7 @@ export default function CategoryTabs({
             return (
               <LocalizedClientLink
                 key={idx}
-                href={tab.handle === "cok-satanlar" ? "/" : `/?category=${tab.handle}`}
+                href={tab.handle === "yeni-gelenler" ? "/" : `/?category=${tab.handle}`}
                 scroll={false}
                 className="flex flex-col items-center gap-2 group/tab min-w-[90px] snap-center cursor-pointer transition-all duration-300"
               >

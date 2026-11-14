@@ -365,7 +365,7 @@ const ReportsPage = () => {
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   <tr>
-                    <td className="py-3 px-3 font-semibold">Web Mağaza (kombingo.com)</td>
+                    <td className="py-3 px-3 font-semibold">Web Mağaza (bodykitmerkezi.com)</td>
                     <td className="py-3 px-3 text-center font-bold">88</td>
                     <td className="py-3 px-3 text-right">2,890.00 TL</td>
                     <td className="py-3 px-3 text-right font-bold text-[#0abb87]">254,320.00 TL</td>

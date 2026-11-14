@@ -131,26 +131,22 @@ export async function addToCart({
   countryCode: string
   metadata?: Record<string, unknown>
 }) {
-  console.log("addToCart triggered with variantId:", variantId)
   if (!variantId) {
     throw new Error("Missing variant ID when adding to cart")
   }
 
-  console.log("Getting or setting cart...")
   const cart = await getOrSetCart(countryCode)
 
   if (!cart) {
     throw new Error("Error retrieving or creating cart")
   }
-  console.log("Cart retrieved:", cart.id)
 
   const headers = {
     ...(await getAuthHeaders()),
   }
 
-  console.log("Creating line item in Medusa...")
-  await sdk.store.cart
-    .createLineItem(
+  const createItem = async () => {
+    await sdk.store.cart.createLineItem(
       cart.id,
       {
         variant_id: variantId,
@@ -160,20 +156,39 @@ export async function addToCart({
       {},
       headers
     )
-    .then(async () => {
-      console.log("Line item created successfully.")
+  }
 
-      const cartCacheTag = await getCacheTag("carts")
-      revalidateTag(cartCacheTag)
+  try {
+    await createItem()
+  } catch (firstErr: any) {
+    // Auto-heal variants that have manage_inventory=true with 0 stock
+    try {
+      const backendUrl =
+        process.env.MEDUSA_BACKEND_URL ||
+        process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL ||
+        "http://localhost:9000"
+      const pubKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
+      await fetch(`${backendUrl}/store/custom/ensure-stock`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(pubKey ? { "x-publishable-api-key": pubKey } : {}),
+        },
+        body: JSON.stringify({ variant_id: variantId }),
+        cache: "no-store",
+      })
+      await createItem()
+    } catch (retryErr: any) {
+      console.error("Error in createLineItem after stock recovery:", retryErr)
+      medusaError(retryErr)
+    }
+  }
 
-      const fulfillmentCacheTag = await getCacheTag("fulfillment")
-      revalidateTag(fulfillmentCacheTag)
-      console.log("Caches revalidated. addToCart finished.")
-    })
-    .catch((err) => {
-      console.error("Error in createLineItem:", err)
-      medusaError(err)
-    })
+  const cartCacheTag = await getCacheTag("carts")
+  revalidateTag(cartCacheTag)
+
+  const fulfillmentCacheTag = await getCacheTag("fulfillment")
+  revalidateTag(fulfillmentCacheTag)
 }
 
 export async function addGiftToCart({
