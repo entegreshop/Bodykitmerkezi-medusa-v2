@@ -154,8 +154,17 @@ const PaymentSettingsPage = () => {
   const [activeSubTab, setActiveSubTab] = useState<"odeme" | "eklentiler">(initialTab)
 
   useEffect(() => {
-    const sp = new URLSearchParams(location.search)
-    setActiveSubTab(sp.get("tab") === "eklentiler" ? "eklentiler" : "odeme")
+    const syncTab = () => {
+      const sp = new URLSearchParams(window.location.search)
+      setActiveSubTab(sp.get("tab") === "eklentiler" ? "eklentiler" : "odeme")
+    }
+    syncTab()
+    window.addEventListener("popstate", syncTab)
+    const timer = setInterval(syncTab, 300)
+    return () => {
+      window.removeEventListener("popstate", syncTab)
+      clearInterval(timer)
+    }
   }, [location.search])
 
   // Virtual POS active map & modal state
@@ -806,14 +815,233 @@ const PaymentSettingsPage = () => {
         </div>
       )}
 
-      {/* Sub-view 2: Eklentiler */}
+      {/* Sub-view 2: Eklentiler (/admin/tools/apps 1:1) */}
       {activeSubTab === "eklentiler" && (
-        <div className="max-w-[920px] mx-auto px-4 py-7">
-          <div className="bg-white rounded-[6px] border border-gray-200/90 shadow-xs p-8 text-center">
-            <div className="text-[15px] font-bold text-[#1e293b]">Eklentiler</div>
-            <p className="text-[12px] text-[#64748b] mt-1">
-              Mağazanız için ek ödeme, kargo ve pazaryeri modülleri aktif durumdadır.
-            </p>
+        <div className="max-w-[1220px] mx-auto px-4 py-7">
+          {/* Top Callout */}
+          <div className="bg-white border-l-[10px] border-[#c0c5d9] rounded-[5px] px-[25px] py-[20px] mb-[22px] text-[14px] text-[#48465b] shadow-2xs">
+            Mağazanızın hızını, dönüşüm oranlarını ve kurumsal iletişimini güçlendiren resmi EntegreShop uygulama ve eklentilerini buradan yönetebilirsiniz.
+          </div>
+
+          {/* .apps 3-Column Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[22px] mb-8">
+            {[
+              {
+                icon: "🚀",
+                bg: "#e0f6e7",
+                title: "Rocket (Gelişmiş Önbellek / Cache)",
+                desc: "Sayfa açılış hızlarını maksimuma çıkaran tam sayfa ve sorgu önbellekleme teknolojisi.",
+                badge: "Aktif",
+              },
+              {
+                icon: "✉️",
+                bg: "#e0edff",
+                title: "Kurumsal Webmail Yönetimi",
+                desc: "Alan adınıza özel kurumsal e-posta hesapları oluşturun ve webmail üzerinden yönetin.",
+                badge: "4 Hesap",
+              },
+              {
+                icon: "📋",
+                bg: "#fef3c7",
+                title: "Toplu Teklif & İhale Modülü",
+                desc: "Müşterilerinizin ve bayilerinizin sepetteki ürünler için toplu fiyat teklifi istemesini sağlayın.",
+                badge: "Aktif",
+              },
+              {
+                icon: "✨",
+                bg: "#f3e8ff",
+                title: "Yapay Zeka (Text AI & Image Studio)",
+                desc: "Ürün açıklaması, SEO meta üretimi, yorum analizi ve yapay zeka ürün görseli iyileştirme.",
+                badge: "18.741 Kontör",
+              },
+              {
+                icon: "💬",
+                bg: "#dcfce7",
+                title: "WhatsApp & Canlı Destek Balonu",
+                desc: "Site sağ alt köşesinde departman bazlı hızlı WhatsApp sipariş ve müşteri destek butonu.",
+                badge: "Aktif",
+              },
+              {
+                icon: "📸",
+                bg: "#fce7f3",
+                title: "Instagram & Reels Mağaza Vitrin",
+                desc: "Instagram gönderilerinizi ve Reels videolarınızı ürün etiketleriyle ana sayfada sergileyin.",
+                badge: "Aktif",
+              },
+              {
+                icon: "⭐",
+                bg: "#fef9c3",
+                title: "Google Müşteri Yorumları & Rich Snippets",
+                desc: "Google arama sonuçlarında yıldızlı ürün puanları ve doğrulanmış mağaza rozeti gösterimi.",
+                badge: "Aktif",
+              },
+              {
+                icon: "🛍️",
+                bg: "#e0f2fe",
+                title: "Ürün Kombin & Birlikte Al (Bundle)",
+                desc: "Ürün detay sayfasında tamamlayıcı ürünleri kombin olarak indirimli satarak sepeti büyütün.",
+                badge: "Aktif",
+              },
+              {
+                icon: "📏",
+                bg: "#f1f5f9",
+                title: "Akıllı Beden & Araç Uyumluluk Sihirbazı",
+                desc: "Müşterinin boy/kilo veya araç marka/model/yıl seçimine göre %100 uyumlu ürünü önerir.",
+                badge: "Aktif",
+              },
+            ].map((app) => (
+              <div
+                key={app.title}
+                className="bg-white rounded-[8px] border border-[#ebedf2] p-[20px] shadow-2xs hover:shadow-md transition flex flex-col justify-between gap-4"
+              >
+                <div className="flex items-start gap-[18px]">
+                  <div
+                    className="w-[70px] h-[70px] rounded-[6px] border border-[#ebedf2] shadow-xs flex items-center justify-center text-[30px] shrink-0"
+                    style={{ background: app.bg }}
+                  >
+                    {app.icon}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <div className="text-[15px] font-semibold text-[#232323] leading-snug">
+                        {app.title}
+                      </div>
+                    </div>
+                    <div className="text-[13px] text-[#74788d] leading-relaxed">{app.desc}</div>
+                  </div>
+                </div>
+                <div className="pt-3 border-t border-[#f1f3f6] flex items-center justify-between">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[4px] bg-[#e0f6e7] text-[#08976d] text-[12px] font-semibold">
+                    <span>✓</span> {app.badge}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const el = document.getElementById("apps-detail-panel")
+                      if (el) el.scrollIntoView({ behavior: "smooth" })
+                    }}
+                    className="h-[32px] px-3.5 rounded-[4px] border border-[#cbd5e1] hover:border-[#3d94fb] hover:text-[#3d94fb] bg-white text-[#48465b] text-[12px] font-semibold cursor-pointer transition"
+                  >
+                    ⚙ Ayarlar &amp; Yönet
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Eklenti Detay & Yönetim Panelleri (Rocket Cache + Webmail Hesapları) */}
+          <div id="apps-detail-panel" className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Rocket Cache Card */}
+            <div className="lg:col-span-5 bg-white rounded-[6px] border border-[#ebedf2] p-[24px] shadow-2xs flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-[16px] font-bold text-[#48465b] flex items-center gap-2">
+                    🚀 Rocket Önbellek (Cache) Sistemi
+                  </h3>
+                  <span className="px-2.5 py-1 rounded bg-[#e0f6e7] text-[#08976d] text-[11.5px] font-bold">
+                    Aktif
+                  </span>
+                </div>
+                <p className="text-[12.5px] text-[#74788d] leading-relaxed mb-4">
+                  Tasarım, kategori veya blok ayarlarında yaptığınız değişikliklerin sitede anında görünmesi için Rocket önbelleğini temizleyebilirsiniz.
+                </p>
+                <div className="space-y-2.5 mb-5 text-[13px]">
+                  <label className="flex items-center justify-between py-2 border-b border-slate-100 cursor-pointer">
+                    <span className="text-[#48465b]">HTML Sayfa Önbellekleme (Full Page Cache)</span>
+                    <input type="checkbox" defaultChecked className="w-4 h-4 accent-[#0abb87]" />
+                  </label>
+                  <label className="flex items-center justify-between py-2 border-b border-slate-100 cursor-pointer">
+                    <span className="text-[#48465b]">CSS / JS Otomatik Küçültme (Minify)</span>
+                    <input type="checkbox" defaultChecked className="w-4 h-4 accent-[#0abb87]" />
+                  </label>
+                  <label className="flex items-center justify-between py-2 cursor-pointer">
+                    <span className="text-[#48465b]">Stok Güncellemesinde Otomatik Önbellek Yenile</span>
+                    <input type="checkbox" defaultChecked className="w-4 h-4 accent-[#0abb87]" />
+                  </label>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => toast.success("Rocket önbelleği (Cache) başarıyla temizlendi!")}
+                className="w-full h-[38px] rounded-[4px] bg-[#0abb87] hover:bg-[#099f73] text-white text-[13px] font-bold cursor-pointer shadow-xs"
+              >
+                🚀 Tüm Önbelleği Şimdi Temizle
+              </button>
+            </div>
+
+            {/* Kurumsal Webmail Hesapları Table */}
+            <div className="lg:col-span-7 bg-white rounded-[6px] border border-[#ebedf2] p-[24px] shadow-2xs">
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+                <div>
+                  <h3 className="text-[16px] font-bold text-[#48465b]">
+                    ✉️ Kurumsal Webmail Hesapları
+                  </h3>
+                  <p className="text-[12.5px] text-[#74788d] mt-0.5">
+                    Mağaza alan adınıza tanımlı kurumsal e-posta adresleri
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => toast.success("Yeni Kurumsal E-Posta Hesabı oluşturma penceresi açıldı.")}
+                  className="h-[34px] px-3.5 rounded-[4px] bg-[#0abb87] hover:bg-[#099f73] text-white text-[12.5px] font-semibold cursor-pointer"
+                >
+                  + Yeni E-Posta Hesabı
+                </button>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-[13px]">
+                  <thead>
+                    <tr className="bg-[#f8f9fb] border-b border-[#ebedf2] text-[#48465b] font-semibold">
+                      <th className="py-2.5 px-3">E-Posta Adresi</th>
+                      <th className="py-2.5 px-3">Kullanım / Kota</th>
+                      <th className="py-2.5 px-3 text-center">Durum</th>
+                      <th className="py-2.5 px-3 text-right">İşlemler</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#ebedf2] text-[#48465b]">
+                    {[
+                      { email: "info@bodykitmerkezi.com", quota: "420 MB / 5 GB" },
+                      { email: "siparis@bodykitmerkezi.com", quota: "1.1 GB / 5 GB" },
+                      { email: "destek@bodykitmerkezi.com", quota: "280 MB / 5 GB" },
+                      { email: "muhasebe@bodykitmerkezi.com", quota: "640 MB / 5 GB" },
+                    ].map((acct) => (
+                      <tr key={acct.email}>
+                        <td className="py-2.5 px-3 font-semibold">{acct.email}</td>
+                        <td className="py-2.5 px-3 text-[#74788d]">{acct.quota}</td>
+                        <td className="py-2.5 px-3 text-center">
+                          <span className="inline-flex w-[20px] h-[20px] rounded-full border-2 border-[#0abb87] text-[#0abb87] items-center justify-center text-[10px] font-bold">
+                            ✓
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-3 text-right">
+                          <div className="inline-flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => toast.success(`${acct.email} Webmail oturumu açılıyor...`)}
+                              className="h-[26px] px-2.5 rounded-[4px] bg-[#3d94fb] text-white text-[11.5px] font-medium cursor-pointer"
+                            >
+                              Webmail
+                            </button>
+                            <button
+                              type="button"
+                              className="w-[26px] h-[26px] rounded-[4px] bg-[#9b59b6] text-white text-[11px] cursor-pointer"
+                            >
+                              👁
+                            </button>
+                            <button
+                              type="button"
+                              className="w-[26px] h-[26px] rounded-[4px] bg-[#e74c3c] text-white text-[11px] cursor-pointer"
+                            >
+                              🗑
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </div>
       )}

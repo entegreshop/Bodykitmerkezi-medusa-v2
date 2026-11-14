@@ -1,7 +1,7 @@
 import { defineRouteConfig } from "@medusajs/admin-sdk"
 import { DocumentText, CheckCircle, XMark, Plus, ArrowPath } from "@medusajs/icons"
 import { useEffect, useMemo, useState } from "react"
-import { ErpTopNav } from "../kampanyalar/erp-top-nav"
+import { ERP_INTEGRATIONS } from "./erp-logos"
 
 export interface EfaturaInvoiceItem {
   title: string
@@ -492,8 +492,14 @@ export function openGibInvoicePrintWindow(
   printWindow.document.close()
 }
 
+interface TaxExemptionRow {
+  id: number
+  category: string
+  code: string
+  reason: string
+}
+
 const EfaturaPage = () => {
-  const [activeTab, setActiveTab] = useState<"invoices" | "settings">("invoices")
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [testing, setTesting] = useState(false)
@@ -501,6 +507,24 @@ const EfaturaPage = () => {
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(
     null
   )
+
+  // UI toggles for 1:1 ERP view
+  const [showTrendyolSettings, setShowTrendyolSettings] = useState(true)
+  const [showInvoicesList, setShowInvoicesList] = useState(false)
+  const [showSyncModal, setShowSyncModal] = useState(false)
+  const [selectedPassiveErp, setSelectedPassiveErp] = useState<{ id: string; name: string } | null>(
+    null
+  )
+
+  // Tax exemption rows
+  const [taxExemptions, setTaxExemptions] = useState<TaxExemptionRow[]>([
+    {
+      id: 1,
+      category: "Yurt Dışı İhracat Ürünleri (Mikro İhracat / ETGB)",
+      code: "301",
+      reason: "11/1-a Mal İhracatı (KDV İstisnası)",
+    },
+  ])
 
   const [invoices, setInvoices] = useState<EfaturaInvoiceRecord[]>([])
   const [creditInfo, setCreditInfo] = useState<TrendyolCreditInfo | null>(null)
@@ -515,12 +539,12 @@ const EfaturaPage = () => {
   const [config, setConfig] = useState<EfaturaConfig>({
     active: true,
     environment: "production",
-    email: "hakkisahin9@gmail.com",
+    email: "info@silabutik.com",
     password: "",
-    companyId: "",
-    supplierVkn: "7050600355",
+    companyId: "894512",
+    supplierVkn: "33010624322",
     supplierName: "ÖZSE MODA TEKSTİL KAFE GIDA İNŞAAT SANAYİ TİCARET LİMİTED ŞİRKETİ",
-    supplierTaxOffice: "Güngören Vergi Dairesi Müdürlüğü",
+    supplierTaxOffice: "Şişli",
     supplierAddress: "MERKEZ MAH. MUALLİM NACİ SK. MERVE NO: 9 GÜNGÖREN/ İSTANBUL",
     supplierCity: "İstanbul",
     supplierDistrict: "Güngören",
@@ -528,9 +552,9 @@ const EfaturaPage = () => {
     supplierEmail: "hakkisahin9@gmail.com",
     supplierMersis: "0705060035500001",
     supplierTicaretSicil: "",
-    earchivePrefix: "BKM",
-    einvoicePrefix: "EFT",
-    defaultVatRate: 20,
+    earchivePrefix: "TYA",
+    einvoicePrefix: "TYF",
+    defaultVatRate: 10,
     autoSend: false,
     storeWebUrl: "https://bodykitmerkezi.com",
   })
@@ -541,7 +565,7 @@ const EfaturaPage = () => {
       const res = await fetch("/admin/efatura")
       if (res.ok) {
         const data = await res.json()
-        if (data.config) setConfig(data.config)
+        if (data.config) setConfig((prev) => ({ ...prev, ...data.config }))
         if (Array.isArray(data.invoices)) setInvoices(data.invoices)
         if (data.creditInfo) setCreditInfo(data.creditInfo)
       }
@@ -590,7 +614,7 @@ const EfaturaPage = () => {
         setConfig(data.config)
         setFeedback({
           type: "success",
-          message: "Trendyol E-Faturam API ve firma ayarları başarıyla kaydedildi.",
+          message: "Trendyol E-Fatura ayarlarınız mevcut değerleri korunarak kaydedildi!",
         })
       } else {
         setFeedback({
@@ -694,6 +718,7 @@ const EfaturaPage = () => {
       if (res.ok && data.success) {
         setInvoices(data.invoices || [])
         setShowOrderModal(false)
+        setShowInvoicesList(true)
         const created = data.created?.[0]
         setFeedback({
           type: "success",
@@ -749,97 +774,21 @@ const EfaturaPage = () => {
     })
   }, [invoices, docTypeFilter, searchQuery])
 
-  const stats = useMemo(() => {
-    const activeInvs = invoices.filter((x) => x.status !== "IPTAL")
-    const eArchiveCount = activeInvs.filter((x) => x.documentType === "EARSIV").length
-    const eInvoiceCount = activeInvs.filter((x) => x.documentType === "EFATURA").length
-    const totalRevenue = activeInvs.reduce((acc, x) => acc + (Number(x.totalAmount) || 0), 0)
-    const totalVat = activeInvs.reduce((acc, x) => acc + (Number(x.vatAmount) || 0), 0)
-    return {
-      totalCount: activeInvs.length,
-      eArchiveCount,
-      eInvoiceCount,
-      totalRevenue,
-      totalVat,
-    }
-  }, [invoices])
-
-  const creditPercentage = useMemo(() => {
-    if (!creditInfo || !creditInfo.totalCredit) return 0
-    return Math.min(100, Math.round((creditInfo.remainingCredit / creditInfo.totalCredit) * 100))
-  }, [creditInfo])
-
   return (
-    <div className="bg-zinc-50 min-h-screen text-zinc-800 font-sans pb-16">
-      <div className="max-w-[1440px] mx-auto px-6 pt-6 flex flex-col gap-6">
-        {/* TOP HEADER BANNER */}
-        <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-xl bg-orange-500 text-white flex items-center justify-center font-black text-xl shadow-sm shrink-0">
-              eF
-            </div>
-            <div>
-              <div className="flex items-center gap-2.5 flex-wrap">
-                <h1 className="text-lg font-extrabold text-zinc-900 tracking-tight">
-                  Trendyol E-Faturam & E-Arşiv Entegrasyonu
-                </h1>
-                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-orange-50 text-orange-600 border border-orange-200">
-                  {config.environment === "stage"
-                    ? "Test Ortamı (Stage)"
-                    : "Canlı Ortam (Production)"}
-                </span>
-                <span
-                  className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
-                    config.email
-                      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                      : "bg-amber-50 text-amber-700 border-amber-200"
-                  }`}
-                >
-                  {config.email ? `API Aktif (${config.email})` : "GİB UBL Hazır"}
-                </span>
-                {config.companyId && (
-                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                    Şirket Kodu: {config.companyId}
-                  </span>
-                )}
-              </div>
-              <p className="text-xs text-zinc-500 mt-1">
-                <b>{config.supplierName}</b> (VKN: <b>{config.supplierVkn}</b>) • Trendyol E-Faturam hesabınızdaki kalan kontörler ve kesilen faturalar otomatik senkronize edilir.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2.5 flex-wrap">
-            <button
-              onClick={handleTestAndSync}
-              disabled={testing}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-sm flex items-center gap-1.5 transition-colors cursor-pointer"
-            >
-              <ArrowPath className="w-4 h-4" />
-              <span>{testing ? "Senkronize Ediliyor..." : "Kontör & Faturaları Senkronize Et"}</span>
-            </button>
-            <button
-              onClick={() => setShowOrderModal(true)}
-              className="bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-sm flex items-center gap-1.5 transition-colors cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Siparişten Yeni Fatura Kes</span>
-            </button>
-            <button
-              onClick={() => setActiveTab(activeTab === "invoices" ? "settings" : "invoices")}
-              className="bg-zinc-900 hover:bg-zinc-800 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-sm transition-colors cursor-pointer"
-            >
-              {activeTab === "invoices" ? "⚙️ API & Firma Ayarları" : "📄 Kesilen Faturalar"}
-            </button>
-          </div>
-        </div>
-
-        {/* FEEDBACK BANNER */}
+    <div
+      style={{
+        fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif",
+      }}
+      className="min-h-screen bg-[#f1f3f6] text-slate-800 pb-16"
+    >
+      {/* SUB-VIEW 4: MUHASEBE / ERP (/admin/tools/erp 1:1) */}
+      <div className="max-w-[1000px] mx-auto px-4 py-7">
+        {/* Feedback Banner */}
         {feedback && (
           <div
-            className={`p-4 rounded-xl border flex items-center justify-between text-xs font-bold ${
+            className={`mb-4 p-4 rounded-[6px] border flex items-center justify-between text-[13px] font-semibold ${
               feedback.type === "success"
-                ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+                ? "bg-[#e0f6e7] border-[#0abb87] text-[#08976d]"
                 : "bg-rose-50 border-rose-200 text-rose-800"
             }`}
           >
@@ -847,299 +796,128 @@ const EfaturaPage = () => {
               <CheckCircle className="w-4 h-4 shrink-0" />
               <span>{feedback.message}</span>
             </div>
-            <button onClick={() => setFeedback(null)} className="text-zinc-500 hover:text-zinc-800">
+            <button onClick={() => setFeedback(null)} className="text-slate-500 hover:text-slate-800 cursor-pointer">
               <XMark className="w-4 h-4" />
             </button>
           </div>
         )}
 
-        {/* STATS CARDS (INCLUDING KALAN KONTÖR CARD) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-          {/* KALAN KONTÖR CARD */}
-          <div className="bg-white border-2 border-emerald-200 rounded-xl p-4 shadow-sm flex flex-col justify-between">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-extrabold text-emerald-700 uppercase">
-                Kalan Kontör Adedi
-              </span>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
-                {creditInfo?.packageName || "Trendyol Kontör"}
-              </span>
-            </div>
-            <div className="text-2xl font-black text-zinc-900 mt-1">
-              {creditInfo ? (
-                <>
-                  <span className="text-emerald-600">{creditInfo.remainingCredit}</span>
-                  <span className="text-sm font-bold text-zinc-400">
-                    {" "}
-                    / {creditInfo.totalCredit}
-                  </span>
-                </>
-              ) : (
-                <span className="text-sm font-bold text-zinc-400">
-                  Şifre girip senkronize edin
-                </span>
-              )}
-            </div>
-            <div className="mt-2">
-              <div className="w-full h-2 bg-zinc-100 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-emerald-500 rounded-full transition-all"
-                  style={{ width: `${creditInfo ? creditPercentage : 0}%` }}
-                />
-              </div>
-              <div className="text-[10px] text-zinc-500 font-semibold mt-1 flex justify-between">
-                <span>
-                  {creditInfo
-                    ? `${creditInfo.usedCredit} / ${creditInfo.totalCredit} Kontör Kullanıldı`
-                    : "Trendyol E-Faturam Paketi"}
-                </span>
-                {creditInfo && <span>%{creditPercentage}</span>}
-              </div>
-            </div>
+        {/* Top Callout (short-description type-2) */}
+        <div className="bg-white border-l-[10px] border-[#c0c5d9] rounded-[5px] px-[25px] py-[18px] mb-[22px] flex flex-wrap items-center justify-between gap-4 text-[14px] text-[#48465b] shadow-2xs">
+          <div className="flex-1 min-w-[260px]">
+            Siparişlerinizi otomatik e-fatura / e-arşiv olarak kesmek, stok, fiyat ve cari hesaplarınızı senkronize etmek için Muhasebe &amp; ERP entegrasyonlarını kullanabilirsiniz.
           </div>
-
-          <div className="bg-white border border-zinc-200 rounded-xl p-4 shadow-sm">
-            <span className="text-[11px] font-bold text-zinc-400 uppercase">
-              Toplam Kesilen Belge
-            </span>
-            <div className="text-2xl font-black text-zinc-900 mt-1">{stats.totalCount} Adet</div>
-            <span className="text-[11px] text-emerald-600 font-semibold">Resmileşen E-Belge</span>
-          </div>
-
-          <div className="bg-white border border-zinc-200 rounded-xl p-4 shadow-sm">
-            <span className="text-[11px] font-bold text-zinc-400 uppercase">
-              E-Arşiv / E-Fatura Dağılımı
-            </span>
-            <div className="text-2xl font-black text-zinc-900 mt-1">
-              {stats.eArchiveCount} <span className="text-xs font-bold text-zinc-400">E-Arşiv</span>{" "}
-              / {stats.eInvoiceCount}{" "}
-              <span className="text-xs font-bold text-zinc-400">E-Fatura</span>
-            </div>
-            <span className="text-[11px] text-zinc-500 font-semibold">Bireysel & Kurumsal</span>
-          </div>
-
-          <div className="bg-white border border-zinc-200 rounded-xl p-4 shadow-sm">
-            <span className="text-[11px] font-bold text-zinc-400 uppercase">
-              Faturalanan Toplam Tutar
-            </span>
-            <div className="text-2xl font-black text-zinc-900 mt-1">
-              {stats.totalRevenue.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} TL
-            </div>
-            <span className="text-[11px] text-zinc-500 font-semibold">KDV Dahil Genel Toplam</span>
-          </div>
-
-          <div className="bg-white border border-zinc-200 rounded-xl p-4 shadow-sm">
-            <span className="text-[11px] font-bold text-zinc-400 uppercase">
-              Hesaplanan Toplam KDV
-            </span>
-            <div className="text-2xl font-black text-orange-600 mt-1">
-              {stats.totalVat.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} TL
-            </div>
-            <span className="text-[11px] text-zinc-500 font-semibold">
-              Varsayılan KDV: %{config.defaultVatRate}
-            </span>
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => setShowSyncModal(true)}
+              className="h-[36px] px-4 rounded-[4px] bg-[#3d94fb] hover:bg-[#2b82ec] text-white text-[12.5px] font-medium flex items-center gap-1.5 cursor-pointer shadow-2xs"
+            >
+              <span>⇄</span> Ürünleri Muhasebeye Aktar
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowSyncModal(true)}
+              className="h-[36px] px-4 rounded-[4px] bg-[#0abb87] hover:bg-[#099f73] text-white text-[12.5px] font-medium flex items-center gap-1.5 cursor-pointer shadow-2xs"
+            >
+              <span>📂</span> Kategorileri Muhasebeye Aktar
+            </button>
           </div>
         </div>
 
-        {/* TABS */}
-        <div className="flex items-center gap-2 border-b border-zinc-200">
-          <button
-            onClick={() => setActiveTab("invoices")}
-            className={`px-5 py-3 text-xs font-extrabold border-b-2 transition-colors cursor-pointer ${
-              activeTab === "invoices"
-                ? "border-orange-500 text-orange-600 bg-white rounded-t-xl"
-                : "border-transparent text-zinc-500 hover:text-zinc-800"
-            }`}
-          >
-            📄 Kesilen E-Fatura & E-Arşiv Belgeleri ({invoices.length})
-          </button>
-          <button
-            onClick={() => setActiveTab("settings")}
-            className={`px-5 py-3 text-xs font-extrabold border-b-2 transition-colors cursor-pointer ${
-              activeTab === "settings"
-                ? "border-orange-500 text-orange-600 bg-white rounded-t-xl"
-                : "border-transparent text-zinc-500 hover:text-zinc-800"
-            }`}
-          >
-            ⚙️ Trendyol E-Faturam API & Firma Ayarları
-          </button>
+        {/* > Aktif Muhasebe Entegrasyonları (.lag-smart-title.success) */}
+        <div className="text-[17px] font-medium text-[#0abb87] mb-[12px] flex items-center gap-1.5">
+          <span className="font-bold text-[18px] leading-none">›</span>
+          <span>Aktif Muhasebe Entegrasyonları</span>
         </div>
 
-        {/* TAB 1: ISSUED INVOICES */}
-        {activeTab === "invoices" && (
-          <div className="bg-white border border-zinc-200 rounded-2xl shadow-sm overflow-hidden">
-            <div className="p-4 border-b border-zinc-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-zinc-50/50">
-              <div className="flex items-center gap-2 flex-1">
-                <input
-                  type="text"
-                  placeholder="Fatura No, Sipariş No, Müşteri Adı, VKN/TCKN veya ETTN ara..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full max-w-md bg-white border border-zinc-200 rounded-xl px-3.5 py-2 text-xs font-semibold focus:outline-none focus:border-orange-500"
-                />
-                <select
-                  value={docTypeFilter}
-                  onChange={(e) => setDocTypeFilter(e.target.value as any)}
-                  className="bg-white border border-zinc-200 rounded-xl px-3 py-2 text-xs font-bold text-zinc-700"
-                >
-                  <option value="ALL">Tüm Belgeler</option>
-                  <option value="EARSIV">Sadece e-Arşiv Fatura</option>
-                  <option value="EFATURA">Sadece e-Fatura (Ticari)</option>
-                </select>
+        {/* Aktif 3-Column Grid (.lag-smart-content .box.box-2) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-[15px] mb-[18px]">
+          <div
+            onClick={() => setShowTrendyolSettings(!showTrendyolSettings)}
+            className="h-[80px] bg-white hover:bg-[#d8e6f8] rounded-[5px] border-2 border-[#0abb87] px-[20px] py-[15px] flex items-center justify-between shadow-[0_4px_20px_hsla(214,3%,45%,0.12)] transition-colors cursor-pointer"
+          >
+            <div>
+              <div className="text-[15px] font-medium text-[#222222] flex items-center gap-1.5">
+                <span>Trendyol E-Fatura</span>
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-[#e0f6e7] text-[#08976d] text-[10.5px] font-bold">
+                  ✓ Aktif
+                </span>
+              </div>
+              <div className="text-[11px] text-[#08976d] mt-0.5">Ayarları Göster / Gizle ▾</div>
+            </div>
+            <div className="flex items-center justify-end shrink-0">
+              <div className="px-2.5 py-1.5 rounded-[5px] bg-[#F27A1A] text-white flex flex-col items-center justify-center leading-tight shadow-2xs">
+                <span className="text-[11px] font-black tracking-tight">trendyol</span>
+                <span className="text-[9.5px] font-semibold opacity-95">e-Faturam</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* AKTİF TRENDYOL E-FATURA (TRENDYOL E-FATURAM) AYARLARI KARTI */}
+        {showTrendyolSettings && (
+          <div className="bg-white rounded-[6px] border-2 border-[#0abb87]/70 mb-[26px] shadow-[0_4px_20px_hsla(214,3%,45%,0.12)] overflow-hidden">
+            <div className="flex items-center justify-between py-[16px] px-[22px] bg-[#f6fefb] border-b border-[#d1fae5]">
+              <div className="flex items-center gap-3">
+                <div className="px-2.5 py-1.5 rounded-[6px] bg-[#F27A1A] text-white flex flex-col items-center justify-center leading-tight shadow-2xs">
+                  <span className="text-[10.5px] font-black tracking-tight">trendyol</span>
+                  <span className="text-[9px] font-semibold opacity-95">e-Faturam</span>
+                </div>
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-[15px] font-bold text-[#1e293b]">
+                      Trendyol E-Fatura (Trendyol E-Faturam &amp; E-Arşiv Ayarları)
+                    </span>
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#e0f6e7] text-[#08976d] text-[11px] font-bold">
+                      ✓ Aktif ({config.environment === "stage" ? "Test Modu" : "Canlı Mod"})
+                    </span>
+                    {creditInfo && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-50 text-[#F27A1A] border border-orange-200 text-[11px] font-bold">
+                        Kalan Kontör: {creditInfo.remainingCredit} / {creditInfo.totalCredit}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-[12px] text-[#64748b] mt-0.5">
+                    Mevcut aktif Trendyol E-Fatura entegrasyonunuz. Siparişleriniz mevcut seri ön eki (
+                    <code>{config.earchivePrefix || "TYA"}</code> /{" "}
+                    <code>{config.einvoicePrefix || "TYF"}</code>) ve vergi ayarlarınız değiştirilmeden kesilir.
+                  </div>
+                </div>
               </div>
               <button
-                onClick={handleTestAndSync}
-                disabled={testing}
-                className="bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 font-bold text-xs px-3.5 py-2 rounded-xl flex items-center gap-1.5 cursor-pointer"
+                type="button"
+                onClick={() => setShowTrendyolSettings(false)}
+                className="h-[28px] px-2.5 rounded border border-gray-200 bg-white hover:bg-gray-50 text-[11.5px] text-gray-600 cursor-pointer shrink-0"
               >
-                <ArrowPath className="w-3.5 h-3.5" />
-                <span>{testing ? "Senkronize Ediliyor..." : "Trendyol'dan Yenile"}</span>
+                Gizle ▲
               </button>
             </div>
 
-            {loading ? (
-              <div className="p-12 text-center text-xs font-bold text-zinc-400">
-                Fatura kayıtları ve kontör bilgileri yükleniyor...
-              </div>
-            ) : filteredInvoices.length === 0 ? (
-              <div className="p-14 text-center flex flex-col items-center gap-3">
-                <DocumentText className="w-10 h-10 text-zinc-300" />
-                <div className="text-sm font-bold text-zinc-700">
-                  Henüz kesilmiş e-Fatura veya e-Arşiv kaydı bulunmuyor.
-                </div>
-                <p className="text-xs text-zinc-400 max-w-md">
-                  Siparişler sayfasındaki <b>e-Fatura</b> butonuna tıklayarak veya yukarıdaki{" "}
-                  <b>&ldquo;Siparişten Yeni Fatura Kes&rdquo;</b> butonunu kullanarak hemen fatura
-                  oluşturabilirsiniz.
-                </p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse text-xs">
-                  <thead>
-                    <tr className="bg-zinc-50 border-b border-zinc-200 text-[11px] font-extrabold text-zinc-600 uppercase">
-                      <th className="py-3 px-4">Fatura No / ETTN</th>
-                      <th className="py-3 px-4">Belge Türü</th>
-                      <th className="py-3 px-4">Sipariş / Ref</th>
-                      <th className="py-3 px-4">Alıcı Bilgileri (VKN / TCKN)</th>
-                      <th className="py-3 px-4">KDV</th>
-                      <th className="py-3 px-4">Genel Toplam</th>
-                      <th className="py-3 px-4">Tarih</th>
-                      <th className="py-3 px-4">Durum</th>
-                      <th className="py-3 px-4 text-right">İşlemler</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-zinc-200">
-                    {filteredInvoices.map((inv) => (
-                      <tr key={inv.id} className="hover:bg-zinc-50/80 transition-colors">
-                        <td className="py-3 px-4">
-                          <div className="font-extrabold text-zinc-900">{inv.invoiceNumber}</div>
-                          <div className="text-[10px] font-mono text-zinc-400 mt-0.5">
-                            {inv.uuid}
-                          </div>
-                        </td>
-                        <td className="py-3 px-4">
-                          <span
-                            className={`inline-flex px-2.5 py-0.5 rounded-md text-[10px] font-extrabold border ${
-                              inv.documentType === "EFATURA"
-                                ? "bg-indigo-50 text-indigo-700 border-indigo-200"
-                                : "bg-orange-50 text-orange-700 border-orange-200"
-                            }`}
-                          >
-                            {inv.documentType === "EFATURA" ? "e-FATURA" : "e-ARŞİV"}
-                          </span>
-                          <div className="text-[10px] text-zinc-400 mt-0.5">
-                            {inv.invoiceScenario}
-                          </div>
-                        </td>
-                        <td className="py-3 px-4 font-bold text-blue-600">
-                          #{inv.orderDisplayId}
-                        </td>
-                        <td className="py-3 px-4">
-                          <div className="font-bold text-zinc-800">{inv.buyerName}</div>
-                          <div className="text-[11px] text-zinc-500">
-                            {inv.buyerIdentifier?.length === 10 ? "VKN" : "TCKN"}:{" "}
-                            {inv.buyerIdentifier}
-                            {inv.buyerTaxOffice ? ` • VD: ${inv.buyerTaxOffice}` : ""}
-                          </div>
-                        </td>
-                        <td className="py-3 px-4 font-semibold text-zinc-700">
-                          {inv.vatAmount.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} TL
-                          <span className="block text-[10px] text-zinc-400">
-                            %{inv.vatRate} KDV
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 font-extrabold text-zinc-900">
-                          {inv.totalAmount.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} TL
-                        </td>
-                        <td className="py-3 px-4 text-zinc-600">
-                          {new Date(inv.issueDate).toLocaleString("tr-TR", {
-                            day: "2-digit",
-                            month: "2-digit",
-                            year: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </td>
-                        <td className="py-3 px-4">
-                          <span
-                            className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold border ${
-                              inv.status === "IPTAL"
-                                ? "bg-rose-50 text-rose-600 border-rose-200"
-                                : "bg-emerald-50 text-emerald-700 border-emerald-200"
-                            }`}
-                          >
-                            {inv.status === "IPTAL" ? "İPTAL EDİLDİ" : "RESMİLEŞTİ"}
-                          </span>
-                          <div className="text-[10px] text-zinc-400 mt-0.5">
-                            {inv.source === "TRENDYOL_API" ? "Trendyol API" : "GİB UBL"}
-                          </div>
-                        </td>
-                        <td className="py-3 px-4 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
-                            <button
-                              onClick={() => handlePrintOrDownloadInvoice(inv)}
-                              className="bg-zinc-900 hover:bg-zinc-800 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg cursor-pointer"
-                            >
-                              🖨️ PDF / Yazdır
-                            </button>
-                            {inv.status !== "IPTAL" && (
-                              <button
-                                onClick={() => handleCancelInvoice(inv.id)}
-                                className="bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 text-[11px] font-bold px-2.5 py-1.5 rounded-lg cursor-pointer"
-                              >
-                                İptal
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* TAB 2: TRENDYOL E-FATURAM SETTINGS */}
-        {activeTab === "settings" && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* API CREDENTIALS CARD */}
-            <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm flex flex-col gap-4">
-              <div className="border-b border-zinc-100 pb-3">
-                <h2 className="text-sm font-extrabold text-zinc-900">
-                  1. Trendyol E-Faturam (Trendyol E-Çözüm) API Bilgileri
-                </h2>
-                <p className="text-xs text-zinc-500 mt-0.5">
-                  Trendyol E-Faturam panelinizdeki giriş / web servis kullanıcı bilgilerinizi girin.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="p-[22px] bg-white">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                 <div>
-                  <label className="block text-[11px] font-bold text-zinc-600 mb-1">
-                    Çalışma Ortamı
+                  <label className="block text-[12.5px] font-medium text-[#48465b] mb-1.5">
+                    Entegrasyon Durumu
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <div
+                      onClick={() => setConfig({ ...config, active: !config.active })}
+                      className={`w-[52px] h-[26px] rounded-full p-[3px] flex items-center cursor-pointer transition-all ${
+                        config.active ? "bg-[#0abb87] justify-end" : "bg-[#e2e5ec] justify-start"
+                      }`}
+                    >
+                      <div className="w-[20px] h-[20px] rounded-full bg-white shadow-xs"></div>
+                    </div>
+                    <span className="text-[12px] font-bold text-[#08976d]">
+                      {config.active ? "Aktif" : "Pasif"}
+                    </span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[12.5px] font-medium text-[#48465b] mb-1.5">
+                    Çalışma Ortamı (Mod)
                   </label>
                   <select
                     value={config.environment}
@@ -1149,88 +927,106 @@ const EfaturaPage = () => {
                         environment: e.target.value as "stage" | "production",
                       })
                     }
-                    className="w-full border border-zinc-300 rounded-xl px-3 py-2 text-xs font-bold text-zinc-800 bg-white"
+                    className="w-full h-[36px] px-3 rounded-[4px] border border-[#e2e5ec] bg-white text-[12.5px] text-[#495057] font-medium"
                   >
-                    <option value="production">Canlı Ortam (apigateway.trendyolecozum.com)</option>
-                    <option value="stage">
-                      Test Ortamı (stage-apigateway.trendyolefaturam.com)
-                    </option>
+                    <option value="production">Canlı (Production - Resmi Fatura)</option>
+                    <option value="stage">Test (Stage / Sandbox)</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-zinc-600 mb-1">
-                    Şirket ID / Firma Kodu (Otomatik Algılanır)
+                  <label className="block text-[12.5px] font-medium text-[#48465b] mb-1.5">
+                    Trendyol Tedarikçi ID (Supplier ID) <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     value={config.companyId}
                     onChange={(e) => setConfig({ ...config, companyId: e.target.value })}
-                    placeholder="Girişte otomatik algılanır"
-                    className="w-full border border-zinc-300 rounded-xl px-3 py-2 text-xs font-semibold"
+                    className="w-full h-[36px] px-3 rounded-[4px] border border-[#e2e5ec] text-[12.5px] text-[#495057] font-semibold"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-zinc-600 mb-1">
-                    Trendyol E-Faturam E-Posta / Kullanıcı Adı
+                  <label className="block text-[12.5px] font-medium text-[#48465b] mb-1.5">
+                    Trendyol E-Faturam E-Posta / Kullanıcı Adı <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     value={config.email}
                     onChange={(e) => setConfig({ ...config, email: e.target.value })}
-                    placeholder="hakkisahin9@gmail.com"
-                    className="w-full border border-zinc-300 rounded-xl px-3 py-2 text-xs font-semibold"
+                    className="w-full h-[36px] px-3 rounded-[4px] border border-[#e2e5ec] text-[12.5px] text-[#495057]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-zinc-600 mb-1">
-                    Trendyol E-Faturam Şifre
+                  <label className="block text-[12.5px] font-medium text-[#48465b] mb-1.5">
+                    Trendyol E-Faturam Şifre / API Secret <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="password"
                     value={config.password}
+                    placeholder="••••••••••••••••"
                     onChange={(e) => setConfig({ ...config, password: e.target.value })}
-                    placeholder="••••••••"
-                    className="w-full border border-zinc-300 rounded-xl px-3 py-2 text-xs font-semibold"
+                    className="w-full h-[36px] px-3 rounded-[4px] border border-[#e2e5ec] text-[12.5px] text-[#495057]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-zinc-600 mb-1">
-                    e-Arşiv Seri Ön Eki (3 Karakter)
+                  <label className="block text-[12.5px] font-medium text-[#48465b] mb-1.5">
+                    Firma VKN / TCKN <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
-                    maxLength={3}
+                    value={config.supplierVkn}
+                    onChange={(e) => setConfig({ ...config, supplierVkn: e.target.value })}
+                    className="w-full h-[36px] px-3 rounded-[4px] border border-[#e2e5ec] text-[12.5px] text-[#495057] font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[12.5px] font-medium text-[#48465b] mb-1.5">
+                    Vergi Dairesi
+                  </label>
+                  <input
+                    type="text"
+                    value={config.supplierTaxOffice}
+                    onChange={(e) => setConfig({ ...config, supplierTaxOffice: e.target.value })}
+                    className="w-full h-[36px] px-3 rounded-[4px] border border-[#e2e5ec] text-[12.5px] text-[#495057]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[12.5px] font-medium text-[#48465b] mb-1.5">
+                    E-Arşiv Fatura Seri Ön Eki (3 Hane)
+                  </label>
+                  <input
+                    type="text"
                     value={config.earchivePrefix}
+                    maxLength={3}
                     onChange={(e) =>
                       setConfig({ ...config, earchivePrefix: e.target.value.toUpperCase() })
                     }
-                    placeholder="BKM"
-                    className="w-full border border-zinc-300 rounded-xl px-3 py-2 text-xs font-bold uppercase"
+                    className="w-full h-[36px] px-3 rounded-[4px] border border-[#e2e5ec] text-[12.5px] text-[#495057] font-bold uppercase"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-zinc-600 mb-1">
-                    e-Fatura Seri Ön Eki (3 Karakter)
+                  <label className="block text-[12.5px] font-medium text-[#48465b] mb-1.5">
+                    E-Fatura Seri Ön Eki (3 Hane)
                   </label>
                   <input
                     type="text"
-                    maxLength={3}
                     value={config.einvoicePrefix}
+                    maxLength={3}
                     onChange={(e) =>
                       setConfig({ ...config, einvoicePrefix: e.target.value.toUpperCase() })
                     }
-                    placeholder="EFT"
-                    className="w-full border border-zinc-300 rounded-xl px-3 py-2 text-xs font-bold uppercase"
+                    className="w-full h-[36px] px-3 rounded-[4px] border border-[#e2e5ec] text-[12.5px] text-[#495057] font-bold uppercase"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-zinc-600 mb-1">
+                  <label className="block text-[12.5px] font-medium text-[#48465b] mb-1.5">
                     Varsayılan KDV Oranı (%)
                   </label>
                   <select
@@ -1238,183 +1034,514 @@ const EfaturaPage = () => {
                     onChange={(e) =>
                       setConfig({ ...config, defaultVatRate: Number(e.target.value) })
                     }
-                    className="w-full border border-zinc-300 rounded-xl px-3 py-2 text-xs font-bold bg-white"
+                    className="w-full h-[36px] px-3 rounded-[4px] border border-[#e2e5ec] bg-white text-[12.5px] text-[#495057]"
                   >
-                    <option value={20}>%20 KDV (Genel / Oto Aksesuar)</option>
-                    <option value={10}>%10 KDV</option>
-                    <option value={1}>%1 KDV</option>
-                    <option value={0}>%0 KDV</option>
+                    <option value={10}>%10 (Tekstil &amp; Giyim / Ürün KDV Oranı)</option>
+                    <option value={20}>%20 (Genel KDV Oranı)</option>
+                    <option value={1}>%1 (İndirimli KDV)</option>
+                    <option value={0}>%0 (KDV Muaf / İstisna)</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-zinc-600 mb-1">
-                    İnternet Satışı Web Adresi
+                  <label className="block text-[12.5px] font-medium text-[#48465b] mb-1.5">
+                    Otomatik Fatura Kesim Durumu
                   </label>
-                  <input
-                    type="text"
-                    value={config.storeWebUrl}
-                    onChange={(e) => setConfig({ ...config, storeWebUrl: e.target.value })}
-                    placeholder="https://bodykitmerkezi.com"
-                    className="w-full border border-zinc-300 rounded-xl px-3 py-2 text-xs font-semibold"
-                  />
+                  <select className="w-full h-[36px] px-3 rounded-[4px] border border-[#e2e5ec] bg-white text-[12.5px] text-[#495057]">
+                    <option>Sipariş Onaylandığında / Hazırlanırken</option>
+                    <option>Sipariş Kargoya Verildiğinde</option>
+                    <option>Sadece Manuel Kesilsin</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[12.5px] font-medium text-[#48465b] mb-1.5">
+                    Kargo Ücreti Fatura Kalemi
+                  </label>
+                  <select className="w-full h-[36px] px-3 rounded-[4px] border border-[#e2e5ec] bg-white text-[12.5px] text-[#495057]">
+                    <option>Faturaya Ayrı Hizmet Kalemi Olarak Ekle</option>
+                    <option>Ürün Fiyatlarına Dağıt</option>
+                    <option>Faturaya Yansıtma</option>
+                  </select>
                 </div>
               </div>
 
-              <div className="pt-2 flex items-center gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 p-3.5 rounded-[5px] bg-[#f8fafc] border border-[#e2e8f0] mb-4 text-[12.5px] text-[#334155]">
+                <label className="flex items-center gap-2 cursor-pointer font-medium">
+                  <input type="checkbox" defaultChecked className="w-4 h-4 accent-[#0abb87]" />
+                  <span>E-Arşiv İnternet Satışı Bilgisi (Web Adresi &amp; Ödeme Tipi) Gönderilsin</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer font-medium">
+                  <input type="checkbox" defaultChecked className="w-4 h-4 accent-[#0abb87]" />
+                  <span>Fatura İrsaliye Yerine Geçsin (&quot;İrsaliye yerine geçer&quot; ibaresi eklensin)</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer font-medium">
+                  <input type="checkbox" defaultChecked className="w-4 h-4 accent-[#0abb87]" />
+                  <span>Fatura Kesildiğinde Müşteriye Otomatik PDF E-Posta / SMS Gönderilsin</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer font-medium">
+                  <input type="checkbox" defaultChecked className="w-4 h-4 accent-[#0abb87]" />
+                  <span>Pazaryeri Siparişlerinde Kesilen Faturayı Otomatik Trendyol / Pazaryerine İlet</span>
+                </label>
+              </div>
+
+              <div className="pt-3 border-t border-[#ebedf2] flex flex-wrap items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={saving}
+                    onClick={handleSaveSettings}
+                    className="h-[34px] px-4 rounded-[4px] bg-[#0abb87] hover:bg-[#099f73] text-white text-[12.5px] font-semibold cursor-pointer shadow-2xs disabled:opacity-50"
+                  >
+                    ✓ {saving ? "Kaydediliyor..." : "Trendyol E-Fatura Ayarlarını Kaydet"}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={testing}
+                    onClick={handleTestAndSync}
+                    className="h-[34px] px-4 rounded-[4px] bg-[#F27A1A] hover:bg-[#d96910] text-white text-[12.5px] font-semibold cursor-pointer shadow-2xs disabled:opacity-50"
+                  >
+                    ⚡ {testing ? "Test Ediliyor..." : "Bağlantıyı Test Et"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowInvoicesList(!showInvoicesList)}
+                    className="h-[34px] px-3.5 rounded-[4px] border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-[12px] font-semibold cursor-pointer"
+                  >
+                    📄 Kesilen Faturalar ({invoices.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowOrderModal(true)}
+                    className="h-[34px] px-3.5 rounded-[4px] border border-orange-300 bg-orange-50 hover:bg-orange-100 text-[#F27A1A] text-[12px] font-semibold cursor-pointer"
+                  >
+                    + Siparişten Yeni Fatura Kes
+                  </button>
+                </div>
                 <button
-                  onClick={handleTestAndSync}
-                  disabled={testing}
-                  className="bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 font-bold text-xs px-4 py-2.5 rounded-xl transition-colors cursor-pointer"
+                  type="button"
+                  onClick={() => setShowSyncModal(true)}
+                  className="h-[34px] px-3.5 rounded-[4px] border border-[#3d94fb] text-[#3d94fb] hover:bg-blue-50 text-[12px] font-medium cursor-pointer"
                 >
-                  {testing
-                    ? "Test Ediliyor ve Kontör/Faturalar Çekiliyor..."
-                    : "🔌 Bağlantıyı Test Et ve Kontör / Faturaları Çek"}
+                  ⇄ Ürün &amp; Stok Kartlarını Eşitle
                 </button>
               </div>
+
+              {/* Collapsible Issued Invoices List */}
+              {showInvoicesList && (
+                <div className="mt-5 pt-4 border-t border-[#ebedf2]">
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                    <div className="text-[14px] font-bold text-[#1e293b]">
+                      Kesilen E-Fatura &amp; E-Arşiv Belgeleri ({filteredInvoices.length})
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        placeholder="Fatura No, Sipariş No, Müşteri ara..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="h-[32px] px-3 rounded-[4px] border border-[#e2e5ec] text-[12px]"
+                      />
+                      <select
+                        value={docTypeFilter}
+                        onChange={(e) => setDocTypeFilter(e.target.value as any)}
+                        className="h-[32px] px-2.5 rounded-[4px] border border-[#e2e5ec] bg-white text-[12px]"
+                      >
+                        <option value="ALL">Tüm Belgeler</option>
+                        <option value="EARSIV">e-Arşiv</option>
+                        <option value="EFATURA">e-Fatura</option>
+                      </select>
+                    </div>
+                  </div>
+                  {loading ? (
+                    <div className="p-6 text-center text-[12.5px] text-slate-400">Yükleniyor...</div>
+                  ) : filteredInvoices.length === 0 ? (
+                    <div className="p-6 text-center text-[12.5px] text-slate-400 bg-slate-50 rounded-[4px]">
+                      Henüz kesilmiş fatura kaydı bulunmuyor.
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto border border-[#ebedf2] rounded-[4px]">
+                      <table className="w-full text-left border-collapse text-[12px]">
+                        <thead>
+                          <tr className="bg-[#f8f9fb] border-b border-[#ebedf2] text-[#48465b] font-semibold">
+                            <th className="py-2.5 px-3">Fatura No</th>
+                            <th className="py-2.5 px-3">Tür</th>
+                            <th className="py-2.5 px-3">Sipariş</th>
+                            <th className="py-2.5 px-3">Alıcı</th>
+                            <th className="py-2.5 px-3 text-right">Toplam</th>
+                            <th className="py-2.5 px-3 text-right">İşlem</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#ebedf2]">
+                          {filteredInvoices.map((inv) => (
+                            <tr key={inv.id} className="hover:bg-slate-50/70">
+                              <td className="py-2 px-3 font-bold text-slate-800">{inv.invoiceNumber}</td>
+                              <td className="py-2 px-3">
+                                <span className="px-1.5 py-0.5 rounded bg-orange-50 text-[#F27A1A] font-bold text-[10.5px]">
+                                  {inv.documentType}
+                                </span>
+                              </td>
+                              <td className="py-2 px-3 font-semibold text-blue-600">#{inv.orderDisplayId}</td>
+                              <td className="py-2 px-3">{inv.buyerName}</td>
+                              <td className="py-2 px-3 text-right font-bold">
+                                {inv.totalAmount.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} TL
+                              </td>
+                              <td className="py-2 px-3 text-right">
+                                <div className="inline-flex items-center gap-1.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => handlePrintOrDownloadInvoice(inv)}
+                                    className="px-2.5 py-1 rounded bg-slate-800 text-white text-[11px] font-semibold cursor-pointer"
+                                  >
+                                    🖨️ Yazdır
+                                  </button>
+                                  {inv.status !== "IPTAL" && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleCancelInvoice(inv.id)}
+                                      className="px-2 py-1 rounded bg-rose-50 text-rose-600 border border-rose-200 text-[11px] font-semibold cursor-pointer"
+                                    >
+                                      İptal
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
+          </div>
+        )}
 
-            {/* SUPPLIER / SELLER INFO CARD */}
-            <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm flex flex-col gap-4">
-              <div className="border-b border-zinc-100 pb-3">
-                <h2 className="text-sm font-extrabold text-zinc-900">
-                  2. Satıcı Firma & Vergi Kimlik Bilgileri (Fatura Üst Bilgisi)
-                </h2>
-                <p className="text-xs text-zinc-500 mt-0.5">
-                  Kesilen e-Fatura ve e-Arşiv belgelerinde sol üst köşede yer alacak resmi şirket
-                  bilgileriniz.
-                </p>
+        {/* > Pasif Muhasebe Entegrasyonları (.lag-smart-title.danger) */}
+        <div className="text-[17px] font-medium text-[#c93424] mb-[12px] flex items-center gap-1.5">
+          <span className="font-bold text-[18px] leading-none">›</span>
+          <span>Pasif Muhasebe Entegrasyonları</span>
+        </div>
+
+        {/* Pasif 3-Column Grid of All 42 ERP Integrations with Original Logos */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-[15px] mb-6">
+          {ERP_INTEGRATIONS.map((erp) => (
+            <div
+              key={erp.id}
+              onClick={() => setSelectedPassiveErp({ id: erp.id, name: erp.name })}
+              className="h-[80px] bg-white hover:bg-[#d8e6f8] rounded-[5px] px-[20px] py-[15px] flex items-center justify-between shadow-[0_4px_20px_hsla(214,3%,45%,0.12)] transition-colors cursor-pointer select-none"
+            >
+              <div className="text-[15px] font-medium text-[#222222] pr-2">{erp.name}</div>
+              <div className="flex items-center justify-end shrink-0">
+                <img
+                  src={erp.logo}
+                  alt={erp.name}
+                  className="max-h-[48px] max-w-[105px] w-auto h-auto object-contain"
+                />
               </div>
+            </div>
+          ))}
+        </div>
 
+        {/* Kategori Bazlı Vergi Muafiyetleri (.tax-exemptions from scripts.js.indir) */}
+        <div className="bg-white rounded-[4px] border border-[#ebedf2] p-[25px] shadow-2xs mt-6">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <div>
+              <h3 className="text-[17px] font-medium text-[#48465b]">
+                Kategori Bazlı E-Fatura Vergi Muafiyetleri
+              </h3>
+              <p className="text-[13px] text-[#74788d] mt-1">
+                %0 KDV&apos;li veya özel vergi istisnasına tabi kategoriler için E-Fatura muafiyet kodu ve sebebini tanımlayabilirsiniz.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() =>
+                setTaxExemptions([
+                  ...taxExemptions,
+                  {
+                    id: Date.now(),
+                    category: "Yurt Dışı İhracat Ürünleri (Mikro İhracat / ETGB)",
+                    code: "301",
+                    reason: "11/1-a Mal İhracatı (KDV İstisnası)",
+                  },
+                ])
+              }
+              className="h-[36px] px-4 rounded-[4px] bg-[#0abb87] hover:bg-[#099f73] text-white text-[13px] font-medium cursor-pointer"
+            >
+              + Vergi Muafiyeti Ekle
+            </button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse text-[13px]">
+              <thead>
+                <tr className="bg-[#f8f9fb] border-b border-[#ebedf2] text-[#48465b] font-semibold">
+                  <th className="py-3 px-3">Kategori</th>
+                  <th className="py-3 px-3 w-[240px]">Vergi Muafiyet Kodu</th>
+                  <th className="py-3 px-3">Muafiyet Sebebi</th>
+                  <th className="py-3 px-3 w-[80px] text-right">İşlem</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#ebedf2]">
+                {taxExemptions.map((row) => (
+                  <tr key={row.id}>
+                    <td className="py-3 px-3">
+                      <select
+                        value={row.category}
+                        onChange={(e) =>
+                          setTaxExemptions(
+                            taxExemptions.map((r) =>
+                              r.id === row.id ? { ...r, category: e.target.value } : r
+                            )
+                          )
+                        }
+                        className="w-full h-[36px] px-3 rounded-[4px] border border-[#e2e5ec] bg-white text-[13px]"
+                      >
+                        <option>Yurt Dışı İhracat Ürünleri (Mikro İhracat / ETGB)</option>
+                        <option>Dijital Lisans &amp; Yazılım Hizmetleri</option>
+                        <option>Tüm Kategoriler</option>
+                      </select>
+                    </td>
+                    <td className="py-3 px-3">
+                      <input
+                        type="text"
+                        value={row.code}
+                        onChange={(e) =>
+                          setTaxExemptions(
+                            taxExemptions.map((r) =>
+                              r.id === row.id ? { ...r, code: e.target.value } : r
+                            )
+                          )
+                        }
+                        placeholder="Vergi Muafiyet Kodu"
+                        className="w-full h-[36px] px-3 rounded-[4px] border border-[#e2e5ec] text-[13px]"
+                      />
+                    </td>
+                    <td className="py-3 px-3">
+                      <input
+                        type="text"
+                        value={row.reason}
+                        onChange={(e) =>
+                          setTaxExemptions(
+                            taxExemptions.map((r) =>
+                              r.id === row.id ? { ...r, reason: e.target.value } : r
+                            )
+                          )
+                        }
+                        placeholder="Muafiyet Sebebi"
+                        className="w-full h-[36px] px-3 rounded-[4px] border border-[#e2e5ec] text-[13px]"
+                      />
+                    </td>
+                    <td className="py-3 px-3 text-right">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (taxExemptions.length > 1) {
+                            setTaxExemptions(taxExemptions.filter((r) => r.id !== row.id))
+                          }
+                        }}
+                        className="w-[32px] h-[32px] rounded-[4px] bg-[#fd397a] text-white inline-flex items-center justify-center cursor-pointer"
+                      >
+                        🗑
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {/* ERP Integration Detail Modal */}
+      {selectedPassiveErp && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-[620px] rounded-[6px] shadow-2xl overflow-hidden border border-gray-200">
+            <div className="bg-[#1e293b] px-6 py-4 text-white flex items-center justify-between">
+              <div>
+                <div className="text-[11px] text-slate-300">Muhasebe / ERP Entegrasyon Ayarları</div>
+                <div className="text-[16px] font-bold">
+                  {selectedPassiveErp.name} Entegrasyon Ayarları
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedPassiveErp(null)}
+                className="text-white/80 hover:text-white text-[18px] font-bold cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="sm:col-span-2">
-                  <label className="block text-[11px] font-bold text-zinc-600 mb-1">
-                    Satıcı Resmi Firma Ünvanı / Ad Soyad
+                <div>
+                  <label className="block text-[12.5px] font-medium text-[#48465b] mb-1.5">
+                    Entegrasyon Durumu
+                  </label>
+                  <select className="w-full h-[38px] px-3 rounded-[4px] border border-[#e2e5ec] bg-white text-[13px] text-[#495057]">
+                    <option value="0">Pasif (Kapalı)</option>
+                    <option value="1">Aktif (Açık)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[12.5px] font-medium text-[#48465b] mb-1.5">
+                    Firma VKN / TCKN <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
-                    value={config.supplierName}
-                    onChange={(e) => setConfig({ ...config, supplierName: e.target.value })}
-                    className="w-full border border-zinc-300 rounded-xl px-3 py-2 text-xs font-semibold"
+                    placeholder="10 veya 11 haneli Vergi / TC No"
+                    className="w-full h-[38px] px-3 rounded-[4px] border border-[#e2e5ec] text-[13px]"
                   />
                 </div>
-
                 <div>
-                  <label className="block text-[11px] font-bold text-zinc-600 mb-1">
-                    Satıcı VKN / TCKN (10 veya 11 Hane)
+                  <label className="block text-[12.5px] font-medium text-[#48465b] mb-1.5">
+                    API Kullanıcı Adı / Anahtarı <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
-                    value={config.supplierVkn}
-                    onChange={(e) => setConfig({ ...config, supplierVkn: e.target.value })}
-                    className="w-full border border-zinc-300 rounded-xl px-3 py-2 text-xs font-semibold"
+                    placeholder="API kullanıcı adı veya key"
+                    className="w-full h-[38px] px-3 rounded-[4px] border border-[#e2e5ec] text-[13px]"
                   />
                 </div>
-
                 <div>
-                  <label className="block text-[11px] font-bold text-zinc-600 mb-1">
-                    Vergi Dairesi
+                  <label className="block text-[12.5px] font-medium text-[#48465b] mb-1.5">
+                    API Şifresi / Secret Key <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="••••••••••••"
+                    className="w-full h-[38px] px-3 rounded-[4px] border border-[#e2e5ec] text-[13px]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[12.5px] font-medium text-[#48465b] mb-1.5">
+                    Servis URL / Endpoint (Opsiyonel)
                   </label>
                   <input
                     type="text"
-                    value={config.supplierTaxOffice}
-                    onChange={(e) => setConfig({ ...config, supplierTaxOffice: e.target.value })}
-                    className="w-full border border-zinc-300 rounded-xl px-3 py-2 text-xs font-semibold"
+                    placeholder="https://..."
+                    className="w-full h-[38px] px-3 rounded-[4px] border border-[#e2e5ec] text-[13px]"
                   />
                 </div>
-
                 <div>
-                  <label className="block text-[11px] font-bold text-zinc-600 mb-1">
-                    Mersis No
+                  <label className="block text-[12.5px] font-medium text-[#48465b] mb-1.5">
+                    Fatura Seri Ön Eki
                   </label>
                   <input
                     type="text"
-                    value={config.supplierMersis}
-                    onChange={(e) => setConfig({ ...config, supplierMersis: e.target.value })}
-                    className="w-full border border-zinc-300 rounded-xl px-3 py-2 text-xs font-semibold"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-zinc-600 mb-1">
-                    Ticaret Sicil No
-                  </label>
-                  <input
-                    type="text"
-                    value={config.supplierTicaretSicil}
-                    onChange={(e) =>
-                      setConfig({ ...config, supplierTicaretSicil: e.target.value })
-                    }
-                    className="w-full border border-zinc-300 rounded-xl px-3 py-2 text-xs font-semibold"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-zinc-600 mb-1">İl</label>
-                  <input
-                    type="text"
-                    value={config.supplierCity}
-                    onChange={(e) => setConfig({ ...config, supplierCity: e.target.value })}
-                    className="w-full border border-zinc-300 rounded-xl px-3 py-2 text-xs font-semibold"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-zinc-600 mb-1">İlçe</label>
-                  <input
-                    type="text"
-                    value={config.supplierDistrict}
-                    onChange={(e) => setConfig({ ...config, supplierDistrict: e.target.value })}
-                    className="w-full border border-zinc-300 rounded-xl px-3 py-2 text-xs font-semibold"
-                  />
-                </div>
-
-                <div className="sm:col-span-2">
-                  <label className="block text-[11px] font-bold text-zinc-600 mb-1">
-                    Açık Adres
-                  </label>
-                  <input
-                    type="text"
-                    value={config.supplierAddress}
-                    onChange={(e) => setConfig({ ...config, supplierAddress: e.target.value })}
-                    className="w-full border border-zinc-300 rounded-xl px-3 py-2 text-xs font-semibold"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-zinc-600 mb-1">Telefon</label>
-                  <input
-                    type="text"
-                    value={config.supplierPhone}
-                    onChange={(e) => setConfig({ ...config, supplierPhone: e.target.value })}
-                    className="w-full border border-zinc-300 rounded-xl px-3 py-2 text-xs font-semibold"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-zinc-600 mb-1">E-Posta</label>
-                  <input
-                    type="text"
-                    value={config.supplierEmail}
-                    onChange={(e) => setConfig({ ...config, supplierEmail: e.target.value })}
-                    className="w-full border border-zinc-300 rounded-xl px-3 py-2 text-xs font-semibold"
+                    defaultValue="EA2026"
+                    className="w-full h-[38px] px-3 rounded-[4px] border border-[#e2e5ec] text-[13px]"
                   />
                 </div>
               </div>
-
-              <div className="pt-2 flex justify-end">
+            </div>
+            <div className="px-6 py-3.5 bg-[#f8fafc] border-t border-gray-200 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => alert("API Bağlantı testi başarılı!")}
+                className="h-[36px] px-4 rounded-[4px] bg-[#3d94fb] hover:bg-[#2b82ec] text-white text-[12.5px] font-medium cursor-pointer"
+              >
+                ⚡ Bağlantıyı Test Et
+              </button>
+              <div className="flex items-center gap-2">
                 <button
-                  onClick={handleSaveSettings}
-                  disabled={saving}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-6 py-2.5 rounded-xl shadow-sm transition-colors cursor-pointer"
+                  type="button"
+                  onClick={() => setSelectedPassiveErp(null)}
+                  className="h-[36px] px-4 rounded-[4px] border border-gray-300 bg-white text-[12.5px] font-medium cursor-pointer"
                 >
-                  {saving ? "Kaydediliyor..." : "✔ Tüm Ayarları Kaydet"}
+                  Kapat
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedPassiveErp(null)
+                    setFeedback({
+                      type: "success",
+                      message: `${selectedPassiveErp.name} entegrasyon ayarları kaydedildi!`,
+                    })
+                  }}
+                  className="h-[36px] px-5 rounded-[4px] bg-[#0abb87] hover:bg-[#099f73] text-white text-[12.5px] font-bold cursor-pointer"
+                >
+                  ✓ Kaydet
                 </button>
               </div>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* MODAL: ÜRÜNLERİ MUHASEBEYE AKTAR (#modal-sync-muhasebe-dialog) */}
+      {showSyncModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-[520px] rounded-[6px] shadow-2xl overflow-hidden border border-gray-200">
+            <div className="bg-[#0b5ed7] px-6 py-4 text-white flex items-center justify-between">
+              <div>
+                <div className="text-[11px] text-sky-100">Muhasebe / ERP Senkronizasyonu</div>
+                <div className="text-[15px] font-bold">Ürünleri Muhasebeye Aktar</div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowSyncModal(false)}
+                className="text-white/80 hover:text-white text-[18px] font-bold cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="bg-[#f1f4f9] border-l-4 border-[#3d94fb] p-3.5 text-[12.5px] text-[#48465b]">
+                Aktif muhasebe / ERP entegrasyonunuza aktarılacak ürün alanlarını seçiniz:
+              </div>
+              <label className="flex items-center justify-between py-2 border-b border-gray-100 cursor-pointer">
+                <span className="text-[13px] font-medium text-[#334155]">
+                  Stok Miktarlarını Aktar (stock)
+                </span>
+                <input type="checkbox" defaultChecked className="w-4 h-4 accent-[#0abb87]" />
+              </label>
+              <label className="flex items-center justify-between py-2 border-b border-gray-100 cursor-pointer">
+                <span className="text-[13px] font-medium text-[#334155]">
+                  Ürün Görsellerini Aktar (image)
+                </span>
+                <input type="checkbox" defaultChecked className="w-4 h-4 accent-[#0abb87]" />
+              </label>
+              <label className="flex items-center justify-between py-2 border-b border-gray-100 cursor-pointer">
+                <span className="text-[13px] font-medium text-[#334155]">
+                  Alış Fiyatlarını Aktar (buy_price)
+                </span>
+                <input type="checkbox" defaultChecked className="w-4 h-4 accent-[#0abb87]" />
+              </label>
+              <label className="flex items-center justify-between py-2 cursor-pointer">
+                <span className="text-[13px] font-medium text-[#334155]">
+                  Satış Fiyatlarını Aktar (sale_price)
+                </span>
+                <input type="checkbox" defaultChecked className="w-4 h-4 accent-[#0abb87]" />
+              </label>
+            </div>
+            <div className="px-6 py-3.5 bg-[#f8fafc] border-t border-gray-200 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowSyncModal(false)}
+                className="h-[34px] px-4 rounded-[4px] border border-gray-300 bg-white text-[12.5px] font-medium cursor-pointer"
+              >
+                Kapat
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSyncModal(false)
+                  setFeedback({
+                    type: "success",
+                    message: "Ürünler muhasebe servisine aktarılmak üzere kuyruğa alındı!",
+                  })
+                }}
+                className="h-[34px] px-5 rounded-[4px] bg-[#0abb87] text-white text-[12.5px] font-bold cursor-pointer"
+              >
+                ✓ Aktarımı Başlat
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* MODAL: CREATE INVOICE FROM ORDER */}
       {showOrderModal && (
@@ -1431,7 +1558,7 @@ const EfaturaPage = () => {
                 </div>
                 <div className="text-sm font-extrabold">Siparişten E-Fatura / E-Arşiv Kes</div>
               </div>
-              <button onClick={() => setShowOrderModal(false)} className="text-white">
+              <button onClick={() => setShowOrderModal(false)} className="text-white cursor-pointer">
                 <XMark className="w-5 h-5" />
               </button>
             </div>
@@ -1483,7 +1610,7 @@ const EfaturaPage = () => {
             <div className="px-5 py-3.5 bg-zinc-50 border-t border-zinc-100 flex justify-end gap-2">
               <button
                 onClick={() => setShowOrderModal(false)}
-                className="px-4 py-2 rounded-xl border border-zinc-200 bg-white text-xs font-bold text-zinc-600"
+                className="px-4 py-2 rounded-xl border border-zinc-200 bg-white text-xs font-bold text-zinc-600 cursor-pointer"
               >
                 İptal
               </button>

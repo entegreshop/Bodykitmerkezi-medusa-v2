@@ -388,11 +388,11 @@ export const getTopNavCategories = (prepOrdersBadge: number): TopNavCategory[] =
         items: [
           { label: "Hediye Çekleri", path: "/kampanyalar?tab=hediye" },
           { label: "Promosyonlar", path: "/kampanyalar?tab=yuzde" },
-          { label: "Bayi İndirimleri", path: "/price-lists" },
-          { label: "Hızlı İndirimler", path: "/kampanyalar?tab=sepette" },
-          { label: "Affiliate", path: "/kampanyalar?tab=bogo" },
-          { label: "Sipariş Limitleri", path: "/kampanyalar?tab=otomasyon" },
-          { label: "Satış Kotaları", path: "/kampanyalar?tab=urun_kupon" },
+          { label: "Bayi İndirimleri", path: "/kampanyalar?tab=sepette" },
+          { label: "Hızlı İndirimler", path: "/kampanyalar?tab=bogo" },
+          { label: "Affiliate", path: "/kampanyalar?tab=hediye_urun" },
+          { label: "Sipariş Limitleri", path: "/kampanyalar?tab=firsat" },
+          { label: "Satış Kotaları", path: "/kampanyalar?tab=otomasyon" },
           { label: "E-Posta Bültenleri", path: "/sms-settings" },
           { label: "SMS Bültenleri", path: "/sms-settings" },
           { label: "Mobil Bildirimler", path: "/sms-settings" },
@@ -422,34 +422,34 @@ export const getTopNavCategories = (prepOrdersBadge: number): TopNavCategory[] =
   },
   {
     label: "TASARIM",
-    sectionTitle: "Tasarım Yönetimi",
-    path: "/hero-manager",
+    sectionTitle: "Tasarım",
+    path: "/hero-manager?tab=theme",
     icon: "design",
     alignRight: true,
     columns: [
       {
         bulletStyle: "solid",
         items: [
-          { label: "Temalar", path: "/hero-manager" },
-          { label: "Blok Yönetimi", path: "/hero-manager?tab=blok-yonetimi" },
-          { label: "Görsel Optimizasyonu", path: "/hero-manager?tab=gorsel-optimizasyonu" },
-          { label: "SEO Optimizasyonu", path: "/store-settings" },
-          { label: "301 Yönlendirmeleri", path: "/hero-manager?tab=301-yonlendirmeleri" },
-          { label: "404 Kırık Linkler", path: "/hero-manager?tab=404-kirik-linkler" },
+          { label: "Temalar", path: "/hero-manager?tab=theme" },
+          { label: "Blok Yönetimi", path: "/hero-manager?tab=modules" },
+          { label: "Görsel Optimizasyonu", path: "/hero-manager?tab=image" },
+          { label: "SEO Optimizasyonu", path: "/hero-manager?tab=seo" },
+          { label: "301 Yönlendirmeleri", path: "/hero-manager?tab=redirect301" },
+          { label: "404 Kırık Linkler", path: "/hero-manager?tab=page404" },
           { label: "Sitemap", path: "/hero-manager?tab=sitemap" },
-          { label: "Görsel Yükle", path: "/hero-manager?tab=gorsel-yukle" },
+          { label: "Görsel Yükle", path: "/hero-manager?tab=upload" },
         ],
       },
       {
         title: "İçerikler",
         bulletStyle: "hollow",
         items: [
-          { label: "Sayfalar", path: "/sayfalar" },
-          { label: "Yardım İçerikleri", path: "/sayfalar?tab=yardim" },
-          { label: "Sıkça Sorulan Sorular", path: "/sayfalar?tab=sss" },
-          { label: "Blog", path: "/sayfalar?tab=blog" },
-          { label: "Manşetler", path: "/hero-manager" },
-          { label: "Bannerlar", path: "/hero-manager" },
+          { label: "Sayfalar", path: "/hero-manager?tab=pages" },
+          { label: "Yardım İçerikleri", path: "/hero-manager?tab=help" },
+          { label: "Sıkça Sorulan Sorular", path: "/hero-manager?tab=sss" },
+          { label: "Blog", path: "/hero-manager?tab=blog" },
+          { label: "Manşetler", path: "/hero-manager?tab=headlines" },
+          { label: "Bannerlar", path: "/hero-manager?tab=banners" },
           { label: "Popup", path: "/hero-manager?tab=popup" },
           { label: "Story", path: "/hero-manager?tab=story" },
         ],
@@ -458,26 +458,26 @@ export const getTopNavCategories = (prepOrdersBadge: number): TopNavCategory[] =
   },
   {
     label: "RAPORLAR",
-    sectionTitle: "Rapor Yönetimi",
-    path: "/e-fatura",
+    sectionTitle: "Raporlar",
+    path: "/reports?tab=satis",
     icon: "reports",
     alignRight: true,
     columns: [
       {
         bulletStyle: "solid",
         items: [
-          { label: "Genel Satış & Ciro Özeti", path: "/dashboard" },
-          { label: "Sipariş Raporları", path: "/orders?status=tum_siparisler" },
-          { label: "Ürün & Stok Raporları", path: "/product-management" },
-          { label: "Kesilen E-Fatura Raporları", path: "/e-fatura" },
-          { label: "GA4 & Ziyaretçi Analitiği", path: "/pixel-settings" },
+          { label: "Satış Raporları", path: "/reports?tab=satis" },
+          { label: "Ürün Raporları", path: "/reports?tab=urun" },
+          { label: "Müşteri Raporları", path: "/reports?tab=musteri" },
+          { label: "Pazaryeri Raporları", path: "/reports?tab=pazaryeri" },
+          { label: "Trafik & Dönüşüm", path: "/reports?tab=trafik" },
         ],
       },
     ],
   },
   {
     label: "ARAÇLAR",
-    sectionTitle: "Araçlar & Entegrasyonlar",
+    sectionTitle: "Araçlar",
     path: "/payment-settings",
     icon: "tools",
     alignRight: true,
@@ -496,24 +496,24 @@ export const getTopNavCategories = (prepOrdersBadge: number): TopNavCategory[] =
   },
   {
     label: "AYARLAR",
-    sectionTitle: "Genel Ayarlar",
-    path: "/store-settings",
+    sectionTitle: "Ayarlar",
+    path: "/store-settings?tab=store",
     icon: "settings",
     alignRight: true,
     columns: [
       {
         bulletStyle: "solid",
         items: [
-          { label: "Mağaza Ayarları", path: "/store-settings" },
-          { label: "Sözleşmeler ve Metinler", path: "/sayfalar" },
-          { label: "Pazarlama ve Doğrulama", path: "/pixel-settings" },
-          { label: "Yazdırma Etiketleri", path: "/e-fatura" },
-          { label: "Para Birimleri", path: "/settings/regions" },
-          { label: "Vergiler", path: "/settings/tax-regions" },
-          { label: "Diller", path: "/settings/store" },
-          { label: "Web Servis", path: "/settings/publishable-api-keys" },
-          { label: "Personeller", path: "/settings/users" },
-          { label: "Lisans", path: "/dashboard?modal=license", action: "license_modal" },
+          { label: "Mağaza Ayarları", path: "/store-settings?tab=store" },
+          { label: "Sözleşmeler ve Metinler", path: "/store-settings?tab=rules" },
+          { label: "Pazarlama ve Doğrulama", path: "/store-settings?tab=marketing" },
+          { label: "Yazdırma Etiketleri", path: "/store-settings?tab=prints" },
+          { label: "Para Birimleri", path: "/store-settings?tab=currencies" },
+          { label: "Vergiler", path: "/store-settings?tab=taxes" },
+          { label: "Diller", path: "/store-settings?tab=locations" },
+          { label: "Web Servis", path: "/store-settings?tab=api" },
+          { label: "Personeller", path: "/store-settings?tab=staff" },
+          { label: "Lisans", path: "/store-settings?tab=licence" },
         ],
       },
     ],
@@ -750,6 +750,9 @@ export const EntegreShopHeaderBar = ({
     if (clean.startsWith("/hero-manager") || clean.startsWith("/sayfalar")) {
       return "TASARIM"
     }
+    if (clean.startsWith("/reports")) {
+      return "RAPORLAR"
+    }
     if (
       clean.startsWith("/e-fatura") ||
       clean.startsWith("/payment-settings") ||
@@ -808,12 +811,30 @@ export const EntegreShopHeaderBar = ({
     if (isImportExportSubTab && activeCategoryObj.columns[2]) {
       return [...activeCategoryObj.columns[2].items]
     }
-    const baseItems = [...activeCategoryObj.columns[0].items]
-    const clean = currentPathname.replace(/^\/app/, "") || "/dashboard"
-    // If on /sayfalar under TASARIM, also include Sayfalar in the tab bar
-    if (activeCategoryLabel === "TASARIM" && clean.startsWith("/sayfalar")) {
-      baseItems.push({ label: "Sayfalar", path: "/sayfalar" })
+    if (activeCategoryLabel === "KAMPANYALAR") {
+      return [
+        { label: "Promosyonlar & Kurgu Motoru", path: "/kampanyalar?tab=yuzde" },
+        { label: "Hediye Çekleri & Kuponlar", path: "/kampanyalar?tab=hediye" },
+        { label: "Hızlı & Sepette İndirimler", path: "/kampanyalar?tab=sepette" },
+        { label: "Affiliate & Satış Kotaları", path: "/kampanyalar?tab=otomasyon" },
+        { label: "E-Posta / SMS Bültenleri", path: "/sms-settings" },
+      ]
     }
+    if (activeCategoryLabel === "TASARIM") {
+      const col0 = activeCategoryObj.columns[0]?.items || []
+      const col1 = activeCategoryObj.columns[1]?.items || []
+      return [...col0, ...col1]
+    }
+    if (activeCategoryLabel === "RAPORLAR") {
+      return [
+        { label: "Genel Satış & Ciro Raporları", path: "/reports?tab=satis" },
+        { label: "Ürün, Kategori & Stok Raporları", path: "/reports?tab=urun" },
+        { label: "Müşteri, Üye & Şehir Raporları", path: "/reports?tab=musteri" },
+        { label: "Pazaryeri & Kupon Raporları", path: "/reports?tab=pazaryeri" },
+        { label: "Ziyaretçi, Trafik & Dönüşüm Hunisi", path: "/reports?tab=trafik" },
+      ]
+    }
+    const baseItems = [...activeCategoryObj.columns[0].items]
     return baseItems
   }
 
@@ -831,6 +852,9 @@ export const EntegreShopHeaderBar = ({
       if (clean === "/pazaryeri" && sub.path === "/pazaryeri?tab=magazalar") return true
       if (clean === "/kampanyalar" && sub.path === "/kampanyalar?tab=yuzde") return true
       if (clean === "/xml-operations" && sub.path === "/xml-operations?tab=import") return true
+      if (clean === "/hero-manager" && sub.path === "/hero-manager?tab=theme") return true
+      if (clean === "/reports" && sub.path === "/reports?tab=satis") return true
+      if (clean === "/store-settings" && sub.path === "/store-settings?tab=store") return true
     }
 
     // If sub.path has no query string, match exact clean pathname only when currentSearch is empty
