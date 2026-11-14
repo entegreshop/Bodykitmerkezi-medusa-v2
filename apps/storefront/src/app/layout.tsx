@@ -12,8 +12,8 @@ import PixelScripts from "@modules/layout/components/pixel-scripts"
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} ${plusJakartaSans.variable}`}>
-      <body className="font-sans">
+    <html lang="en" className={`${inter.variable} ${plusJakartaSans.variable}`} suppressHydrationWarning>
+      <body className="font-sans" suppressHydrationWarning>
         <PixelScripts />
         {children}
       </body>
