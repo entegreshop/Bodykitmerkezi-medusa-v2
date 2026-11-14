@@ -43,7 +43,11 @@ async function getLogoConfig() {
       headers,
     })
     const data = await res.json()
-    return data?.config || null
+    let cfg = data?.config || data || null
+    while (cfg && typeof cfg === "object" && cfg.config && typeof cfg.config === "object") {
+      cfg = cfg.config
+    }
+    return cfg
   } catch (err) {
     console.error("Failed to fetch logo config in Nav:", err)
     return null
@@ -59,6 +63,9 @@ export default async function Nav() {
     getHeroConfig(),
     getLogoConfig(),
   ])
+
+  const mainLogo = logoConfig?.logo || logoConfig?.logoUrl || logoConfig?.mobileLogo || "/logo.png"
+  const mobileLogo = logoConfig?.mobileLogo || logoConfig?.logo || logoConfig?.logoUrl || "/logo.png"
 
   const topAnnouncementPhrases = config?.top_announcement
     ? config.top_announcement.split(",").map((s: string) => s.trim()).filter(Boolean)
@@ -87,31 +94,13 @@ export default async function Nav() {
               className="txt-compact-xlarge-plus text-zinc-950 hover:text-violet-600 font-bold uppercase tracking-widest flex items-center gap-1.5 transition-colors"
               data-testid="nav-store-link"
             >
-              {logoConfig?.logo || logoConfig?.mobileLogo ? (
-                <>
-                  {logoConfig.mobileLogo ? (
-                    <img src={logoConfig.mobileLogo} alt="Store Logo" className="h-8 w-auto object-contain block md:hidden" />
-                  ) : (
-                    <img src={logoConfig.logo} alt="Store Logo" className="h-8 w-auto object-contain block md:hidden" />
-                  )}
-                  {logoConfig.logo ? (
-                    <img src={logoConfig.logo} alt="Store Logo" className="h-10 w-auto object-contain hidden md:block" />
-                  ) : (
-                    <img src={logoConfig.mobileLogo} alt="Store Logo" className="h-10 w-auto object-contain hidden md:block" />
-                  )}
-                </>
-              ) : (
-                <>
-                  <span>XOOX</span>
-                  <span className="w-2 h-2 rounded-full bg-violet-500 shadow-[0_0_8px_rgba(139,92,246,0.5)] inline-block"></span>
-                  <span className="text-zinc-400 font-normal text-xs tracking-normal lowercase hidden small:inline">store</span>
-                </>
-              )}
+              <img src={mobileLogo} alt="BodyKit Merkezi" className="h-9 w-auto object-contain block md:hidden" />
+              <img src={mainLogo} alt="BodyKit Merkezi" className="h-11 w-auto object-contain hidden md:block" />
             </LocalizedClientLink>
           </div>
 
           <div className="flex items-center gap-x-5 h-full flex-1 basis-0 justify-end">
-            <SearchModal />
+            <SearchModal logoUrl={mainLogo} />
             <LocalizedClientLink
               className="hover:text-zinc-950 transition-colors text-zinc-700 p-1 flex items-center justify-center"
               href="/account"

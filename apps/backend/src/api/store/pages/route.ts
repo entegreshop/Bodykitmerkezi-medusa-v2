@@ -8,7 +8,7 @@ const configFilePath = path.join(process.cwd(), "uploads", "pages-config.json")
 const defaultPages = {
   "hakkimizda": {
     title: "Hakkımızda",
-    content: "Özse Moda Tekstil Ltd. Şti. olarak moda dünyasında öncü markalardan biri olmayı hedefliyoruz."
+    content: "BodyKit Merkezi olarak Türkiye'nin en kapsamlı oto body kit, tampon, spoiler, difüzör ve modifiye aksesuarları mağazasıyız."
   },
   "mesafeli-satis": {
     title: "Mesafeli Satış Sözleşmesi",
@@ -36,7 +36,7 @@ const defaultPages = {
   },
   "iletisim": {
     title: "İletişim",
-    content: "ÖZSE MODA TEKSTİL LTD. ŞTİ.\nAdres: Merkez Mahallesi Merter Sokak NO 44 Güngören / İstanbul\nTel: +90 530 456 43 77\nE-posta: info@kombingo.com"
+    content: "BODYKİT MERKEZİ\nAdres: İkitelli OSB Oto Sanayi Sitesi Başakşehir / İstanbul\nTel: 0532 337 00 81\nE-posta: info@bodykitmerkezi.com"
   },
   "siparis-takip": {
     title: "Sipariş Takip",

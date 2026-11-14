@@ -1,36 +1,31 @@
 import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
+import { Modules } from "@medusajs/framework/utils"
 import fs from "fs"
 import path from "path"
+import {
+  normalizeLogoConfig,
+  readLogoConfigFromDisk,
+} from "../../admin/logo-config/route"
 
 const configFilePath = path.join(process.cwd(), "uploads", "logo-config.json")
 
-export async function GET(
-  req: MedusaRequest,
-  res: MedusaResponse
-) {
+export async function GET(req: MedusaRequest, res: MedusaResponse) {
   try {
-    if (!fs.existsSync(configFilePath)) {
-      return res.json({
-        config: {
-          logo: null,
-          favicon: null,
-          mobileLogo: null,
-          footerLogo: null,
-          emailLogo: null,
-          defaultImage: null,
-          checkoutLogo: null,
-          sideMenuLogo: null,
-          siteTitle: "",
-          footerCopyrightText: "",
-        }
-      })
-    }
-
-    const fileContent = fs.readFileSync(configFilePath, "utf-8")
-    const config = JSON.parse(fileContent)
+    let config = readLogoConfigFromDisk()
+    try {
+      const storeModule = req.scope.resolve(Modules.STORE)
+      const stores = await storeModule.listStores({}, { select: ["id", "metadata"] })
+      const storeMetaConfig = stores[0]?.metadata?.logo_config
+      if (!fs.existsSync(configFilePath) && storeMetaConfig) {
+        config = normalizeLogoConfig(storeMetaConfig)
+      }
+    } catch {}
 
     res.json({ config })
-  } catch (error) {
-    res.status(500).json({ message: "Failed to read logo config", error: error.message })
+  } catch (error: any) {
+    res.status(500).json({
+      message: "Failed to read logo config",
+      error: error?.message,
+    })
   }
 }

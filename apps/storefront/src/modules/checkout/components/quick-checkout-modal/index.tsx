@@ -70,6 +70,7 @@ export default function QuickCheckoutModal({
   const ARAS_BASE64 = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iNDAiPjx0ZXh0IHg9IjEwIiB5PSIyNSIgZmlsbD0iIzEzMkI1QiIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjIyIiBmb250LXdlaWdodD0iYm9sZCI+QVJBUzwvdGV4dD48L3N2Zz4=";
   const [arasLogoUrl, setArasLogoUrl] = useState(ARAS_BASE64);
   const [storeLogoUrl, setStoreLogoUrl] = useState("/logo.png");
+  const [copyrightText, setCopyrightText] = useState(`© ${new Date().getFullYear()} BodyKit Merkezi. Tüm hakları saklıdır.`);
 
   // Popup açma fonksiyonu
   const openPopup = (e: React.MouseEvent<HTMLAnchorElement>, url: string) => {
@@ -157,6 +158,25 @@ export default function QuickCheckoutModal({
              }
           }).catch(err => console.error("COD bilgieri çekilemedi", err))
 
+       fetch(`${MEDUSA_URL}/store/logo-config`, fetchOptions)
+          .then(res => res.json())
+          .then(data => {
+              let cfg = data?.config || data || null;
+              while (cfg && typeof cfg === "object" && cfg.config && typeof cfg.config === "object") {
+                  cfg = cfg.config;
+              }
+              if (cfg) {
+                  const logoCandidate = cfg.checkoutLogo || cfg.logo || cfg.logoUrl || cfg.mobileLogo;
+                  if (logoCandidate) {
+                      setStoreLogoUrl(logoCandidate.replace(/http:\/\/localhost:9000/g, MEDUSA_URL));
+                  }
+                  const copyCandidate = cfg.footerCopyrightText || cfg.copyrightText;
+                  if (copyCandidate) {
+                      setCopyrightText(copyCandidate);
+                  }
+              }
+          }).catch(() => {})
+
        fetch(`${MEDUSA_URL}/store/custom/settings`, fetchOptions)
           .then(res => res.json())
           .then(data => {
@@ -167,6 +187,19 @@ export default function QuickCheckoutModal({
                           mainLogo = mainLogo.replace(/http:\/\/localhost:9000/g, MEDUSA_URL);
                       }
                       setStoreLogoUrl(mainLogo);
+                  } else if (data.settings.logo_config?.logo || data.settings.logo_config?.logoUrl) {
+                      let mainLogo = data.settings.logo_config.logo || data.settings.logo_config.logoUrl;
+                      if (mainLogo.includes("localhost:9000")) {
+                          mainLogo = mainLogo.replace(/http:\/\/localhost:9000/g, MEDUSA_URL);
+                      }
+                      setStoreLogoUrl(mainLogo);
+                  }
+                  if (data.settings.logo_config?.footerCopyrightText || data.settings.logo_config?.copyrightText || data.settings["footer-telif"]?.copyright_text) {
+                      setCopyrightText(
+                        data.settings.logo_config?.footerCopyrightText ||
+                        data.settings.logo_config?.copyrightText ||
+                        data.settings["footer-telif"]?.copyright_text
+                      );
                   }
                   
                   setPaymentSettings({
@@ -394,7 +427,7 @@ export default function QuickCheckoutModal({
                {/* Header */}
                <div className="px-5 py-4 flex items-center justify-between border-b border-gray-200 bg-white shadow-sm">
                   <div className="flex-1 flex items-center">
-                    <img src={storeLogoUrl} alt="Logo" className="h-[22px] md:h-[26px] object-contain w-auto" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/logo.png'; }} />
+                    <img src={storeLogoUrl} alt="BodyKit Merkezi" className="h-8 md:h-9 object-contain w-auto" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/logo.png'; }} />
                   </div>
                   <button type="button" onClick={onClose} className="p-2" aria-label="Close Checkout">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M6 18L18 6M6 6l12 12"/></svg>
@@ -737,7 +770,7 @@ export default function QuickCheckoutModal({
             <div className="pt-10 pb-8 flex flex-col items-center justify-center space-y-4">
                <div className="text-center space-y-1">
                   <p className="text-[12.5px] text-[#8c8c8c] font-medium tracking-wide">Tüm bilgileriniz 256bit SSL Sertifikası ile korunmaktadır.</p>
-                  <p className="text-[12.5px] text-[#8c8c8c] font-medium tracking-wide">© {new Date().getFullYear()} Kombingo.com Tüm Hakları Saklıdır</p>
+                  <p className="text-[12.5px] text-[#8c8c8c] font-medium tracking-wide">{copyrightText}</p>
                </div>
                <div className="flex items-center gap-x-3 mt-4 w-full justify-center">
                   <div className="w-[50px] h-[32px] border border-gray-200 rounded flex items-center justify-center bg-white shadow-[0_1px_2px_rgba(0,0,0,0.02)] px-1.5">

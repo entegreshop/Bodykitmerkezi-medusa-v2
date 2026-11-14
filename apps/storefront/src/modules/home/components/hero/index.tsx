@@ -27,9 +27,9 @@ const Hero = async ({ dict }: { dict: any }) => {
   const config = await getHeroConfig()
 
   // Extract config or use fallbacks
-  const tag = config?.tag || "MEDUSA V2 × NEXT.JS"
-  const title = config?.title || dict.hero.title
-  const subtitle = config?.subtitle || dict.hero.subtitle
+  const tag = config?.tag && config.tag !== "MEDUSA V2 × NEXT.JS" ? config.tag : "BODYKİT MERKEZİ"
+  const title = config?.title && config.title !== "XOOX Mağazasına Hoş Geldiniz" ? config.title : dict.hero.title
+  const subtitle = config?.subtitle && !config.subtitle.includes("Medusa V2 altyapısıyla") ? config.subtitle : dict.hero.subtitle
   const btnText = config?.btn_text || dict.hero.cta
   const btnLink = config?.btn_link || "/store"
   const mediaType = config?.media_type || "image"

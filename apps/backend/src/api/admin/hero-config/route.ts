@@ -73,9 +73,9 @@ const defaultBanners = [
 ]
 
 const defaultData = {
-  tag: "MEDUSA V2 × NEXT.JS",
-  title: "XOOX Mağazasına Hoş Geldiniz",
-  subtitle: "Medusa V2 altyapısıyla güçlendirilen yeni 2026 koleksiyonumuzu keşfedin",
+  tag: "BODYKİT MERKEZİ",
+  title: "BodyKit Merkezi'ne Hoş Geldiniz",
+  subtitle: "Aracınızın görünümünü baştan yaratacak yeni sezon body kit, tampon, spoiler ve difüzör koleksiyonumuzu keşfedin",
   btn_text: "Şimdi Alışverişe Başla",
   btn_link: "/store",
   media_type: "image", // "image" or "video"
@@ -112,6 +112,15 @@ function readConfig() {
     if (fs.existsSync(configFilePath)) {
       const content = fs.readFileSync(configFilePath, "utf-8")
       const parsed = JSON.parse(content)
+      if (parsed.title === "XOOX Mağazasına Hoş Geldiniz") {
+        parsed.title = defaultData.title
+      }
+      if (parsed.tag === "MEDUSA V2 × NEXT.JS") {
+        parsed.tag = defaultData.tag
+      }
+      if (parsed.subtitle === "Medusa V2 altyapısıyla güçlendirilen yeni 2026 koleksiyonumuzu keşfedin") {
+        parsed.subtitle = defaultData.subtitle
+      }
       return {
         ...defaultData,
         ...parsed,

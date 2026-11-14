@@ -21,7 +21,7 @@ const Register = ({ setCurrentView }: Props) => {
       data-testid="register-page"
     >
       <h1 className="text-large-semi uppercase mb-6">
-        XOOX Store Üyesi Olun
+        BodyKit Merkezi Üyesi Olun
       </h1>
       <p className="text-center text-base-regular text-ui-fg-base mb-4">
         Üye profilinizi oluşturun ve daha gelişmiş bir alışveriş deneyiminin keyfini çıkarın.
@@ -68,7 +68,7 @@ const Register = ({ setCurrentView }: Props) => {
         </div>
         <ErrorMessage error={message} data-testid="register-error" />
         <span className="text-center text-ui-fg-base text-small-regular mt-6">
-          Bir hesap oluşturarak, XOOX Store'un{" "}
+          Bir hesap oluşturarak, BodyKit Merkezi&apos;nin{" "}
           <LocalizedClientLink
             href="/content/privacy-policy"
             className="underline"

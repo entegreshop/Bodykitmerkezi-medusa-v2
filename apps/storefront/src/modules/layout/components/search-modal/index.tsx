@@ -11,7 +11,7 @@ import LocalizedClientLink from "@modules/common/components/localized-client-lin
 import Thumbnail from "@modules/products/components/thumbnail"
 import AddToCartButton from "@modules/products/components/product-preview/add-to-cart-button"
 
-export default function SearchModal() {
+export default function SearchModal({ logoUrl }: { logoUrl?: string }) {
   const [isOpen, setIsOpen] = useState(false)
   const [query, setQuery] = useState("")
   const [results, setResults] = useState<HttpTypes.StoreProduct[]>([])
@@ -124,9 +124,7 @@ export default function SearchModal() {
               onClick={() => setIsOpen(false)}
               className="txt-compact-xlarge-plus text-zinc-950 hover:text-violet-600 font-bold uppercase tracking-widest flex items-center gap-1.5 transition-colors"
             >
-              <span>XOOX</span>
-              <span className="w-2 h-2 rounded-full bg-violet-500 shadow-[0_0_8px_rgba(139,92,246,0.5)] inline-block"></span>
-              <span className="text-zinc-400 font-normal text-xs tracking-normal lowercase">store</span>
+              <img src={logoUrl || "/logo.png"} alt="BodyKit Merkezi" className="h-10 w-auto object-contain" />
             </LocalizedClientLink>
           </div>
 

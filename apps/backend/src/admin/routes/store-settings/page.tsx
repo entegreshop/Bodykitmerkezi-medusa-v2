@@ -31,15 +31,30 @@ type StoreMenuItemId =
 
 interface StoreConfigState {
   storeTitle: string
+  siteTitle: string
   logoUrl: string
+  logo: string
+  mobileLogo: string
+  sideMenuLogo: string
+  footerLogo: string
+  checkoutLogo: string
+  emailLogo: string
+  defaultImage: string
   faviconUrl: string
+  favicon: string
   footerDescription: string
   copyrightText: string
+  footerCopyrightText: string
+  contactCompany: string
   phone: string
+  contactPhone: string
   whatsapp: string
   email: string
+  contactEmail: string
   address: string
+  contactAddress: string
   workingHours: string
+  contactHours: string
   socialLinks: {
     instagram: string
     facebook: string
@@ -48,18 +63,38 @@ interface StoreConfigState {
   }
 }
 
+const DEFAULT_LOGO =
+  "https://api.bodykitmerkezi.com/uploads/logo-1794624171059-BODYKITMERKEZILOGO.png"
+const DEFAULT_FAVICON =
+  "https://api.bodykitmerkezi.com/uploads/logo-1785013199077-BODYKITMERKEZILOGO.png"
+
 const DEFAULT_CONFIG: StoreConfigState = {
   storeTitle: "BodyKit Merkezi | Oto Modifiye & Aksesuar",
-  logoUrl: "/images/logo-main.png",
-  faviconUrl: "/favicon.ico",
+  siteTitle: "BodyKit Merkezi | Oto Modifiye & Aksesuar",
+  logoUrl: DEFAULT_LOGO,
+  logo: DEFAULT_LOGO,
+  mobileLogo: DEFAULT_LOGO,
+  sideMenuLogo: DEFAULT_LOGO,
+  footerLogo: DEFAULT_LOGO,
+  checkoutLogo: DEFAULT_LOGO,
+  emailLogo: DEFAULT_LOGO,
+  defaultImage: DEFAULT_LOGO,
+  faviconUrl: DEFAULT_FAVICON,
+  favicon: DEFAULT_FAVICON,
   footerDescription:
     "Türkiye'nin en kapsamlı oto body kit, tampon, spoiler, difüzör ve modifiye aksesuarları mağazası.",
   copyrightText: "© 2026 BodyKit Merkezi. Tüm hakları saklıdır.",
-  phone: "0552 001 99 66",
-  whatsapp: "905520019966",
+  footerCopyrightText: "© 2026 BodyKit Merkezi. Tüm hakları saklıdır.",
+  contactCompany: "BODYKİT MERKEZİ",
+  phone: "0532 337 00 81",
+  contactPhone: "0532 337 00 81",
+  whatsapp: "905323370081",
   email: "info@bodykitmerkezi.com",
+  contactEmail: "info@bodykitmerkezi.com",
   address: "İkitelli OSB Oto Sanayi Sitesi Başakşehir / İstanbul",
+  contactAddress: "İkitelli OSB Oto Sanayi Sitesi Başakşehir / İstanbul",
   workingHours: "Pzt - Cmt: 09:00 - 19:00",
+  contactHours: "Pzt - Cmt: 09:00 - 19:00",
   socialLinks: {
     instagram: "https://instagram.com/bodykitmerkezi",
     facebook: "https://facebook.com/bodykitmerkezi",
@@ -163,13 +198,69 @@ const StoreSettingsPage = () => {
     fetch("/admin/logo-config")
       .then((res) => res.json())
       .then((data) => {
-        if (data?.config) {
+        const raw =
+          data?.config?.config && typeof data.config.config === "object"
+            ? { ...data.config, ...data.config.config }
+            : data?.config
+        if (raw) {
+          const validLogo = (val: any) =>
+            typeof val === "string" &&
+            val.trim() !== "" &&
+            val !== "/images/logo-main.png"
+              ? val.trim()
+              : null
+
+          const mainLogo =
+            validLogo(raw.logoUrl) || validLogo(raw.logo) || DEFAULT_LOGO
+          const mainFavicon =
+            validLogo(raw.favicon) && raw.favicon !== "/favicon.ico"
+              ? raw.favicon
+              : validLogo(raw.faviconUrl) && raw.faviconUrl !== "/favicon.ico"
+              ? raw.faviconUrl
+              : DEFAULT_FAVICON
+          const title =
+            raw.storeTitle || raw.siteTitle || DEFAULT_CONFIG.storeTitle
+          const copyright = (
+            raw.copyrightText ||
+            raw.footerCopyrightText ||
+            DEFAULT_CONFIG.copyrightText
+          ).replace(/Bodytkitmerkezi\.com/gi, "BodyKit Merkezi")
+          const phone = raw.phone || raw.contactPhone || DEFAULT_CONFIG.phone
+          const email = raw.email || raw.contactEmail || DEFAULT_CONFIG.email
+          const address =
+            raw.address || raw.contactAddress || DEFAULT_CONFIG.address
+          const hours =
+            raw.workingHours || raw.contactHours || DEFAULT_CONFIG.workingHours
+
           setConfig({
             ...DEFAULT_CONFIG,
-            ...data.config,
+            ...raw,
+            storeTitle: title,
+            siteTitle: title,
+            logoUrl: mainLogo,
+            logo: mainLogo,
+            mobileLogo: validLogo(raw.mobileLogo) || mainLogo,
+            sideMenuLogo: validLogo(raw.sideMenuLogo) || mainLogo,
+            footerLogo: validLogo(raw.footerLogo) || mainLogo,
+            checkoutLogo: validLogo(raw.checkoutLogo) || mainLogo,
+            emailLogo: validLogo(raw.emailLogo) || mainLogo,
+            defaultImage: validLogo(raw.defaultImage) || mainLogo,
+            faviconUrl: mainFavicon,
+            favicon: mainFavicon,
+            copyrightText: copyright,
+            footerCopyrightText: copyright,
+            contactCompany: raw.contactCompany || DEFAULT_CONFIG.contactCompany,
+            phone,
+            contactPhone: phone,
+            email,
+            contactEmail: email,
+            address,
+            contactAddress: address,
+            workingHours: hours,
+            contactHours: hours,
             socialLinks: {
               ...DEFAULT_CONFIG.socialLinks,
-              ...(data.config.socialLinks || {}),
+              ...(raw.socialLinks || {}),
             },
           })
         }
@@ -180,13 +271,24 @@ const StoreSettingsPage = () => {
   const handleSave = async () => {
     setSaving(true)
     try {
+      const payload = {
+        ...config,
+        siteTitle: config.storeTitle,
+        logo: config.logoUrl,
+        favicon: config.faviconUrl,
+        footerCopyrightText: config.copyrightText,
+        contactPhone: config.phone,
+        contactEmail: config.email,
+        contactAddress: config.address,
+        contactHours: config.workingHours,
+      }
       const res = await fetch("/admin/logo-config", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ config }),
+        body: JSON.stringify(payload),
       })
       if (res.ok) {
-        showToast("Ayarlar başarıyla kaydedildi!")
+        showToast("Ayarlar başarıyla kaydedildi ve mağaza önyüzüne yansıtıldı!")
       } else {
         showToast("Kaydedilirken bir hata oluştu.")
       }
@@ -197,7 +299,19 @@ const StoreSettingsPage = () => {
     }
   }
 
-  const handleFileUpload = async (field: "logoUrl" | "faviconUrl", file: File) => {
+  const handleFileUpload = async (
+    field:
+      | "logoUrl"
+      | "mobileLogo"
+      | "sideMenuLogo"
+      | "footerLogo"
+      | "checkoutLogo"
+      | "emailLogo"
+      | " faviconUrl"
+      | "faviconUrl",
+    file: File,
+    applyToAllLogos = false
+  ) => {
     setUploadingField(field)
     try {
       const base64 = await new Promise<string>((resolve, reject) => {
@@ -217,8 +331,26 @@ const StoreSettingsPage = () => {
       })
       const data = await res.json()
       if (data?.url) {
-        setConfig((prev) => ({ ...prev, [field]: data.url }))
-        showToast("Görsel başarıyla yüklendi.")
+        setConfig((prev) => {
+          if (applyToAllLogos || field === "logoUrl") {
+            return {
+              ...prev,
+              logoUrl: data.url,
+              logo: data.url,
+              mobileLogo: data.url,
+              sideMenuLogo: data.url,
+              footerLogo: data.url,
+              checkoutLogo: data.url,
+              emailLogo: data.url,
+              defaultImage: data.url,
+            }
+          }
+          if (field === "faviconUrl") {
+            return { ...prev, faviconUrl: data.url, favicon: data.url }
+          }
+          return { ...prev, [field]: data.url }
+        })
+        showToast("Görsel başarıyla yüklendi. Kaydet butonuna basarak yayınlayabilirsiniz.")
       } else {
         showToast("Görsel yüklenemedi.")
       }
@@ -446,7 +578,13 @@ const StoreSettingsPage = () => {
                     <input
                       className="quka-input"
                       value={config.storeTitle}
-                      onChange={(e) => setConfig({ ...config, storeTitle: e.target.value })}
+                      onChange={(e) =>
+                        setConfig({
+                          ...config,
+                          storeTitle: e.target.value,
+                          siteTitle: e.target.value,
+                        })
+                      }
                     />
                   </div>
                   <div className="quka-field">
@@ -463,11 +601,17 @@ const StoreSettingsPage = () => {
                     />
                   </div>
                   <div className="quka-field" style={{ gridColumn: "span 2" }}>
-                    <label>Telif Hakkı (Copyright) Metni</label>
+                    <label>Telif Hakkı (Copyright) Metni (Footer &amp; Ödeme Ekranı)</label>
                     <input
                       className="quka-input"
                       value={config.copyrightText}
-                      onChange={(e) => setConfig({ ...config, copyrightText: e.target.value })}
+                      onChange={(e) =>
+                        setConfig({
+                          ...config,
+                          copyrightText: e.target.value,
+                          footerCopyrightText: e.target.value,
+                        })
+                      }
                     />
                   </div>
                 </div>
@@ -475,37 +619,97 @@ const StoreSettingsPage = () => {
 
               {/* Logo ve İkonlar */}
               <div id="preview-card-store_logo" className="quka-card">
-                <h5>Logo ve İkonlar</h5>
+                <h5>Logo ve İkonlar (Tüm Vitrin, Mobil, Menü ve Ödeme Alanları)</h5>
                 <div className="quka-form-grid">
                   <div className="quka-field">
-                    <label>Site Üst Logo (Header Logo)</label>
+                    <label>Ana Site Logosu (Header, Mobil, Menü, Footer &amp; Ödeme)</label>
+                    {config.logoUrl && (
+                      <div
+                        style={{
+                          padding: 10,
+                          marginBottom: 8,
+                          border: "1px solid #e2e8f0",
+                          borderRadius: 6,
+                          background: "#f8fafc",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                        }}
+                      >
+                        <img
+                          src={config.logoUrl}
+                          alt="Ana Logo"
+                          style={{ maxHeight: 38, objectFit: "contain" }}
+                        />
+                        <span className="quka-badge-success">Aktif Logo</span>
+                      </div>
+                    )}
                     <div style={{ display: "flex", gap: 8 }}>
                       <input
                         className="quka-input"
                         value={config.logoUrl}
-                        onChange={(e) => setConfig({ ...config, logoUrl: e.target.value })}
+                        onChange={(e) =>
+                          setConfig({
+                            ...config,
+                            logoUrl: e.target.value,
+                            logo: e.target.value,
+                            mobileLogo: e.target.value,
+                            sideMenuLogo: e.target.value,
+                            footerLogo: e.target.value,
+                            checkoutLogo: e.target.value,
+                            emailLogo: e.target.value,
+                          })
+                        }
                       />
                       <label className="quka-btn-outline" style={{ whiteSpace: "nowrap", marginBottom: 0 }}>
-                        {uploadingField === "logoUrl" ? "Yükleniyor..." : "Yükle"}
+                        {uploadingField === "logoUrl" ? "Yükleniyor..." : "Tümüne Yükle"}
                         <input
                           type="file"
                           accept="image/*"
                           style={{ display: "none" }}
                           onChange={(e) => {
                             const f = e.target.files?.[0]
-                            if (f) handleFileUpload("logoUrl", f)
+                            if (f) handleFileUpload("logoUrl", f, true)
                           }}
                         />
                       </label>
                     </div>
                   </div>
+
                   <div className="quka-field">
                     <label>Tarayıcı İkonu (Favicon)</label>
+                    {config.faviconUrl && (
+                      <div
+                        style={{
+                          padding: 10,
+                          marginBottom: 8,
+                          border: "1px solid #e2e8f0",
+                          borderRadius: 6,
+                          background: "#f8fafc",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                        }}
+                      >
+                        <img
+                          src={config.faviconUrl}
+                          alt="Favicon"
+                          style={{ maxHeight: 38, objectFit: "contain" }}
+                        />
+                        <span className="quka-badge-muted">Favicon</span>
+                      </div>
+                    )}
                     <div style={{ display: "flex", gap: 8 }}>
                       <input
                         className="quka-input"
                         value={config.faviconUrl}
-                        onChange={(e) => setConfig({ ...config, faviconUrl: e.target.value })}
+                        onChange={(e) =>
+                          setConfig({
+                            ...config,
+                            faviconUrl: e.target.value,
+                            favicon: e.target.value,
+                          })
+                        }
                       />
                       <label className="quka-btn-outline" style={{ whiteSpace: "nowrap", marginBottom: 0 }}>
                         {uploadingField === "faviconUrl" ? "Yükleniyor..." : "Yükle"}
@@ -521,23 +725,83 @@ const StoreSettingsPage = () => {
                       </label>
                     </div>
                   </div>
+
+                  <div className="quka-field">
+                    <label>Mobil Üst Logo</label>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <input
+                        className="quka-input"
+                        value={config.mobileLogo}
+                        onChange={(e) => setConfig({ ...config, mobileLogo: e.target.value })}
+                      />
+                      <label className="quka-btn-outline" style={{ whiteSpace: "nowrap", marginBottom: 0 }}>
+                        {uploadingField === "mobileLogo" ? "..." : "Yükle"}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          style={{ display: "none" }}
+                          onChange={(e) => {
+                            const f = e.target.files?.[0]
+                            if (f) handleFileUpload("mobileLogo", f)
+                          }}
+                        />
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="quka-field">
+                    <label>Ödeme Adımı (Checkout) Logosu</label>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <input
+                        className="quka-input"
+                        value={config.checkoutLogo}
+                        onChange={(e) => setConfig({ ...config, checkoutLogo: e.target.value })}
+                      />
+                      <label className="quka-btn-outline" style={{ whiteSpace: "nowrap", marginBottom: 0 }}>
+                        {uploadingField === "checkoutLogo" ? "..." : "Yükle"}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          style={{ display: "none" }}
+                          onChange={(e) => {
+                            const f = e.target.files?.[0]
+                            if (f) handleFileUpload("checkoutLogo", f)
+                          }}
+                        />
+                      </label>
+                    </div>
+                  </div>
                 </div>
               </div>
 
               {/* İletişim & Sosyal Medya */}
               <div id="preview-card-store_contact" className="quka-card">
-                <h5>İletişim & Sosyal Medya</h5>
+                <h5>İletişim &amp; Sosyal Medya (Footer &ldquo;Bize Ulaşın&rdquo; Alanı)</h5>
                 <div className="quka-form-grid">
+                  <div className="quka-field" style={{ gridColumn: "span 2" }}>
+                    <label>Kurumsal Firma Unvanı (Footer Bize Ulaşın Başlığı)</label>
+                    <input
+                      className="quka-input"
+                      value={config.contactCompany}
+                      onChange={(e) => setConfig({ ...config, contactCompany: e.target.value })}
+                    />
+                  </div>
                   <div className="quka-field">
                     <label>Müşteri Hizmetleri Telefon</label>
                     <input
                       className="quka-input"
                       value={config.phone}
-                      onChange={(e) => setConfig({ ...config, phone: e.target.value })}
+                      onChange={(e) =>
+                        setConfig({
+                          ...config,
+                          phone: e.target.value,
+                          contactPhone: e.target.value,
+                        })
+                      }
                     />
                   </div>
                   <div className="quka-field">
-                    <label>WhatsApp Sipariş & Destek Hattı</label>
+                    <label>WhatsApp Sipariş &amp; Destek Hattı</label>
                     <input
                       className="quka-input"
                       value={config.whatsapp}
@@ -549,7 +813,13 @@ const StoreSettingsPage = () => {
                     <input
                       className="quka-input"
                       value={config.email}
-                      onChange={(e) => setConfig({ ...config, email: e.target.value })}
+                      onChange={(e) =>
+                        setConfig({
+                          ...config,
+                          email: e.target.value,
+                          contactEmail: e.target.value,
+                        })
+                      }
                     />
                   </div>
                   <div className="quka-field">
@@ -557,7 +827,13 @@ const StoreSettingsPage = () => {
                     <input
                       className="quka-input"
                       value={config.workingHours}
-                      onChange={(e) => setConfig({ ...config, workingHours: e.target.value })}
+                      onChange={(e) =>
+                        setConfig({
+                          ...config,
+                          workingHours: e.target.value,
+                          contactHours: e.target.value,
+                        })
+                      }
                     />
                   </div>
                   <div className="quka-field" style={{ gridColumn: "span 2" }}>
@@ -565,7 +841,13 @@ const StoreSettingsPage = () => {
                     <input
                       className="quka-input"
                       value={config.address}
-                      onChange={(e) => setConfig({ ...config, address: e.target.value })}
+                      onChange={(e) =>
+                        setConfig({
+                          ...config,
+                          address: e.target.value,
+                          contactAddress: e.target.value,
+                        })
+                      }
                     />
                   </div>
                   <div className="quka-field">
@@ -672,12 +954,12 @@ const StoreSettingsPage = () => {
 
               {/* Ürün & Katalog Ayarları */}
               <div id="preview-card-store_products" className="quka-card">
-                <h5>Ürün & Katalog Ayarları</h5>
+                <h5>Ürün &amp; Katalog Ayarları</h5>
                 <div className="quka-form-grid">
                   <div className="quka-field">
                     <label>Stokta Olmayan Ürünler</label>
                     <select className="quka-select" defaultValue="show_bottom">
-                      <option value="show_bottom">Listelerin En Altında Göster ("Tükendi" Etiketiyle)</option>
+                      <option value="show_bottom">Listelerin En Altında Göster (&ldquo;Tükendi&rdquo; Etiketiyle)</option>
                       <option value="hide">Sitede Gizle</option>
                     </select>
                   </div>
@@ -773,7 +1055,7 @@ const StoreSettingsPage = () => {
                 <h5>Bayi XML Çıktısı</h5>
                 <div className="quka-form-grid">
                   <div className="quka-field" style={{ gridColumn: "span 2" }}>
-                    <label>Standart Ürün & Stok XML Paylaşım Bağlantısı</label>
+                    <label>Standart Ürün &amp; Stok XML Paylaşım Bağlantısı</label>
                     <input
                       className="quka-input"
                       readOnly
@@ -888,7 +1170,7 @@ const StoreSettingsPage = () => {
               <textarea
                 className="quka-textarea"
                 rows={16}
-                defaultValue={`MADDE 1 - TARAFLAR\n\n1.1. SATICI BİLGİLERİ:\nUnvanı: BodyKit Merkezi Otomotiv Aksesuar San. ve Tic. Ltd. Şti.\nAdres: ${config.address}\nTelefon: ${config.phone}\nE-Posta: ${config.email}\n\n1.2. ALICI BİLGİLERİ:\nAdı Soyadı / Unvanı: {ALICI_AD_SOYAD}\nTeslimat Adresi: {TESLIMAT_ADRESI}\nTelefon: {ALICI_TELEFON}\nE-Posta: {ALICI_EPOSTA}\n\nMADDE 2 - SÖZLEŞMENİN KONUSU\nİşbu sözleşmenin konusu, ALICI'nın SATICI'ya ait www.bodykitmerkezi.com internet sitesinden elektronik ortamda siparişini yaptığı aşağıda nitelikleri ve satış fiyatı belirtilen ürünün satışı ve teslimi ile ilgili olarak 6502 sayılı Tüketicinin Korunması Hakkında Kanun ve Mesafeli Sözleşmeler Yönetmeliği hükümleri gereğince tarafların hak ve yükümlülüklerinin saptanmasıdır.`}
+                defaultValue={`MADDE 1 - TARAFLAR\n\n1.1. SATICI BİLGİLERİ:\nUnvanı: ${config.contactCompany}\nAdres: ${config.address}\nTelefon: ${config.phone}\nE-Posta: ${config.email}\n\n1.2. ALICI BİLGİLERİ:\nAdı Soyadı / Unvanı: {ALICI_AD_SOYAD}\nTeslimat Adresi: {TESLIMAT_ADRESI}\nTelefon: {ALICI_TELEFON}\nE-Posta: {ALICI_EPOSTA}\n\nMADDE 2 - SÖZLEŞMENİN KONUSU\nİşbu sözleşmenin konusu, ALICI'nın SATICI'ya ait www.bodykitmerkezi.com internet sitesinden elektronik ortamda siparişini yaptığı aşağıda nitelikleri ve satış fiyatı belirtilen ürünün satışı ve teslimi ile ilgili olarak 6502 sayılı Tüketicinin Korunması Hakkında Kanun ve Mesafeli Sözleşmeler Yönetmeliği hükümleri gereğince tarafların hak ve yükümlülüklerinin saptanmasıdır.`}
               />
             </div>
           </div>
@@ -898,7 +1180,7 @@ const StoreSettingsPage = () => {
         {activeTab === "marketing" && (
           <div>
             <div className="quka-card">
-              <h5>Google Servisleri & Doğrulama Kodları</h5>
+              <h5>Google Servisleri &amp; Doğrulama Kodları</h5>
               <div className="quka-form-grid">
                 <div className="quka-field">
                   <label>Google Analytics 4 (GA4) Ölçüm Kimliği</label>
@@ -920,7 +1202,7 @@ const StoreSettingsPage = () => {
             </div>
 
             <div className="quka-card">
-              <h5>Meta (Facebook & Instagram), TikTok ve Yandex Piksel</h5>
+              <h5>Meta (Facebook &amp; Instagram), TikTok ve Yandex Piksel</h5>
               <div className="quka-form-grid">
                 <div className="quka-field">
                   <label>Meta (Facebook) Pixel ID</label>
@@ -942,7 +1224,7 @@ const StoreSettingsPage = () => {
             </div>
 
             <div className="quka-card">
-              <h5>Özel Script & Canlı Destek Kodları</h5>
+              <h5>Özel Script &amp; Canlı Destek Kodları</h5>
               <div className="quka-form-grid">
                 <div className="quka-field">
                   <label>{"<head> ... </head>"} Arasına Eklenecek Özel Kodlar</label>
@@ -1197,7 +1479,7 @@ const StoreSettingsPage = () => {
           <div className="quka-card">
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
               <div>
-                <h5 style={{ margin: 0 }}>Mağaza Dilleri & Çoklu Dil (Lokalizasyon)</h5>
+                <h5 style={{ margin: 0 }}>Mağaza Dilleri &amp; Çoklu Dil (Lokalizasyon)</h5>
                 <div style={{ fontSize: 12.5, color: "#64748b", marginTop: 4 }}>
                   E-İhracat ve çok dilli vitrin için aktif dilleri ve çeviri oranlarını yönetebilirsiniz.
                 </div>
@@ -1273,7 +1555,7 @@ const StoreSettingsPage = () => {
           <div className="quka-card">
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
               <div>
-                <h5 style={{ margin: 0 }}>Web Servis (REST & SOAP API Hesapları)</h5>
+                <h5 style={{ margin: 0 }}>Web Servis (REST &amp; SOAP API Hesapları)</h5>
                 <div style={{ fontSize: 12.5, color: "#64748b", marginTop: 4 }}>
                   ERP, Muhasebe, Pazaryeri ve Mobil Uygulama entegrasyonları için API erişim anahtarları.
                 </div>
@@ -1300,10 +1582,10 @@ const StoreSettingsPage = () => {
               </thead>
               <tbody>
                 <tr>
-                  <td style={{ fontWeight: 600 }}>EntegreShop ERP & E-Fatura Köprüsü</td>
+                  <td style={{ fontWeight: 600 }}>EntegreShop ERP &amp; E-Fatura Köprüsü</td>
                   <td><code>api_erp_prod_01</code></td>
                   <td>Ürün, Sipariş, Stok, Cari (Tam Yetki)</td>
-                  <td>Tüm IP'ler</td>
+                  <td>Tüm IP&apos;ler</td>
                   <td>2 dakika önce</td>
                   <td><span className="quka-badge-success">✓ Aktif</span></td>
                 </tr>
@@ -1311,15 +1593,15 @@ const StoreSettingsPage = () => {
                   <td style={{ fontWeight: 600 }}>Pazaryeri Senkronizasyon Servisi</td>
                   <td><code>api_mp_sync_02</code></td>
                   <td>Ürün, Fiyat, Stok, Sipariş</td>
-                  <td>Tüm IP'ler</td>
+                  <td>Tüm IP&apos;ler</td>
                   <td>5 dakika önce</td>
                   <td><span className="quka-badge-success">✓ Aktif</span></td>
                 </tr>
                 <tr>
-                  <td style={{ fontWeight: 600 }}>Mobil Uygulama (iOS & Android)</td>
+                  <td style={{ fontWeight: 600 }}>Mobil Uygulama (iOS &amp; Android)</td>
                   <td><code>api_mobile_storefront</code></td>
                   <td>Katalog, Sepet, Müşteri</td>
-                  <td>Tüm IP'ler</td>
+                  <td>Tüm IP&apos;ler</td>
                   <td>12 dakika önce</td>
                   <td><span className="quka-badge-success">✓ Aktif</span></td>
                 </tr>
@@ -1333,7 +1615,7 @@ const StoreSettingsPage = () => {
           <div className="quka-card">
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
               <div>
-                <h5 style={{ margin: 0 }}>Yönetici Kullanıcılar & Personel Yetkileri</h5>
+                <h5 style={{ margin: 0 }}>Yönetici Kullanıcılar &amp; Personel Yetkileri</h5>
                 <div style={{ fontSize: 12.5, color: "#64748b", marginTop: 4 }}>
                   Yönetim paneline erişebilen personelleri ve departman bazlı yetki gruplarını yönetin.
                 </div>
@@ -1362,23 +1644,23 @@ const StoreSettingsPage = () => {
                 <tr>
                   <td style={{ fontWeight: 600 }}>BodyKit Merkezi Admin</td>
                   <td>info@bodykitmerkezi.com</td>
-                  <td>0552 001 99 66</td>
+                  <td>0532 337 00 81</td>
                   <td>Süper Yönetici (Tam Yetki)</td>
                   <td><span className="quka-badge-success">SMS + E-Posta</span></td>
                   <td><span className="quka-badge-success">✓ Aktif</span></td>
                 </tr>
                 <tr>
-                  <td style={{ fontWeight: 600 }}>Depo & Kargo Operasyon</td>
+                  <td style={{ fontWeight: 600 }}>Depo &amp; Kargo Operasyon</td>
                   <td>depo@bodykitmerkezi.com</td>
-                  <td>0552 001 99 67</td>
+                  <td>0532 337 00 82</td>
                   <td>Sipariş ve Kargo Sorumlusu</td>
                   <td><span className="quka-badge-muted">Standart</span></td>
                   <td><span className="quka-badge-success">✓ Aktif</span></td>
                 </tr>
                 <tr>
-                  <td style={{ fontWeight: 600 }}>Katalog & Pazaryeri Uzmanı</td>
+                  <td style={{ fontWeight: 600 }}>Katalog &amp; Pazaryeri Uzmanı</td>
                   <td>katalog@bodykitmerkezi.com</td>
-                  <td>0552 001 99 68</td>
+                  <td>0532 337 00 83</td>
                   <td>Ürün, Kategori ve Pazaryeri</td>
                   <td><span className="quka-badge-muted">Standart</span></td>
                   <td><span className="quka-badge-success">✓ Aktif</span></td>
@@ -1402,10 +1684,10 @@ const StoreSettingsPage = () => {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 16 }}>
                 <div>
                   <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: 1, color: "#93c5fd", fontWeight: 700 }}>
-                    AKTİF E-TİCARET & PAZARYERİ LİSANSI
+                    AKTİF E-TİCARET &amp; PAZARYERİ LİSANSI
                   </div>
                   <div style={{ fontSize: 22, fontWeight: 800, marginTop: 4 }}>
-                    EntegreShop Enterprise Плюс (Tam Paket)
+                    EntegreShop Enterprise (Tam Paket)
                   </div>
                   <div style={{ fontSize: 13, color: "#cbd5e1", marginTop: 4 }}>
                     Lisans Anahtarı: <code>ENT-BKM-2026-PRO-99482</code> • Alan Adı: <strong>bodykitmerkezi.com</strong>
