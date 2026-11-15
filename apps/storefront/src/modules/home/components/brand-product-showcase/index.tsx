@@ -8,10 +8,48 @@ import { N11ProductCard } from "@modules/home/components/category-tabs"
 export interface CarBrandItem {
   id: string
   name: string
+  sectionTitle?: string
   subtitle: string
   logoUrl: string
   svgLogo: string
   keywords: string[]
+  viewAllLink?: string
+  active?: boolean
+}
+
+export interface BrandShowcaseConfig {
+  enabled?: boolean
+  eyebrow?: string
+  title?: string
+  subtitle?: string
+  view_all_text?: string
+  view_all_link?: string
+  show_all_tab?: boolean
+  all_tab_label?: string
+  default_active_brand?: string
+  accent_color?: string
+  card_accent_color?: string
+  free_shipping_text?: string
+  columns_desktop?: number
+  max_products_per_brand?: number
+  show_count_badge?: boolean
+  show_other_products?: boolean
+  other_products_title?: string
+  other_products_subtitle?: string
+}
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "https://api.bodykitmerkezi.com"
+
+function resolveLogoUrl(url?: string): string {
+  if (!url) return ""
+  const trimmed = url.trim()
+  if (trimmed.startsWith("<svg") || trimmed.startsWith("http://") || trimmed.startsWith("https://") || trimmed.startsWith("data:")) {
+    return trimmed
+  }
+  if (trimmed.startsWith("/uploads/")) {
+    return `${BACKEND_URL}${trimmed}`
+  }
+  return trimmed
 }
 
 export const CAR_BRANDS: CarBrandItem[] = [
@@ -202,19 +240,36 @@ export const CAR_BRANDS: CarBrandItem[] = [
 
 function BrandLogoImage({ brand, className = "w-full h-full object-contain" }: { brand: CarBrandItem; className?: string }) {
   const [imgError, setImgError] = useState(false)
+  const resolvedUrl = resolveLogoUrl(brand.logoUrl)
 
-  if (imgError) {
+  if (resolvedUrl.startsWith("<svg")) {
     return (
       <div
         className={className}
-        dangerouslySetInnerHTML={{ __html: brand.svgLogo }}
+        dangerouslySetInnerHTML={{ __html: resolvedUrl }}
       />
+    )
+  }
+
+  if (imgError || !resolvedUrl) {
+    if (brand.svgLogo) {
+      return (
+        <div
+          className={className}
+          dangerouslySetInnerHTML={{ __html: brand.svgLogo }}
+        />
+      )
+    }
+    return (
+      <span className="text-xs font-black text-zinc-800 uppercase tracking-tight">
+        {brand.name?.slice(0, 3)}
+      </span>
     )
   }
 
   return (
     <img
-      src={brand.logoUrl}
+      src={resolvedUrl}
       alt={brand.name}
       className={className}
       loading="lazy"
@@ -241,8 +296,9 @@ function doesProductMatchBrand(product: HttpTypes.StoreProduct, brand: CarBrandI
     }`
   )
 
-  return brand.keywords.some((kw) => {
+  return (brand.keywords || []).some((kw) => {
     const normKw = normalizeTr(kw)
+    if (!normKw) return false
     if (normKw.length <= 3) {
       const regex = new RegExp(`(^|[^a-z0-9])${normKw}([^a-z0-9]|$)`, "i")
       return regex.test(haystack)
@@ -254,16 +310,77 @@ function doesProductMatchBrand(product: HttpTypes.StoreProduct, brand: CarBrandI
 export default function BrandProductShowcase({
   products,
   region,
-  initialBrand = "tumu",
+  initialBrand,
+  showcaseConfig,
+  configuredBrands,
 }: {
   products: HttpTypes.StoreProduct[]
   region: HttpTypes.StoreRegion
   initialBrand?: string
+  showcaseConfig?: BrandShowcaseConfig
+  configuredBrands?: any[]
 }) {
   const scrollContainerRef = useRef<HTMLDivElement>(null)
-  const [selectedBrand, setSelectedBrand] = useState<string>(initialBrand || "tumu")
+
+  const activeBrandsList: CarBrandItem[] = useMemo(() => {
+    if (Array.isArray(configuredBrands) && configuredBrands.length > 0) {
+      return configuredBrands
+        .filter((b: any) => b && b.active !== false)
+        .map((b: any) => {
+          const fallbackBrand = CAR_BRANDS.find((fb) => fb.id === b.id)
+          const parsedKeywords = Array.isArray(b.keywords)
+            ? b.keywords
+            : typeof b.keywords === "string"
+            ? b.keywords
+                .split(",")
+                .map((s: string) => s.trim())
+                .filter(Boolean)
+            : fallbackBrand?.keywords || [b.name || b.id]
+
+          return {
+            id: b.id || "brand",
+            name: b.name || fallbackBrand?.name || "Marka",
+            sectionTitle: b.section_title || b.sectionTitle || `${b.name || fallbackBrand?.name || "Marka"} Bodykit & Spoiler Ürünleri`,
+            subtitle: b.subtitle || fallbackBrand?.subtitle || "",
+            logoUrl: b.logo_url || b.logoUrl || fallbackBrand?.logoUrl || "",
+            svgLogo: b.svg_logo || b.svgLogo || fallbackBrand?.svgLogo || "",
+            keywords: parsedKeywords,
+            viewAllLink: b.view_all_link || b.viewAllLink || "/store",
+            active: b.active !== false,
+          }
+        })
+    }
+    return CAR_BRANDS
+  }, [configuredBrands])
+
+  const defaultBrand = initialBrand || showcaseConfig?.default_active_brand || "tumu"
+  const [selectedBrand, setSelectedBrand] = useState<string>(defaultBrand)
   const [showLeftArrow, setShowLeftArrow] = useState(false)
   const [showRightArrow, setShowRightArrow] = useState(true)
+
+  const showAllTab = showcaseConfig?.show_all_tab !== false
+  const allTabLabel = showcaseConfig?.all_tab_label || "TÜM MARKALAR"
+  const eyebrowText = showcaseConfig?.eyebrow ?? "ARACINIZA ÖZEL SEÇİM"
+  const mainTitle = showcaseConfig?.title || "Araç Markasına Göre Bodykit & Aksesuar Vitrini"
+  const mainSubtitle = showcaseConfig?.subtitle ?? "Aracınızın markasını seçin veya tüm markaların ürünlerini alt alta inceleyin."
+  const viewAllText = showcaseConfig?.view_all_text || "Tüm Mağaza Ürünlerini Gör"
+  const viewAllLink = showcaseConfig?.view_all_link || "/store"
+  const accentColor = showcaseConfig?.accent_color || "#7c3aed"
+  const cardAccentColor = showcaseConfig?.card_accent_color || "#c91d82"
+  const freeShippingText = showcaseConfig?.free_shipping_text || "HIZLI KARGO"
+  const columnsDesktop = showcaseConfig?.columns_desktop === 4 ? 4 : 5
+  const maxProductsPerBrand = Number(showcaseConfig?.max_products_per_brand || 0)
+  const showCountBadge = showcaseConfig?.show_count_badge !== false
+  const showOtherProducts = showcaseConfig?.show_other_products !== false
+  const otherProductsTitle = showcaseConfig?.other_products_title || "Diğer Marka & Üniversal Bodykit Ürünleri"
+  const otherProductsSubtitle =
+    showcaseConfig?.other_products_subtitle ||
+    "Tüm araç modelleriyle uyumlu üniversal lip, spoiler, difüzör ve aksesuar çeşitleri"
+
+  const gridColsClass =
+    columnsDesktop === 4
+      ? "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5 md:gap-4"
+      : "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5 md:gap-4"
 
   const checkScrollLimits = () => {
     const el = scrollContainerRef.current
@@ -283,7 +400,7 @@ export default function BrandProductShowcase({
       if (el) el.removeEventListener("scroll", checkScrollLimits)
       window.removeEventListener("resize", checkScrollLimits)
     }
-  }, [])
+  }, [activeBrandsList])
 
   const scrollTabs = (direction: "left" | "right") => {
     const el = scrollContainerRef.current
@@ -298,14 +415,14 @@ export default function BrandProductShowcase({
   // Group products by car brand
   const { brandMap, unmatchedProducts } = useMemo(() => {
     const map: Record<string, HttpTypes.StoreProduct[]> = {}
-    CAR_BRANDS.forEach((b) => {
+    activeBrandsList.forEach((b) => {
       map[b.id] = []
     })
 
     const matchedIds = new Set<string>()
 
     for (const product of products || []) {
-      for (const brand of CAR_BRANDS) {
+      for (const brand of activeBrandsList) {
         if (doesProductMatchBrand(product, brand)) {
           map[brand.id].push(product)
           matchedIds.add(product.id)
@@ -315,32 +432,42 @@ export default function BrandProductShowcase({
 
     const unmatched = (products || []).filter((p) => !matchedIds.has(p.id))
     return { brandMap: map, unmatchedProducts: unmatched }
-  }, [products])
+  }, [products, activeBrandsList])
 
   // Visible brand groups when "Tüm Markalar" is active vs a single brand is active
   const visibleBrandSections = useMemo(() => {
     if (selectedBrand !== "tumu") {
-      const targetBrand = CAR_BRANDS.find((b) => b.id === selectedBrand)
+      const targetBrand = activeBrandsList.find((b) => b.id === selectedBrand)
       if (!targetBrand) return []
       const brandProds = brandMap[targetBrand.id] || []
+      const sliced =
+        maxProductsPerBrand > 0 ? brandProds.slice(0, maxProductsPerBrand) : brandProds
       return [
         {
           brand: targetBrand,
-          products: brandProds.length > 0 ? brandProds : products.slice(0, 10),
+          products: sliced.length > 0 ? sliced : products.slice(0, maxProductsPerBrand > 0 ? maxProductsPerBrand : 10),
+          totalCount: brandProds.length,
           isFallback: brandProds.length === 0,
         },
       ]
     }
 
     // When "tumu" is selected, list each brand that has matching products one below another (alt alta)
-    const sections = CAR_BRANDS.map((brand) => ({
-      brand,
-      products: brandMap[brand.id] || [],
-      isFallback: false,
-    })).filter((sec) => sec.products.length > 0)
+    const sections = activeBrandsList
+      .map((brand) => {
+        const fullList = brandMap[brand.id] || []
+        const sliced = maxProductsPerBrand > 0 ? fullList.slice(0, maxProductsPerBrand) : fullList
+        return {
+          brand,
+          products: sliced,
+          totalCount: fullList.length,
+          isFallback: false,
+        }
+      })
+      .filter((sec) => sec.products.length > 0)
 
     return sections
-  }, [selectedBrand, brandMap, products])
+  }, [selectedBrand, brandMap, products, activeBrandsList, maxProductsPerBrand])
 
   return (
     <section className="w-full bg-white py-10 border-b border-zinc-200 select-none">
@@ -348,21 +475,29 @@ export default function BrandProductShowcase({
         {/* Section Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 mb-6">
           <div>
-            <span className="inline-block text-[11px] font-extrabold uppercase tracking-[0.2em] text-violet-600 mb-1">
-              ARACINIZA ÖZEL SEÇİM
-            </span>
+            {eyebrowText && (
+              <span
+                className="inline-block text-[11px] font-extrabold uppercase tracking-[0.2em] mb-1"
+                style={{ color: accentColor }}
+              >
+                {eyebrowText}
+              </span>
+            )}
             <h2 className="text-2xl md:text-[28px] font-black text-zinc-950 tracking-tight">
-              Araç Markasına Göre Bodykit &amp; Aksesuar Vitrini
+              {mainTitle}
             </h2>
-            <p className="text-xs md:text-sm text-zinc-500 mt-1">
-              Aracınızın markasını seçin veya tüm markaların ürünlerini alt alta inceleyin.
-            </p>
+            {mainSubtitle && (
+              <p className="text-xs md:text-sm text-zinc-500 mt-1">
+                {mainSubtitle}
+              </p>
+            )}
           </div>
           <LocalizedClientLink
-            href="/store"
-            className="inline-flex items-center gap-1.5 text-[13.5px] font-bold text-[#c91d82] hover:underline shrink-0"
+            href={viewAllLink}
+            className="inline-flex items-center gap-1.5 text-[13.5px] font-bold hover:underline shrink-0"
+            style={{ color: cardAccentColor }}
           >
-            <span>Tüm Mağaza Ürünlerini Gör</span>
+            <span>{viewAllText}</span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
             </svg>
@@ -405,53 +540,68 @@ export default function BrandProductShowcase({
             className="flex items-center justify-start gap-5 md:gap-7 overflow-x-auto py-2 px-2 scrollbar-none snap-x snap-mandatory scroll-smooth"
           >
             {/* "Tüm Markalar" Tab */}
-            <button
-              type="button"
-              onClick={() => setSelectedBrand("tumu")}
-              className="flex flex-col items-center gap-2 group/tab min-w-[86px] snap-center cursor-pointer transition-all duration-300 shrink-0"
-            >
-              <div
-                className={`w-20 h-20 md:w-24 md:h-24 rounded-full border flex items-center justify-center transition-all duration-300 relative bg-white transform group-hover/tab:scale-105 ${
-                  selectedBrand === "tumu"
-                    ? "border-violet-600 border-2 shadow-[0_4px_16px_rgba(124,58,237,0.16)]"
-                    : "border-zinc-200 group-hover/tab:border-violet-400 group-hover/tab:shadow-sm"
-                }`}
+            {showAllTab && (
+              <button
+                type="button"
+                onClick={() => setSelectedBrand("tumu")}
+                className="flex flex-col items-center gap-2 group/tab min-w-[86px] snap-center cursor-pointer transition-all duration-300 shrink-0"
               >
                 <div
-                  className={`absolute inset-1.5 rounded-full border transition-all duration-300 ${
+                  className="w-20 h-20 md:w-24 md:h-24 rounded-full flex items-center justify-center transition-all duration-300 relative bg-white transform group-hover/tab:scale-105"
+                  style={
                     selectedBrand === "tumu"
-                      ? "border-violet-600/30 bg-violet-50/10"
-                      : "border-zinc-100 group-hover/tab:border-zinc-200/60"
-                  }`}
-                />
-                <div
-                  className={`relative z-10 flex flex-col items-center justify-center ${
-                    selectedBrand === "tumu" ? "text-violet-600" : "text-zinc-700 group-hover/tab:text-violet-600"
-                  }`}
+                      ? {
+                          border: `2px solid ${accentColor}`,
+                          boxShadow: `0 4px 16px ${accentColor}29`,
+                        }
+                      : {
+                          border: "1px solid #e4e4e7",
+                        }
+                  }
                 >
-                  <svg className="w-8 h-8 md:w-9 md:h-9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
-                  </svg>
+                  <div
+                    className="absolute inset-1.5 rounded-full transition-all duration-300"
+                    style={
+                      selectedBrand === "tumu"
+                        ? {
+                            border: `1px solid ${accentColor}4d`,
+                            backgroundColor: `${accentColor}0d`,
+                          }
+                        : {
+                            border: "1px solid #f4f4f5",
+                          }
+                    }
+                  />
+                  <div
+                    className="relative z-10 flex flex-col items-center justify-center"
+                    style={{ color: selectedBrand === "tumu" ? accentColor : "#3f3f46" }}
+                  >
+                    <svg className="w-8 h-8 md:w-9 md:h-9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+                    </svg>
+                  </div>
+                  <span
+                    className="absolute bottom-1 right-1 w-2.5 h-2.5 rounded-full border border-white transition-all duration-300"
+                    style={{
+                      backgroundColor: selectedBrand === "tumu" ? accentColor : "#e4e4e7",
+                    }}
+                  />
                 </div>
                 <span
-                  className={`absolute bottom-1 right-1 w-2.5 h-2.5 rounded-full border border-white transition-all duration-300 ${
-                    selectedBrand === "tumu" ? "bg-violet-600 scale-110" : "bg-zinc-200 group-hover/tab:bg-violet-400"
-                  }`}
-                />
-              </div>
-              <span
-                className={`text-[10.5px] md:text-xs font-bold uppercase tracking-wider text-center transition-colors duration-300 whitespace-nowrap mt-0.5 ${
-                  selectedBrand === "tumu"
-                    ? "text-violet-600 font-extrabold"
-                    : "text-zinc-600 group-hover/tab:text-zinc-900"
-                }`}
-              >
-                TÜM MARKALAR
-              </span>
-            </button>
+                  className="text-[10.5px] md:text-xs font-bold uppercase tracking-wider text-center transition-colors duration-300 whitespace-nowrap mt-0.5"
+                  style={
+                    selectedBrand === "tumu"
+                      ? { color: accentColor, fontWeight: 800 }
+                      : { color: "#52525b" }
+                  }
+                >
+                  {allTabLabel}
+                </span>
+              </button>
+            )}
 
             {/* Car Brand Tabs with Original Logos inside Double-Ring Circles */}
-            {CAR_BRANDS.map((brand) => {
+            {activeBrandsList.map((brand) => {
               const isActive = selectedBrand === brand.id
               const count = brandMap[brand.id]?.length || 0
 
@@ -464,19 +614,31 @@ export default function BrandProductShowcase({
                 >
                   {/* Double Ring Circle Container */}
                   <div
-                    className={`w-20 h-20 md:w-24 md:h-24 rounded-full border flex items-center justify-center transition-all duration-300 relative bg-white transform group-hover/tab:scale-105 ${
+                    className="w-20 h-20 md:w-24 md:h-24 rounded-full flex items-center justify-center transition-all duration-300 relative bg-white transform group-hover/tab:scale-105"
+                    style={
                       isActive
-                        ? "border-violet-600 border-2 shadow-[0_4px_16px_rgba(124,58,237,0.16)]"
-                        : "border-zinc-200 group-hover/tab:border-violet-400 group-hover/tab:shadow-sm"
-                    }`}
+                        ? {
+                            border: `2px solid ${accentColor}`,
+                            boxShadow: `0 4px 16px ${accentColor}29`,
+                          }
+                        : {
+                            border: "1px solid #e4e4e7",
+                          }
+                    }
                   >
                     {/* Outer circle sub-ring */}
                     <div
-                      className={`absolute inset-1.5 rounded-full border transition-all duration-300 ${
+                      className="absolute inset-1.5 rounded-full transition-all duration-300"
+                      style={
                         isActive
-                          ? "border-violet-600/30 bg-violet-50/10"
-                          : "border-zinc-100 group-hover/tab:border-zinc-200/60"
-                      }`}
+                          ? {
+                              border: `1px solid ${accentColor}4d`,
+                              backgroundColor: `${accentColor}0d`,
+                            }
+                          : {
+                              border: "1px solid #f4f4f5",
+                            }
+                      }
                     />
 
                     {/* Original Car Brand Logo */}
@@ -488,11 +650,10 @@ export default function BrandProductShowcase({
                     </div>
 
                     {/* Product Count Badge on Top-Right of Circle if > 0 */}
-                    {count > 0 && (
+                    {showCountBadge && count > 0 && (
                       <span
-                        className={`absolute -top-0.5 -right-0.5 min-w-[20px] h-5 px-1 rounded-full text-[10px] font-extrabold flex items-center justify-center border border-white shadow-xs ${
-                          isActive ? "bg-violet-600 text-white" : "bg-zinc-900 text-white"
-                        }`}
+                        className="absolute -top-0.5 -right-0.5 min-w-[20px] h-5 px-1 rounded-full text-[10px] font-extrabold flex items-center justify-center border border-white shadow-xs text-white"
+                        style={{ backgroundColor: isActive ? accentColor : "#18181b" }}
                       >
                         {count}
                       </span>
@@ -500,19 +661,21 @@ export default function BrandProductShowcase({
 
                     {/* Pulsing indicator dot */}
                     <span
-                      className={`absolute bottom-1 right-1 w-2.5 h-2.5 rounded-full border border-white transition-all duration-300 ${
-                        isActive ? "bg-violet-600 scale-110" : "bg-zinc-200 group-hover/tab:bg-violet-400"
-                      }`}
+                      className="absolute bottom-1 right-1 w-2.5 h-2.5 rounded-full border border-white transition-all duration-300"
+                      style={{
+                        backgroundColor: isActive ? accentColor : "#e4e4e7",
+                      }}
                     />
                   </div>
 
                   {/* Brand Label */}
                   <span
-                    className={`text-[10.5px] md:text-xs font-bold uppercase tracking-wider text-center transition-colors duration-300 whitespace-nowrap mt-0.5 ${
+                    className="text-[10.5px] md:text-xs font-bold uppercase tracking-wider text-center transition-colors duration-300 whitespace-nowrap mt-0.5"
+                    style={
                       isActive
-                        ? "text-violet-600 font-extrabold"
-                        : "text-zinc-600 group-hover/tab:text-zinc-900"
-                    }`}
+                        ? { color: accentColor, fontWeight: 800 }
+                        : { color: "#52525b" }
+                    }
                   >
                     {brand.name}
                   </span>
@@ -538,18 +701,27 @@ export default function BrandProductShowcase({
                   <div>
                     <div className="flex items-center gap-2.5">
                       <h3 className="text-lg md:text-xl font-black text-zinc-950 uppercase tracking-tight">
-                        {section.brand.name} Bodykit &amp; Spoiler Ürünleri
+                        {section.brand.sectionTitle || `${section.brand.name} Bodykit & Spoiler Ürünleri`}
                       </h3>
-                      <span className="px-2.5 py-0.5 rounded-full bg-violet-50 text-violet-700 border border-violet-200 text-[11px] font-extrabold">
-                        {section.products.length} Ürün
+                      <span
+                        className="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold border"
+                        style={{
+                          backgroundColor: `${accentColor}12`,
+                          color: accentColor,
+                          borderColor: `${accentColor}38`,
+                        }}
+                      >
+                        {section.totalCount || section.products.length} Ürün
                       </span>
                     </div>
-                    <p className="text-xs text-zinc-500 mt-0.5">{section.brand.subtitle}</p>
+                    {section.brand.subtitle && (
+                      <p className="text-xs text-zinc-500 mt-0.5">{section.brand.subtitle}</p>
+                    )}
                   </div>
                 </div>
 
                 <div className="flex items-center gap-3">
-                  {selectedBrand !== "tumu" && (
+                  {selectedBrand !== "tumu" && showAllTab && (
                     <button
                       type="button"
                       onClick={() => setSelectedBrand("tumu")}
@@ -559,8 +731,9 @@ export default function BrandProductShowcase({
                     </button>
                   )}
                   <LocalizedClientLink
-                    href="/store"
-                    className="inline-flex items-center gap-1 text-[13px] font-bold text-[#c91d82] hover:underline shrink-0"
+                    href={section.brand.viewAllLink || viewAllLink}
+                    className="inline-flex items-center gap-1 text-[13px] font-bold hover:underline shrink-0"
+                    style={{ color: cardAccentColor }}
                   >
                     <span>Tümünü Gör</span>
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
@@ -570,16 +743,16 @@ export default function BrandProductShowcase({
                 </div>
               </div>
 
-              {/* 5-Column Vertical Product Grid (Alt Alta, Carousel Değil, 1. Görseldeki Kart Tasarımı) */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5 md:gap-4">
+              {/* Vertical Product Grid (Alt Alta, Carousel Değil, 1. Görseldeki Kart Tasarımı) */}
+              <div className={gridColsClass}>
                 {section.products.map((product, idx) => (
                   <div key={`${section.brand.id}-${product.id}`} className="h-full">
                     <N11ProductCard
                       product={product}
                       region={region}
                       index={idx}
-                      accentColor="#c91d82"
-                      freeShippingText="HIZLI KARGO"
+                      accentColor={cardAccentColor}
+                      freeShippingText={freeShippingText}
                     />
                   </div>
                 ))}
@@ -588,20 +761,23 @@ export default function BrandProductShowcase({
           ))}
 
           {/* Unmatched / Universal Products Section when "Tüm Markalar" is active */}
-          {selectedBrand === "tumu" && unmatchedProducts.length > 0 && (
+          {selectedBrand === "tumu" && showOtherProducts && unmatchedProducts.length > 0 && (
             <div className="space-y-5">
               <div className="flex items-center justify-between gap-3 pb-3 border-b-2 border-zinc-100">
                 <div>
                   <h3 className="text-lg md:text-xl font-black text-zinc-950 uppercase tracking-tight">
-                    Diğer Marka &amp; Üniversal Bodykit Ürünleri
+                    {otherProductsTitle}
                   </h3>
-                  <p className="text-xs text-zinc-500 mt-0.5">
-                    Tüm araç modelleriyle uyumlu üniversal lip, spoiler, difüzör ve aksesuar çeşitleri
-                  </p>
+                  {otherProductsSubtitle && (
+                    <p className="text-xs text-zinc-500 mt-0.5">
+                      {otherProductsSubtitle}
+                    </p>
+                  )}
                 </div>
                 <LocalizedClientLink
-                  href="/store"
-                  className="inline-flex items-center gap-1 text-[13px] font-bold text-[#c91d82] hover:underline shrink-0"
+                  href={viewAllLink}
+                  className="inline-flex items-center gap-1 text-[13px] font-bold hover:underline shrink-0"
+                  style={{ color: cardAccentColor }}
                 >
                   <span>Tümünü Gör</span>
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
@@ -610,15 +786,15 @@ export default function BrandProductShowcase({
                 </LocalizedClientLink>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5 md:gap-4">
+              <div className={gridColsClass}>
                 {unmatchedProducts.map((product, idx) => (
                   <div key={`unmatched-${product.id}`} className="h-full">
                     <N11ProductCard
                       product={product}
                       region={region}
                       index={idx}
-                      accentColor="#c91d82"
-                      freeShippingText="HIZLI KARGO"
+                      accentColor={cardAccentColor}
+                      freeShippingText={freeShippingText}
                     />
                   </div>
                 ))}

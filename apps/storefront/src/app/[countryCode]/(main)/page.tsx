@@ -540,7 +540,14 @@ export default async function Home(props: {
       ))}
 
       {/* 4. Car Brand-Focused Product Showcase (Circular Original Car Logo Tabs Carousel + Vertical Grid in Image 1 Card Design) */}
-      <BrandProductShowcase products={allProducts} region={region} />
+      {config?.brand_showcase?.enabled !== false && (
+        <BrandProductShowcase
+          products={allProducts}
+          region={region}
+          showcaseConfig={config?.brand_showcase}
+          configuredBrands={config?.car_brands}
+        />
+      )}
 
       {/* Carousel Blocks placed Below Products */}
       {bannerCarouselsBelowProducts.map((item) => (

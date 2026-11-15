@@ -388,6 +388,18 @@ const HeroManagerPage = () => {
                 <button
                   type="button"
                   onClick={() => {
+                    setStudioSection("brand_tabs")
+                    setShowLiveHeroCustomizer(true)
+                  }}
+                  className="p-[14px] rounded-[5px] border border-[#7c3aed] bg-[#f9f6ff] hover:bg-[#f1eaff] text-left text-[13px] font-bold text-[#6d28d9] flex items-center gap-2.5 transition cursor-pointer"
+                >
+                  <span className="text-[16px]">🚗</span>
+                  <span>Yuvarlak Araç Marka Tab &amp; Vitrin</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
                     setStudioSection("carousel")
                     setShowLiveHeroCustomizer(true)
                   }}

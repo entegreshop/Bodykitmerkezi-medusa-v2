@@ -5,12 +5,24 @@ export type StudioSectionKey =
   | "hero"
   | "coupon_popup"
   | "vitrin"
+  | "brand_tabs"
   | "carousel"
   | "buttons"
   | "header_footer"
   | "product_detail"
   | "cart"
   | "checkout"
+
+export interface CarBrandConfigItem {
+  id: string
+  name: string
+  section_title: string
+  subtitle: string
+  logo_url: string
+  keywords: string[] | string
+  view_all_link: string
+  active: boolean
+}
 
 export interface HeroSlide {
   id: string
@@ -98,12 +110,156 @@ const STUDIO_TABS: { key: StudioSectionKey; icon: string; label: string; badge?:
   { key: "hero", icon: "🎯", label: "Hero Banner & Slider" },
   { key: "coupon_popup", icon: "🎟️", label: "Hero Üstü Kupon & Popup", badge: "YENİ" },
   { key: "vitrin", icon: "🏪", label: "Vitrin, Banner & Kategoriler" },
+  { key: "brand_tabs", icon: "🚗", label: "Marka Tab & Vitrin Ayarları", badge: "YENİ" },
   { key: "carousel", icon: "🎠", label: "Carousel Blok Ayarları", badge: "YENİ" },
   { key: "buttons", icon: "🔘", label: "Buton Ayarları" },
   { key: "header_footer", icon: "🔝", label: "Header & Footer Ayarları" },
   { key: "product_detail", icon: "👗", label: "Ürün Detay Tasarım" },
   { key: "cart", icon: "🛒", label: "Sepet Tasarım & Ayarları" },
   { key: "checkout", icon: "💳", label: "Ödeme Formu Ayarları" },
+]
+
+const DEFAULT_CAR_BRANDS: CarBrandConfigItem[] = [
+  {
+    id: "bmw",
+    name: "BMW",
+    section_title: "BMW Bodykit & Spoiler Ürünleri",
+    subtitle: "F30, F10, E90, E60, G20, M3, M4, M5 Bodykit, Spoiler & Difüzör Setleri",
+    logo_url: "https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/master/logos/thumb/bmw.png",
+    keywords: ["bmw", "f30", "f10", "f20", "f22", "f32", "f36", "f80", "f82", "e90", "e92", "e60", "e46", "e36", "e39", "g20", "g30", "m performance", "bobrek", "böbrek"],
+    view_all_link: "/store",
+    active: true,
+  },
+  {
+    id: "volkswagen",
+    name: "Volkswagen",
+    section_title: "Volkswagen Bodykit & Spoiler Ürünleri",
+    subtitle: "Golf 5, Golf 6, Golf 7, Golf 7.5, Golf 8, Passat B6/B7/B8, Polo, Jetta & Scirocco Bodykit",
+    logo_url: "https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/master/logos/thumb/volkswagen.png",
+    keywords: ["volkswagen", "vw", "golf", "passat", "polo", "jetta", "scirocco", "tiguan", "arteon", "caddy", "transporter", "amarok", "r-line", "r line", "gti"],
+    view_all_link: "/store",
+    active: true,
+  },
+  {
+    id: "seat",
+    name: "Seat",
+    section_title: "Seat Bodykit & Spoiler Ürünleri",
+    subtitle: "Leon MK2, Leon MK3, Leon MK4, FR, Cupra, Ibiza & Ateca Bodykit ve Spoiler Modelleri",
+    logo_url: "https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/master/logos/thumb/seat.png",
+    keywords: ["seat", "leon", "ibiza", "ateca", "toledo", "arona", "cupra"],
+    view_all_link: "/store",
+    active: true,
+  },
+  {
+    id: "honda",
+    name: "Honda",
+    section_title: "Honda Bodykit & Spoiler Ürünleri",
+    subtitle: "Civic FC5, FB7, FD6, FE1, FK8 Type-R, Accord & IES Bodykit, Tampon ve Spoiler Setleri",
+    logo_url: "https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/master/logos/thumb/honda.png",
+    keywords: ["honda", "civic", "fc5", "fb7", "fd6", "fe1", "fk8", "fk2", "typer", "type-r", "type r", "ies", "vtec", "accord"],
+    view_all_link: "/store",
+    active: true,
+  },
+  {
+    id: "ford",
+    name: "Ford",
+    section_title: "Ford Bodykit & Spoiler Ürünleri",
+    subtitle: "Focus 2, Focus 2.5, Focus 3, Focus 3.5, Focus 4, RS, ST, Fiesta, Mondeo & Ranger Bodykit",
+    logo_url: "https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/master/logos/thumb/ford.png",
+    keywords: ["ford", "focus", "fiesta", "mondeo", "kuga", "ranger", "mustang", "puma", "courier", "connect"],
+    view_all_link: "/store",
+    active: true,
+  },
+  {
+    id: "fiat",
+    name: "Fiat",
+    section_title: "Fiat Bodykit & Spoiler Ürünleri",
+    subtitle: "Egea Sedan, Egea HB, Linea, Punto, Bravo, Doblo & Fiorino Bodykit Setleri",
+    logo_url: "https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/master/logos/thumb/fiat.png",
+    keywords: ["fiat", "egea", "linea", "punto", "doblo", "fiorino", "bravo", "tipo", "albea"],
+    view_all_link: "/store",
+    active: true,
+  },
+  {
+    id: "peugeot",
+    name: "Peugeot",
+    section_title: "Peugeot Bodykit & Spoiler Ürünleri",
+    subtitle: "301, 206, 207, 208, 308, 407, 508, 2008, 3008 & Rifter Bodykit ve Aksesuar Ürünleri",
+    logo_url: "https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/master/logos/thumb/peugeot.png",
+    keywords: ["peugeot", "peugoet", "206", "207", "208", "301", "308", "407", "508", "2008", "3008", "5008", "rifter"],
+    view_all_link: "/store",
+    active: true,
+  },
+  {
+    id: "opel",
+    name: "Opel",
+    section_title: "Opel Bodykit & Spoiler Ürünleri",
+    subtitle: "Astra H, Astra J, Astra K, Insignia, Corsa D/E/F & Vectra Bodykit, Lip ve Difüzör",
+    logo_url: "https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/master/logos/thumb/opel.png",
+    keywords: ["opel", "astra", "insignia", "corsa", "vectra", "mokka", "opc"],
+    view_all_link: "/store",
+    active: true,
+  },
+  {
+    id: "audi",
+    name: "Audi",
+    section_title: "Audi Bodykit & Spoiler Ürünleri",
+    subtitle: "A3, A4, A5, A6, S-Line, RS3, RS4, RS5, RS6 & Q Serisi Bodykit, Panjur ve Spoiler",
+    logo_url: "https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/master/logos/thumb/audi.png",
+    keywords: ["audi", "a3", "a4", "a5", "a6", "a7", "q3", "q5", "q7", "rs3", "rs4", "rs5", "rs6", "s-line", "s line"],
+    view_all_link: "/store",
+    active: true,
+  },
+  {
+    id: "mercedes",
+    name: "Mercedes-Benz",
+    section_title: "Mercedes-Benz Bodykit & Spoiler Ürünleri",
+    subtitle: "W204, W205, W206, W212, W213, W176, W177, CLA, E-Serisi & C63 AMG Bodykit Setleri",
+    logo_url: "https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/master/logos/thumb/mercedes-benz.png",
+    keywords: ["mercedes", "amg", "w204", "w205", "w206", "w212", "w213", "w176", "w177", "c180", "c200", "c63", "e180", "e200", "e250", "e63", "cla", "gla"],
+    view_all_link: "/store",
+    active: true,
+  },
+  {
+    id: "renault",
+    name: "Renault",
+    section_title: "Renault Bodykit & Spoiler Ürünleri",
+    subtitle: "Megane 2, Megane 3, Megane 4, Clio 4, Clio 5, Fluence, Talisman, Symbol & Captur Bodykit",
+    logo_url: "https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/master/logos/thumb/renault.png",
+    keywords: ["renault", "megane", "clio", "fluence", "talisman", "symbol", "captur", "kadjar", "kangoo"],
+    view_all_link: "/store",
+    active: true,
+  },
+  {
+    id: "hyundai",
+    name: "Hyundai",
+    section_title: "Hyundai Bodykit & Spoiler Ürünleri",
+    subtitle: "i20, i30, Accent Blue, Accent Era, Elantra & Tucson Bodykit, Spoiler ve Difüzör",
+    logo_url: "https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/master/logos/thumb/hyundai.png",
+    keywords: ["hyundai", "i20", "i30", "accent", "elantra", "tucson", "era", "blue"],
+    view_all_link: "/store",
+    active: true,
+  },
+  {
+    id: "toyota",
+    name: "Toyota",
+    section_title: "Toyota Bodykit & Spoiler Ürünleri",
+    subtitle: "Corolla E160, E170, E210, Auris, Yaris, C-HR & Hilux Bodykit ve Tampon Ekleri",
+    logo_url: "https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/master/logos/thumb/toyota.png",
+    keywords: ["toyota", "corolla", "auris", "yaris", "c-hr", "chr", "hilux", "avensis"],
+    view_all_link: "/store",
+    active: true,
+  },
+  {
+    id: "skoda",
+    name: "Skoda",
+    section_title: "Skoda Bodykit & Spoiler Ürünleri",
+    subtitle: "Octavia A5/A7/A8, Superb, Fabia, Scala & Kamiq Bodykit, Spoiler ve Difüzör",
+    logo_url: "https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/master/logos/thumb/skoda.png",
+    keywords: ["skoda", "octavia", "superb", "fabia", "scala", "kamiq", "karoq", "kodiaq"],
+    view_all_link: "/store",
+    active: true,
+  },
 ]
 
 const DEFAULT_ALL_CATEGORY_BANNER_CAROUSELS: BannerCarouselItem[] = [
@@ -476,7 +632,30 @@ export const DesignStudio: React.FC<DesignStudioProps> = ({ initialSection = "he
       show_coupon_badge: true,
       sepette_badge_text: "Sepette Ekstra %10 İndirim",
     },
+    brand_showcase: {
+      enabled: true,
+      eyebrow: "ARACINIZA ÖZEL SEÇİM",
+      title: "Araç Markasına Göre Bodykit & Aksesuar Vitrini",
+      subtitle: "Aracınızın markasını seçin veya tüm markaların ürünlerini alt alta inceleyin.",
+      view_all_text: "Tüm Mağaza Ürünlerini Gör",
+      view_all_link: "/store",
+      show_all_tab: true,
+      all_tab_label: "TÜM MARKALAR",
+      default_active_brand: "tumu",
+      accent_color: "#7c3aed",
+      card_accent_color: "#c91d82",
+      free_shipping_text: "HIZLI KARGO",
+      columns_desktop: 5,
+      max_products_per_brand: 0,
+      show_count_badge: true,
+      show_other_products: true,
+      other_products_title: "Diğer Marka & Üniversal Bodykit Ürünleri",
+      other_products_subtitle: "Tüm araç modelleriyle uyumlu üniversal lip, spoiler, difüzör ve aksesuar çeşitleri",
+    },
+    car_brands: DEFAULT_CAR_BRANDS,
   })
+
+  const [previewActiveBrand, setPreviewActiveBrand] = useState<string>("tumu")
 
   // Logo & Corporate Config (/admin/logo-config)
   const [logoConfig, setLogoConfig] = useState<Record<string, any>>({
@@ -511,6 +690,10 @@ export const DesignStudio: React.FC<DesignStudioProps> = ({ initialSection = "he
           setConfig((prev) => ({
             ...prev,
             ...heroRes.config,
+            car_brands:
+              Array.isArray(heroRes.config.car_brands) && heroRes.config.car_brands.length > 0
+                ? heroRes.config.car_brands
+                : DEFAULT_CAR_BRANDS,
             header_settings: { ...prev.header_settings, ...(heroRes.config.header_settings || {}) },
             footer_settings: { ...prev.footer_settings, ...(heroRes.config.footer_settings || {}) },
             product_detail_settings: { ...prev.product_detail_settings, ...(heroRes.config.product_detail_settings || {}) },
@@ -518,6 +701,7 @@ export const DesignStudio: React.FC<DesignStudioProps> = ({ initialSection = "he
             checkout_settings: { ...prev.checkout_settings, ...(heroRes.config.checkout_settings || {}) },
             coupon_banner: { ...prev.coupon_banner, ...(heroRes.config.coupon_banner || {}) },
             category_tab_carousel: { ...prev.category_tab_carousel, ...(heroRes.config.category_tab_carousel || {}) },
+            brand_showcase: { ...prev.brand_showcase, ...(heroRes.config.brand_showcase || {}) },
           }))
         }
         if (logoRes?.config) {
@@ -2603,6 +2787,25 @@ export const DesignStudio: React.FC<DesignStudioProps> = ({ initialSection = "he
               </div>
             </div>
 
+            {/* C-2. Yuvarlak Araba Marka Tab & Marka Odaklı Vitrin Hızlı Geçiş Kartı */}
+            <div className="p-5 rounded-[8px] border-2 border-[#7c3aed]/30 bg-[#f9f6ff] flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <h4 className="text-[15.5px] font-bold text-[#1e293b]">
+                  🚗 Yuvarlak Araç Marka Logolu Tab Carousel &amp; Marka Odaklı Ürün Vitrini
+                </h4>
+                <p className="text-[12px] text-[#74788d] mt-0.5">
+                  Ana sayfanın alt kısmındaki yuvarlak araba marka logoları (BMW, Volkswagen, Seat, Honda, Ford vb.), ürün eşleştirme anahtar kelimeleri ve alt alta marka vitrini ayarları ({(config.car_brands || []).length} marka tanımlı).
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSection("brand_tabs")}
+                className="h-[38px] px-4 rounded-[6px] bg-[#7c3aed] hover:opacity-95 text-white text-[12.5px] font-bold cursor-pointer shadow-xs"
+              >
+                🚗 Marka Tab Ayarlarını Düzenle →
+              </button>
+            </div>
+
             {/* D. Güvence Rozetleri (Trust Badges) */}
             <div className="p-5 rounded-[8px] border border-[#ebedf2] bg-[#fafbfe] space-y-4">
               <div className="flex items-center justify-between">
@@ -2644,6 +2847,640 @@ export const DesignStudio: React.FC<DesignStudioProps> = ({ initialSection = "he
                     />
                   </div>
                 ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* =========================================================
+            2.5 YUVARLAK ARAÇ MARKA LOGOLU TAB CAROUSEL & MARKA ODAKLI VİTRİN AYARLARI
+        ========================================================= */}
+        {section === "brand_tabs" && (
+          <div className="space-y-8">
+            {/* Üst Başlık & Aktiflik Anahtarı */}
+            <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-[#ebedf2]">
+              <div>
+                <h4 className="text-[16.5px] font-bold text-[#1e293b]">
+                  🚗 Yuvarlak Araç Marka Logolu Tab Carousel &amp; Marka Odaklı Ürün Vitrini Ayarları
+                </h4>
+                <p className="text-[12.5px] text-[#74788d] mt-0.5">
+                  Ana sayfanın alt kısmında yer alan yuvarlak çift halkalı araba marka logolarını, sıralamasını, yeni marka eklemeyi, her markanın altında listelenecek ürünlerin anahtar kelimelerini (Örn: BMW → f30, f10, e90, m3) ve başlık/renk ayarlarını buradan yönetin.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <label className="flex items-center gap-2 px-4 py-2 rounded-[6px] bg-[#eefbf5] border border-[#0abb87] text-[#08976d] font-bold text-[13px] cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={config.brand_showcase?.enabled ?? true}
+                    onChange={(e) => updateNested("brand_showcase", "enabled", e.target.checked)}
+                    className="w-4 h-4 accent-[#0abb87]"
+                  />
+                  Marka Odaklı Vitrin Aktif
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    updateField("car_brands", DEFAULT_CAR_BRANDS)
+                    notify("Varsayılan 14 Orijinal Araba Markası ve model anahtar kelimeleri yüklendi! Kaydetmeyi unutmayın.")
+                  }}
+                  className="h-[38px] px-3.5 rounded-[6px] bg-[#1e293b] hover:opacity-95 text-white text-[12px] font-bold cursor-pointer"
+                >
+                  ⚡ Varsayılan 14 Markayı Yükle
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const newBrand: CarBrandConfigItem = {
+                      id: "marka-" + Date.now(),
+                      name: "Yeni Marka",
+                      section_title: "Yeni Marka Bodykit & Spoiler Ürünleri",
+                      subtitle: "Aracınıza birebir uyumlu bodykit, ön lip, difüzör ve spoiler modelleri",
+                      logo_url: "",
+                      keywords: ["yeni marka"],
+                      view_all_link: "/store",
+                      active: true,
+                    }
+                    updateField("car_brands", [...(config.car_brands || []), newBrand])
+                    notify("Yeni araç markası tabı eklendi!")
+                  }}
+                  className="h-[38px] px-4 rounded-[6px] bg-[#7c3aed] hover:opacity-95 text-white text-[12.5px] font-bold cursor-pointer shadow-xs"
+                >
+                  + Yeni Araç Markası Tabı Ekle
+                </button>
+              </div>
+            </div>
+
+            {/* 1. CANLI YUVARLAK MARKA TAB CAROUSEL ÖNİZLEMESİ */}
+            <div className="rounded-[10px] border border-[#e2e5ec] bg-white p-5 shadow-2xs space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#f1f3f9] pb-3">
+                <div>
+                  <span className="text-[11px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded bg-violet-50 text-violet-700 border border-violet-200">
+                    CANLI ÖNİZLEME
+                  </span>
+                  <span className="ml-2.5 text-[13.5px] font-bold text-[#1e293b]">
+                    {config.brand_showcase?.title || "Araç Markasına Göre Bodykit & Aksesuar Vitrini"}
+                  </span>
+                </div>
+                <span className="text-[11.5px] text-[#74788d]">
+                  Marka yuvarlaklarına tıklayarak aktif halka stilini test edebilirsiniz
+                </span>
+              </div>
+
+              <div className="flex items-center gap-5 overflow-x-auto py-2 px-1">
+                {(config.brand_showcase?.show_all_tab ?? true) && (
+                  <button
+                    type="button"
+                    onClick={() => setPreviewActiveBrand("tumu")}
+                    className="flex flex-col items-center gap-1.5 min-w-[78px] shrink-0 cursor-pointer"
+                  >
+                    <div
+                      className="w-16 h-16 rounded-full flex items-center justify-center relative bg-white transition-all"
+                      style={{
+                        border:
+                          previewActiveBrand === "tumu"
+                            ? `2px solid ${config.brand_showcase?.accent_color || "#7c3aed"}`
+                            : "1px solid #e4e4e7",
+                        boxShadow:
+                          previewActiveBrand === "tumu"
+                            ? `0 4px 14px ${(config.brand_showcase?.accent_color || "#7c3aed")}28`
+                            : "none",
+                      }}
+                    >
+                      <div
+                        className="absolute inset-1 rounded-full"
+                        style={{
+                          border:
+                            previewActiveBrand === "tumu"
+                              ? `1px solid ${(config.brand_showcase?.accent_color || "#7c3aed")}45`
+                              : "1px solid #f4f4f5",
+                        }}
+                      />
+                      <span
+                        className="text-[18px] font-bold"
+                        style={{
+                          color:
+                            previewActiveBrand === "tumu"
+                              ? config.brand_showcase?.accent_color || "#7c3aed"
+                              : "#3f3f46",
+                        }}
+                      >
+                        ⊞
+                      </span>
+                      <span
+                        className="absolute bottom-0.5 right-0.5 w-2.5 h-2.5 rounded-full border border-white"
+                        style={{
+                          backgroundColor:
+                            previewActiveBrand === "tumu"
+                              ? config.brand_showcase?.accent_color || "#7c3aed"
+                              : "#e4e4e7",
+                        }}
+                      />
+                    </div>
+                    <span
+                      className="text-[10px] font-extrabold uppercase tracking-wider whitespace-nowrap"
+                      style={{
+                        color:
+                          previewActiveBrand === "tumu"
+                            ? config.brand_showcase?.accent_color || "#7c3aed"
+                            : "#52525b",
+                      }}
+                    >
+                      {config.brand_showcase?.all_tab_label || "TÜM MARKALAR"}
+                    </span>
+                  </button>
+                )}
+
+                {(config.car_brands || [])
+                  .filter((b: CarBrandConfigItem) => b && b.active !== false)
+                  .map((b: CarBrandConfigItem, i: number) => {
+                    const isAct = previewActiveBrand === b.id
+                    const accent = config.brand_showcase?.accent_color || "#7c3aed"
+                    return (
+                      <button
+                        key={b.id || i}
+                        type="button"
+                        onClick={() => setPreviewActiveBrand(b.id)}
+                        className="flex flex-col items-center gap-1.5 min-w-[78px] shrink-0 cursor-pointer"
+                      >
+                        <div
+                          className="w-16 h-16 rounded-full flex items-center justify-center relative bg-white transition-all p-2.5"
+                          style={{
+                            border: isAct ? `2px solid ${accent}` : "1px solid #e4e4e7",
+                            boxShadow: isAct ? `0 4px 14px ${accent}28` : "none",
+                          }}
+                        >
+                          <div
+                            className="absolute inset-1 rounded-full"
+                            style={{
+                              border: isAct ? `1px solid ${accent}45` : "1px solid #f4f4f5",
+                            }}
+                          />
+                          {b.logo_url?.trim().startsWith("<svg") ? (
+                            <div
+                              className="w-10 h-10 flex items-center justify-center [&>svg]:w-full [&>svg]:h-full relative z-10"
+                              dangerouslySetInnerHTML={{ __html: b.logo_url }}
+                            />
+                          ) : b.logo_url ? (
+                            <img
+                              src={b.logo_url}
+                              alt={b.name}
+                              className="w-10 h-10 object-contain relative z-10"
+                            />
+                          ) : (
+                            <span className="text-xs font-black text-slate-700 relative z-10">
+                              {b.name?.slice(0, 3).toUpperCase()}
+                            </span>
+                          )}
+                          <span
+                            className="absolute bottom-0.5 right-0.5 w-2.5 h-2.5 rounded-full border border-white"
+                            style={{
+                              backgroundColor: isAct ? accent : "#e4e4e7",
+                            }}
+                          />
+                        </div>
+                        <span
+                          className="text-[10px] font-extrabold uppercase tracking-wider whitespace-nowrap"
+                          style={{ color: isAct ? accent : "#52525b" }}
+                        >
+                          {b.name}
+                        </span>
+                      </button>
+                    )
+                  })}
+              </div>
+            </div>
+
+            {/* 2. GENEL MARKA VİTRİNİ BAŞLIK, RENK VE GRID DÜZENİ AYARLARI */}
+            <div className="p-5 rounded-[8px] border border-[#e2e5ec] bg-[#fafbfe] space-y-4">
+              <div className="text-[14.5px] font-bold text-[#1e293b]">
+                1. Genel Vitrin Başlıkları, Renkler &amp; Alt Alta Grid Listeleme Ayarları
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                  <label className="block text-[11px] font-semibold text-[#48465b] mb-1">Üst Mini Etiket (Eyebrow)</label>
+                  <input
+                    type="text"
+                    value={config.brand_showcase?.eyebrow ?? "ARACINIZA ÖZEL SEÇİM"}
+                    onChange={(e) => updateNested("brand_showcase", "eyebrow", e.target.value)}
+                    className="w-full h-[36px] px-3 rounded border border-[#e2e5ec] text-[12.5px] bg-white font-semibold"
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-[11px] font-semibold text-[#48465b] mb-1">Ana Vitrin Başlığı</label>
+                  <input
+                    type="text"
+                    value={config.brand_showcase?.title ?? "Araç Markasına Göre Bodykit & Aksesuar Vitrini"}
+                    onChange={(e) => updateNested("brand_showcase", "title", e.target.value)}
+                    className="w-full h-[36px] px-3 rounded border border-[#e2e5ec] text-[12.5px] bg-white font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-[#48465b] mb-1">Sağ Üst Tümünü Gör Metni</label>
+                  <input
+                    type="text"
+                    value={config.brand_showcase?.view_all_text ?? "Tüm Mağaza Ürünlerini Gör"}
+                    onChange={(e) => updateNested("brand_showcase", "view_all_text", e.target.value)}
+                    className="w-full h-[36px] px-3 rounded border border-[#e2e5ec] text-[12.5px] bg-white"
+                  />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="block text-[11px] font-semibold text-[#48465b] mb-1">Vitrin Alt Açıklaması</label>
+                  <input
+                    type="text"
+                    value={
+                      config.brand_showcase?.subtitle ??
+                      "Aracınızın markasını seçin veya tüm markaların ürünlerini alt alta inceleyin."
+                    }
+                    onChange={(e) => updateNested("brand_showcase", "subtitle", e.target.value)}
+                    className="w-full h-[36px] px-3 rounded border border-[#e2e5ec] text-[12.5px] bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-[#48465b] mb-1">&quot;Tüm Markalar&quot; Tab Etiketi</label>
+                  <input
+                    type="text"
+                    value={config.brand_showcase?.all_tab_label ?? "TÜM MARKALAR"}
+                    onChange={(e) => updateNested("brand_showcase", "all_tab_label", e.target.value)}
+                    className="w-full h-[36px] px-3 rounded border border-[#e2e5ec] text-[12.5px] bg-white font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-[#48465b] mb-1">Açılışta Varsayılan Seçili Tab</label>
+                  <select
+                    value={config.brand_showcase?.default_active_brand || "tumu"}
+                    onChange={(e) => updateNested("brand_showcase", "default_active_brand", e.target.value)}
+                    className="w-full h-[36px] px-3 rounded border border-[#e2e5ec] text-[12.5px] bg-white font-semibold"
+                  >
+                    <option value="tumu">Tüm Markalar (Alt Alta Tüm Markalar)</option>
+                    {(config.car_brands || []).map((b: CarBrandConfigItem) => (
+                      <option key={b.id} value={b.id}>
+                        Sadece {b.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-[#48465b] mb-1">Masaüstü Grid Sütun Sayısı</label>
+                  <select
+                    value={config.brand_showcase?.columns_desktop || 5}
+                    onChange={(e) => updateNested("brand_showcase", "columns_desktop", Number(e.target.value))}
+                    className="w-full h-[36px] px-3 rounded border border-[#e2e5ec] text-[12.5px] bg-white font-semibold"
+                  >
+                    <option value={5}>5 Sütun (1. Görseldeki Standart)</option>
+                    <option value={4}>4 Sütun (Geniş Kartlar)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-[#48465b] mb-1">Marka Başına Maksimum Ürün</label>
+                  <select
+                    value={config.brand_showcase?.max_products_per_brand ?? 0}
+                    onChange={(e) => updateNested("brand_showcase", "max_products_per_brand", Number(e.target.value))}
+                    className="w-full h-[36px] px-3 rounded border border-[#e2e5ec] text-[12.5px] bg-white font-semibold"
+                  >
+                    <option value={0}>Sınırsız (Markanın Tüm Ürünleri Alt Alta)</option>
+                    <option value={5}>5 Ürün (1 Satır)</option>
+                    <option value={10}>10 Ürün (2 Satır)</option>
+                    <option value={15}>15 Ürün (3 Satır)</option>
+                    <option value={20}>20 Ürün (4 Satır)</option>
+                    <option value={30}>30 Ürün (6 Satır)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-[#48465b] mb-1">Kart Siyah Kargo Bandı Metni</label>
+                  <input
+                    type="text"
+                    value={config.brand_showcase?.free_shipping_text ?? "HIZLI KARGO"}
+                    onChange={(e) => updateNested("brand_showcase", "free_shipping_text", e.target.value)}
+                    className="w-full h-[36px] px-3 rounded border border-[#e2e5ec] text-[12.5px] bg-white font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-[#48465b] mb-1">Aktif Yuvarlak Tab Halka Rengi</label>
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="color"
+                      value={config.brand_showcase?.accent_color || "#7c3aed"}
+                      onChange={(e) => updateNested("brand_showcase", "accent_color", e.target.value)}
+                      className="w-9 h-[36px] rounded border cursor-pointer"
+                    />
+                    <input
+                      type="text"
+                      value={config.brand_showcase?.accent_color || "#7c3aed"}
+                      onChange={(e) => updateNested("brand_showcase", "accent_color", e.target.value)}
+                      className="w-full h-[36px] px-2 rounded border border-[#e2e5ec] text-[12px] font-mono bg-white"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
+                <label className="flex items-center gap-2 p-3 rounded border border-[#e2e5ec] bg-white text-[12.5px] font-semibold text-[#1e293b] cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={config.brand_showcase?.show_all_tab ?? true}
+                    onChange={(e) => updateNested("brand_showcase", "show_all_tab", e.target.checked)}
+                    className="w-4 h-4 accent-[#7c3aed]"
+                  />
+                  En Başta &quot;Tüm Markalar&quot; Yuvarlak Tabını Göster
+                </label>
+                <label className="flex items-center gap-2 p-3 rounded border border-[#e2e5ec] bg-white text-[12.5px] font-semibold text-[#1e293b] cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={config.brand_showcase?.show_count_badge ?? true}
+                    onChange={(e) => updateNested("brand_showcase", "show_count_badge", e.target.checked)}
+                    className="w-4 h-4 accent-[#7c3aed]"
+                  />
+                  Yuvarlak Marka Logolarında Ürün Sayısı Rozetini Göster
+                </label>
+                <label className="flex items-center gap-2 p-3 rounded border border-[#e2e5ec] bg-white text-[12.5px] font-semibold text-[#1e293b] cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={config.brand_showcase?.show_other_products ?? true}
+                    onChange={(e) => updateNested("brand_showcase", "show_other_products", e.target.checked)}
+                    className="w-4 h-4 accent-[#7c3aed]"
+                  />
+                  Eşleşmeyen / Üniversal Ürünleri En Altta Listele
+                </label>
+              </div>
+
+              {(config.brand_showcase?.show_other_products ?? true) && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-[#48465b] mb-1">
+                      Eşleşmeyen / Üniversal Ürünler Başlığı
+                    </label>
+                    <input
+                      type="text"
+                      value={
+                        config.brand_showcase?.other_products_title ?? "Diğer Marka & Üniversal Bodykit Ürünleri"
+                      }
+                      onChange={(e) => updateNested("brand_showcase", "other_products_title", e.target.value)}
+                      className="w-full h-[36px] px-3 rounded border border-[#e2e5ec] text-[12.5px] bg-white font-semibold"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-[#48465b] mb-1">
+                      Eşleşmeyen / Üniversal Ürünler Alt Açıklaması
+                    </label>
+                    <input
+                      type="text"
+                      value={
+                        config.brand_showcase?.other_products_subtitle ??
+                        "Tüm araç modelleriyle uyumlu üniversal lip, spoiler, difüzör ve aksesuar çeşitleri"
+                      }
+                      onChange={(e) => updateNested("brand_showcase", "other_products_subtitle", e.target.value)}
+                      className="w-full h-[36px] px-3 rounded border border-[#e2e5ec] text-[12.5px] bg-white"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 3. YUVARLAK ARABA MARKA TABLARI LİSTESİ & DÜZENLEYİCİ */}
+            <div className="space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h5 className="text-[15px] font-bold text-[#1e293b]">
+                    2. Yuvarlak Araba Marka Tabları, Orijinal Logolar &amp; Ürün Eşleştirme Kelimeleri ({(config.car_brands || []).length} Marka)
+                  </h5>
+                  <p className="text-[12px] text-[#74788d]">
+                    Her markanın logosunu değiştirebilir, sıralamasını yukarı/aşağı taşıyabilir ve o markanın altında hangi ürünlerin çıkacağını belirleyen anahtar kelimeleri (Örn: <code className="bg-slate-100 px-1 rounded">bmw, f30, f10, e90, e60, g20</code>) düzenleyebilirsiniz.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {(config.car_brands || []).map((brand: CarBrandConfigItem, idx: number) => {
+                  const kwString = Array.isArray(brand.keywords)
+                    ? brand.keywords.join(", ")
+                    : String(brand.keywords || "")
+
+                  return (
+                    <div
+                      key={brand.id || idx}
+                      className={`p-4 rounded-[8px] border transition-all space-y-3 ${
+                        brand.active !== false
+                          ? "bg-white border-[#e2e5ec] shadow-2xs"
+                          : "bg-slate-50 border-slate-200 opacity-70"
+                      }`}
+                    >
+                      {/* Kart Üst Bar: Yuvarlak Logo Önizleme + Marka Adı + Sıralama + Aktif/Sil */}
+                      <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-slate-100">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 rounded-full border-2 border-violet-600/40 bg-white flex items-center justify-center p-1.5 shadow-2xs shrink-0">
+                            {brand.logo_url?.trim().startsWith("<svg") ? (
+                              <div
+                                className="w-full h-full flex items-center justify-center [&>svg]:w-full [&>svg]:h-full"
+                                dangerouslySetInnerHTML={{ __html: brand.logo_url }}
+                              />
+                            ) : brand.logo_url ? (
+                              <img src={brand.logo_url} alt={brand.name} className="w-full h-full object-contain" />
+                            ) : (
+                              <span className="text-[11px] font-black text-violet-700">
+                                {brand.name?.slice(0, 3).toUpperCase()}
+                              </span>
+                            )}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="px-2 py-0.5 rounded bg-violet-50 text-violet-700 text-[11px] font-extrabold">
+                                #{idx + 1}
+                              </span>
+                              <span className="text-[14px] font-extrabold text-[#1e293b]">{brand.name}</span>
+                            </div>
+                            <div className="text-[11px] text-[#74788d] font-mono">kod: {brand.id}</div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            disabled={idx === 0}
+                            onClick={() => {
+                              if (idx === 0) return
+                              const next = [...(config.car_brands || [])]
+                              const temp = next[idx - 1]
+                              next[idx - 1] = next[idx]
+                              next[idx] = temp
+                              updateField("car_brands", next)
+                            }}
+                            title="Yukarı Taşı"
+                            className="w-7 h-7 rounded border border-slate-200 bg-slate-50 hover:bg-slate-100 text-xs font-bold disabled:opacity-30 cursor-pointer"
+                          >
+                            ↑
+                          </button>
+                          <button
+                            type="button"
+                            disabled={idx === (config.car_brands || []).length - 1}
+                            onClick={() => {
+                              const next = [...(config.car_brands || [])]
+                              if (idx >= next.length - 1) return
+                              const temp = next[idx + 1]
+                              next[idx + 1] = next[idx]
+                              next[idx] = temp
+                              updateField("car_brands", next)
+                            }}
+                            title="Aşağı Taşı"
+                            className="w-7 h-7 rounded border border-slate-200 bg-slate-50 hover:bg-slate-100 text-xs font-bold disabled:opacity-30 cursor-pointer"
+                          >
+                            ↓
+                          </button>
+                          <label className="flex items-center gap-1 px-2 py-1 rounded bg-slate-100 text-[11.5px] font-semibold cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={brand.active !== false}
+                              onChange={(e) => {
+                                const next = [...(config.car_brands || [])]
+                                next[idx] = { ...brand, active: e.target.checked }
+                                updateField("car_brands", next)
+                              }}
+                            />
+                            Aktif
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const next = (config.car_brands || []).filter((_: any, i: number) => i !== idx)
+                              updateField("car_brands", next)
+                            }}
+                            className="px-2 py-1 rounded bg-red-50 text-red-600 text-[11.5px] font-semibold cursor-pointer"
+                          >
+                            🗑
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[11px] font-semibold text-[#74788d] mb-0.5">
+                            Marka Adı (Tab Altı Yazısı)
+                          </label>
+                          <input
+                            type="text"
+                            value={brand.name || ""}
+                            onChange={(e) => {
+                              const next = [...(config.car_brands || [])]
+                              next[idx] = { ...brand, name: e.target.value }
+                              updateField("car_brands", next)
+                            }}
+                            placeholder="Örn: BMW"
+                            className="w-full h-[33px] px-2.5 rounded border border-[#e2e5ec] text-[12.5px] font-bold"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-semibold text-[#74788d] mb-0.5">
+                            Marka Kodu (Slug / ID)
+                          </label>
+                          <input
+                            type="text"
+                            value={brand.id || ""}
+                            onChange={(e) => {
+                              const next = [...(config.car_brands || [])]
+                              next[idx] = { ...brand, id: e.target.value.toLowerCase().replace(/\s+/g, "-") }
+                              updateField("car_brands", next)
+                            }}
+                            placeholder="Örn: bmw"
+                            className="w-full h-[33px] px-2.5 rounded border border-[#e2e5ec] text-[12px] font-mono"
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          <label className="block text-[11px] font-semibold text-[#74788d] mb-0.5">
+                            Marka Ürün Listesi Başlığı
+                          </label>
+                          <input
+                            type="text"
+                            value={brand.section_title || `${brand.name} Bodykit & Spoiler Ürünleri`}
+                            onChange={(e) => {
+                              const next = [...(config.car_brands || [])]
+                              next[idx] = { ...brand, section_title: e.target.value }
+                              updateField("car_brands", next)
+                            }}
+                            placeholder="Örn: BMW Bodykit & Spoiler Ürünleri"
+                            className="w-full h-[33px] px-2.5 rounded border border-[#e2e5ec] text-[12.5px] font-semibold"
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          <label className="block text-[11px] font-semibold text-[#74788d] mb-0.5">
+                            Marka Alt Açıklaması (Kasa / Model Bilgisi)
+                          </label>
+                          <input
+                            type="text"
+                            value={brand.subtitle || ""}
+                            onChange={(e) => {
+                              const next = [...(config.car_brands || [])]
+                              next[idx] = { ...brand, subtitle: e.target.value }
+                              updateField("car_brands", next)
+                            }}
+                            placeholder="Örn: F30, F10, E90, E60, G20, M3, M4 Bodykit Setleri"
+                            className="w-full h-[33px] px-2.5 rounded border border-[#e2e5ec] text-[12px]"
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          <label className="block text-[11px] font-semibold text-[#74788d] mb-0.5">
+                            Orijinal Marka Logosu (Görsel URL veya SVG)
+                          </label>
+                          <div className="flex items-center gap-1.5">
+                            <input
+                              type="text"
+                              value={brand.logo_url || ""}
+                              onChange={(e) => {
+                                const next = [...(config.car_brands || [])]
+                                next[idx] = { ...brand, logo_url: e.target.value }
+                                updateField("car_brands", next)
+                              }}
+                              placeholder="https://... veya bilgisayardan logo yükleyin"
+                              className="flex-1 h-[33px] px-2.5 rounded border border-[#e2e5ec] text-[11.5px] font-mono"
+                            />
+                            <label className="px-3 py-1.5 rounded bg-[#eef4ff] text-[#3d94fb] text-[11.5px] font-semibold cursor-pointer shrink-0">
+                              {uploadingKey === `brand-logo-${idx}` ? "..." : "📁 Logo Yükle"}
+                              <input
+                                type="file"
+                                accept="image/*,.svg"
+                                className="hidden"
+                                onChange={(e) => {
+                                  const f = e.target.files?.[0]
+                                  if (f) {
+                                    uploadMediaFile(f, `brand-logo-${idx}`, (url) => {
+                                      const next = [...(config.car_brands || [])]
+                                      next[idx] = { ...brand, logo_url: url }
+                                      updateField("car_brands", next)
+                                    })
+                                  }
+                                }}
+                              />
+                            </label>
+                          </div>
+                        </div>
+                        <div className="col-span-2">
+                          <label className="block text-[11px] font-semibold text-[#48465b] mb-0.5">
+                            🔍 Ürün Eşleştirme Anahtar Kelimeleri (Virgülle Ayırın)
+                          </label>
+                          <input
+                            type="text"
+                            value={kwString}
+                            onChange={(e) => {
+                              const arr = e.target.value
+                                .split(",")
+                                .map((s) => s.trim())
+                                .filter(Boolean)
+                              const next = [...(config.car_brands || [])]
+                              next[idx] = { ...brand, keywords: arr }
+                              updateField("car_brands", next)
+                            }}
+                            placeholder="Örn: bmw, f30, f10, f20, e90, e60, g20, m3, m4"
+                            className="w-full h-[34px] px-2.5 rounded border border-violet-200 bg-violet-50/30 text-[12px] font-mono text-[#1e293b]"
+                          />
+                          <span className="block text-[10.5px] text-[#74788d] mt-0.5">
+                            Ürün adında veya kategorisinde bu kelimelerden biri geçen tüm ürünler otomatik olarak <strong>{brand.name}</strong> başlığı altında listelenir.
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             </div>
           </div>

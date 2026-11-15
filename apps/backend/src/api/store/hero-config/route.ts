@@ -405,7 +405,169 @@ const defaultData = {
     show_installment_badge: true,
     show_coupon_badge: true,
     sepette_badge_text: "Sepette Ekstra %10 İndirim"
-  }
+  },
+  brand_showcase: {
+    enabled: true,
+    eyebrow: "ARACINIZA ÖZEL SEÇİM",
+    title: "Araç Markasına Göre Bodykit & Aksesuar Vitrini",
+    subtitle: "Aracınızın markasını seçin veya tüm markaların ürünlerini alt alta inceleyin.",
+    view_all_text: "Tüm Mağaza Ürünlerini Gör",
+    view_all_link: "/store",
+    show_all_tab: true,
+    all_tab_label: "TÜM MARKALAR",
+    default_active_brand: "tumu",
+    accent_color: "#7c3aed",
+    card_accent_color: "#c91d82",
+    free_shipping_text: "HIZLI KARGO",
+    columns_desktop: 5,
+    max_products_per_brand: 0,
+    show_count_badge: true,
+    show_other_products: true,
+    other_products_title: "Diğer Marka & Üniversal Bodykit Ürünleri",
+    other_products_subtitle: "Tüm araç modelleriyle uyumlu üniversal lip, spoiler, difüzör ve aksesuar çeşitleri"
+  },
+  car_brands: [
+    {
+      id: "bmw",
+      name: "BMW",
+      section_title: "BMW Bodykit & Spoiler Ürünleri",
+      subtitle: "F30, F10, E90, E60, G20, M3, M4, M5 Bodykit, Spoiler & Difüzör Setleri",
+      logo_url: "https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/master/logos/thumb/bmw.png",
+      keywords: ["bmw", "f30", "f10", "f20", "f22", "f32", "f36", "f80", "f82", "e90", "e92", "e60", "e46", "e36", "e39", "g20", "g30", "m performance", "bobrek", "böbrek"],
+      view_all_link: "/store",
+      active: true
+    },
+    {
+      id: "volkswagen",
+      name: "Volkswagen",
+      section_title: "Volkswagen Bodykit & Spoiler Ürünleri",
+      subtitle: "Golf 5, Golf 6, Golf 7, Golf 7.5, Golf 8, Passat B6/B7/B8, Polo, Jetta & Scirocco Bodykit",
+      logo_url: "https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/master/logos/thumb/volkswagen.png",
+      keywords: ["volkswagen", "vw", "golf", "passat", "polo", "jetta", "scirocco", "tiguan", "arteon", "caddy", "transporter", "amarok", "r-line", "r line", "gti"],
+      view_all_link: "/store",
+      active: true
+    },
+    {
+      id: "seat",
+      name: "Seat",
+      section_title: "Seat Bodykit & Spoiler Ürünleri",
+      subtitle: "Leon MK2, Leon MK3, Leon MK4, FR, Cupra, Ibiza & Ateca Bodykit ve Spoiler Modelleri",
+      logo_url: "https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/master/logos/thumb/seat.png",
+      keywords: ["seat", "leon", "ibiza", "ateca", "toledo", "arona", "cupra"],
+      view_all_link: "/store",
+      active: true
+    },
+    {
+      id: "honda",
+      name: "Honda",
+      section_title: "Honda Bodykit & Spoiler Ürünleri",
+      subtitle: "Civic FC5, FB7, FD6, FE1, FK8 Type-R, Accord & IES Bodykit, Tampon ve Spoiler Setleri",
+      logo_url: "https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/master/logos/thumb/honda.png",
+      keywords: ["honda", "civic", "fc5", "fb7", "fd6", "fe1", "fk8", "fk2", "typer", "type-r", "type r", "ies", "vtec", "accord"],
+      view_all_link: "/store",
+      active: true
+    },
+    {
+      id: "ford",
+      name: "Ford",
+      section_title: "Ford Bodykit & Spoiler Ürünleri",
+      subtitle: "Focus 2, Focus 2.5, Focus 3, Focus 3.5, Focus 4, RS, ST, Fiesta, Mondeo & Ranger Bodykit",
+      logo_url: "https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/master/logos/thumb/ford.png",
+      keywords: ["ford", "focus", "fiesta", "mondeo", "kuga", "ranger", "mustang", "puma", "courier", "connect"],
+      view_all_link: "/store",
+      active: true
+    },
+    {
+      id: "fiat",
+      name: "Fiat",
+      section_title: "Fiat Bodykit & Spoiler Ürünleri",
+      subtitle: "Egea Sedan, Egea HB, Linea, Punto, Bravo, Doblo & Fiorino Bodykit Setleri",
+      logo_url: "https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/master/logos/thumb/fiat.png",
+      keywords: ["fiat", "egea", "linea", "punto", "doblo", "fiorino", "bravo", "tipo", "albea"],
+      view_all_link: "/store",
+      active: true
+    },
+    {
+      id: "peugeot",
+      name: "Peugeot",
+      section_title: "Peugeot Bodykit & Spoiler Ürünleri",
+      subtitle: "301, 206, 207, 208, 308, 407, 508, 2008, 3008 & Rifter Bodykit ve Aksesuar Ürünleri",
+      logo_url: "https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/master/logos/thumb/peugeot.png",
+      keywords: ["peugeot", "peugoet", "206", "207", "208", "301", "308", "407", "508", "2008", "3008", "5008", "rifter"],
+      view_all_link: "/store",
+      active: true
+    },
+    {
+      id: "opel",
+      name: "Opel",
+      section_title: "Opel Bodykit & Spoiler Ürünleri",
+      subtitle: "Astra H, Astra J, Astra K, Insignia, Corsa D/E/F & Vectra Bodykit, Lip ve Difüzör",
+      logo_url: "https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/master/logos/thumb/opel.png",
+      keywords: ["opel", "astra", "insignia", "corsa", "vectra", "mokka", "opc"],
+      view_all_link: "/store",
+      active: true
+    },
+    {
+      id: "audi",
+      name: "Audi",
+      section_title: "Audi Bodykit & Spoiler Ürünleri",
+      subtitle: "A3, A4, A5, A6, S-Line, RS3, RS4, RS5, RS6 & Q Serisi Bodykit, Panjur ve Spoiler",
+      logo_url: "https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/master/logos/thumb/audi.png",
+      keywords: ["audi", "a3", "a4", "a5", "a6", "a7", "q3", "q5", "q7", "rs3", "rs4", "rs5", "rs6", "s-line", "s line"],
+      view_all_link: "/store",
+      active: true
+    },
+    {
+      id: "mercedes",
+      name: "Mercedes-Benz",
+      section_title: "Mercedes-Benz Bodykit & Spoiler Ürünleri",
+      subtitle: "W204, W205, W206, W212, W213, W176, W177, CLA, E-Serisi & C63 AMG Bodykit Setleri",
+      logo_url: "https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/master/logos/thumb/mercedes-benz.png",
+      keywords: ["mercedes", "amg", "w204", "w205", "w206", "w212", "w213", "w176", "w177", "c180", "c200", "c63", "e180", "e200", "e250", "e63", "cla", "gla"],
+      view_all_link: "/store",
+      active: true
+    },
+    {
+      id: "renault",
+      name: "Renault",
+      section_title: "Renault Bodykit & Spoiler Ürünleri",
+      subtitle: "Megane 2, Megane 3, Megane 4, Clio 4, Clio 5, Fluence, Talisman, Symbol & Captur Bodykit",
+      logo_url: "https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/master/logos/thumb/renault.png",
+      keywords: ["renault", "megane", "clio", "fluence", "talisman", "symbol", "captur", "kadjar", "kangoo"],
+      view_all_link: "/store",
+      active: true
+    },
+    {
+      id: "hyundai",
+      name: "Hyundai",
+      section_title: "Hyundai Bodykit & Spoiler Ürünleri",
+      subtitle: "i20, i30, Accent Blue, Accent Era, Elantra & Tucson Bodykit, Spoiler ve Difüzör",
+      logo_url: "https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/master/logos/thumb/hyundai.png",
+      keywords: ["hyundai", "i20", "i30", "accent", "elantra", "tucson", "era", "blue"],
+      view_all_link: "/store",
+      active: true
+    },
+    {
+      id: "toyota",
+      name: "Toyota",
+      section_title: "Toyota Bodykit & Spoiler Ürünleri",
+      subtitle: "Corolla E160, E170, E210, Auris, Yaris, C-HR & Hilux Bodykit ve Tampon Ekleri",
+      logo_url: "https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/master/logos/thumb/toyota.png",
+      keywords: ["toyota", "corolla", "auris", "yaris", "c-hr", "chr", "hilux", "avensis"],
+      view_all_link: "/store",
+      active: true
+    },
+    {
+      id: "skoda",
+      name: "Skoda",
+      section_title: "Skoda Bodykit & Spoiler Ürünleri",
+      subtitle: "Octavia A5/A7/A8, Superb, Fabia, Scala & Kamiq Bodykit, Spoiler ve Difüzör",
+      logo_url: "https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/master/logos/thumb/skoda.png",
+      keywords: ["skoda", "octavia", "superb", "fabia", "scala", "kamiq", "karoq", "kodiaq"],
+      view_all_link: "/store",
+      active: true
+    }
+  ]
 }
 
 export async function GET(req: MedusaRequest, res: MedusaResponse) {
@@ -428,13 +590,15 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
       carousel_blocks: parsed.carousel_blocks && parsed.carousel_blocks.length > 0 ? parsed.carousel_blocks : defaultCarouselBlocks,
       banner_carousels: parsed.banner_carousels && parsed.banner_carousels.length > 0 ? parsed.banner_carousels : defaultBannerCarousels,
       trust_badges: parsed.trust_badges && parsed.trust_badges.length > 0 ? parsed.trust_badges : defaultTrustBadges,
+      car_brands: parsed.car_brands && parsed.car_brands.length > 0 ? parsed.car_brands : defaultData.car_brands,
       header_settings: { ...defaultData.header_settings, ...(parsed.header_settings || {}) },
       footer_settings: { ...defaultData.footer_settings, ...(parsed.footer_settings || {}) },
       product_detail_settings: { ...defaultData.product_detail_settings, ...(parsed.product_detail_settings || {}) },
       cart_settings: { ...defaultData.cart_settings, ...(parsed.cart_settings || {}) },
       checkout_settings: { ...defaultData.checkout_settings, ...(parsed.checkout_settings || {}) },
       coupon_banner: { ...defaultData.coupon_banner, ...(parsed.coupon_banner || {}) },
-      category_tab_carousel: { ...defaultData.category_tab_carousel, ...(parsed.category_tab_carousel || {}) }
+      category_tab_carousel: { ...defaultData.category_tab_carousel, ...(parsed.category_tab_carousel || {}) },
+      brand_showcase: { ...defaultData.brand_showcase, ...(parsed.brand_showcase || {}) }
     }
     return res.status(200).json({ config })
   } catch (err) {
