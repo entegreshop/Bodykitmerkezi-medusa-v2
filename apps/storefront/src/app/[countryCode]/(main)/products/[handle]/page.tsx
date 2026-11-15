@@ -150,6 +150,19 @@ function getImagesForVariant(
     return product.images
   }
 
+  // Yeni Sistem: Backend'den gelen metadata.image_colors haritasını kullan
+  if (product.metadata?.image_colors) {
+    const imageColors = product.metadata.image_colors as Record<string, string>;
+    const exactMatches = product.images.filter((img) => {
+      const imgColor = imageColors[img.url];
+      return imgColor && safeNormalize(imgColor) === safeNormalize(variantRenkValue);
+    });
+    if (exactMatches.length > 0) {
+      return exactMatches;
+    }
+  }
+
+  // Eski Sistem (Geriye Uyumluluk): Dosya adından renk bulmaya çalış
   const matchedImages = product.images.filter((img) => {
     return img.url && matchImageToColor(img.url, variantRenkValue)
   })
@@ -223,10 +236,10 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
   }
 
   return {
-    title: `${product.title} | Medusa Store`,
+    title: `${product.title} | BodyKit Merkezi`,
     description: `${product.title}`,
     openGraph: {
-      title: `${product.title} | Medusa Store`,
+      title: `${product.title} | BodyKit Merkezi`,
       description: `${product.title}`,
       images: product.thumbnail ? [product.thumbnail] : [],
     },

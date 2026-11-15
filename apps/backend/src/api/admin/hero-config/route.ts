@@ -1,88 +1,290 @@
-import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
-import fs from "fs"
-import path from "path"
-import os from "os"
+import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
+import * as fs from "fs"
+import * as path from "path"
 
-const configFilePath = path.join(process.cwd(), "uploads", "hero-config-bodykit.json")
+const CONFIG_PATH = path.join(process.cwd(), "uploads", "hero-config-bodykit.json")
 
 const defaultCategories = [
-  {
-    name: "YENİ GELENLER",
-    handle: "yeni-gelenler",
-    icon: `<svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/><path d="M4 17v2"/><path d="M5 18H3"/></svg>`
-  },
-  {
-    name: "Çok Satanlar",
-    handle: "cok-satanlar",
-    icon: `<svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0011 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 11-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 002.5 2.5z"/></svg>`
-  },
-  {
-    name: "Bodykit",
-    handle: "bodykit",
-    icon: `<svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>`
-  },
-  {
-    name: "Difüzör",
-    handle: "difuzor",
-    icon: `<svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2"></path></svg>`
-  },
-  {
-    name: "Spoiler",
-    handle: "spoiler",
-    icon: `<svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>`
-  },
-  {
-    name: "Tampon & Ek",
-    handle: "tampon-ek",
-    icon: `<svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>`
-  },
-  {
-    name: "Marşpiyel",
-    handle: "marspiyel",
-    icon: `<svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>`
-  },
-  {
-    name: "Aydınlatma",
-    handle: "aydinlatma",
-    icon: `<svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>`
-  },
-  {
-    name: "Aksesuar",
-    handle: "aksesuar",
-    icon: `<svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`
-  }
+  { id: "yeni-gelenler", name: "Yeni Gelenler", icon: "sparkles", link: "/store", image_url: "", badge_text: "YENİ", active: true },
+  { id: "bodykit", name: "Bodykit Setleri", icon: "car", link: "/categories/bodykit", image_url: "", badge_text: "POPÜLER", active: true },
+  { id: "difuzor", name: "Difüzör", icon: "exhaust", link: "/categories/difuzor", image_url: "", badge_text: "", active: true },
+  { id: "spoiler", name: "Spoiler", icon: "wing", link: "/categories/spoiler", image_url: "", badge_text: "", active: true },
+  { id: "tampon-ek", name: "Tampon Ekleri", icon: "bumper", link: "/categories/tampon-ek", image_url: "", badge_text: "", active: true },
+  { id: "marspiyel", name: "Marşpiyel", icon: "sideskirt", link: "/categories/marspiyel", image_url: "", badge_text: "", active: true },
+  { id: "panjur", name: "Ön Panjur", icon: "grille", link: "/categories/panjur", image_url: "", badge_text: "", active: true },
+  { id: "aydinlatma", name: "Aydınlatma", icon: "headlight", link: "/categories/aydinlatma", image_url: "", badge_text: "", active: true },
+  { id: "aksesuar", name: "Aksesuar", icon: "gear", link: "/categories/aksesuar", image_url: "", badge_text: "", active: true }
 ]
 
 const defaultBanners = [
   {
-    tag: "Trend Koleksiyon",
+    id: "banner-1",
+    tag: "TREND KOLEKSİYON",
     title: "PREMIUM BODYKIT SETLERİ",
-    description: "Aracınızın görünümünü tamamen değiştirecek yeni nesil aero dinamik bodykit setleri vitrinde.",
+    description: "Aracınızın görünümünü tamamen değiştirecek agresif ve aerodinamik bodykit setleri vitrinde.",
     btn_text: "Koleksiyonu Keşfet",
-    btn_link: "/categories/bodykit",
+    btn_link: "/store",
+    btn_bg_color: "#4f46e5",
+    btn_text_color: "#ffffff",
     image_url: "",
+    bg_color: "#EEF0F4",
+    text_color: "#09090B",
+    tag_color: "#4338CA",
+    tag_bg: "#E0E7FF",
+    active: true
   },
   {
-    tag: "Özel Seçki",
-    title: "SPORTİF EKLENTİLER",
-    description: "Aracınıza sportif bir hava katacak spoiler, difüzör ve marşpiyel eklentileri ile şık görünümler.",
-    btn_text: "Şimdi İncele",
-    btn_link: "/categories/aksesuar",
+    id: "banner-2",
+    tag: "ÖZEL SEÇKİ",
+    title: "DİFÜZÖR & SPOILER",
+    description: "Sportif detaylar ve yüksek kaliteli plastik/karbon görünümüyle aracınıza değer katın.",
+    btn_text: "Fırsatları İncele",
+    btn_link: "/store",
+    btn_bg_color: "#d97706",
+    btn_text_color: "#ffffff",
     image_url: "",
+    bg_color: "#F3EFEA",
+    text_color: "#09090B",
+    tag_color: "#B45309",
+    tag_bg: "#FEF3C7",
+    active: true
   }
 ]
 
+const defaultCarouselBlocks = [
+  {
+    id: "carousel-1",
+    title: "Çok Satan Bodykit & Spoiler Ürünleri",
+    subtitle: "En çok tercih edilen aracınıza özel tasarım ürünler",
+    source_type: "latest",
+    handle: "",
+    limit: 10,
+    bg_color: "#ffffff",
+    text_color: "#111827",
+    view_all_text: "Tümünü Gör",
+    view_all_link: "/store",
+    active: true
+  }
+]
+
+const defaultBannerCarousels = [
+  {
+    id: "banner-carousel-bodykit",
+    title: "Komple Bodykit Setleri",
+    title_color: "#111827",
+    cta_text: "Fırsatları Kaçırma",
+    cta_link: "/categories/bodykit",
+    cta_color: "#e11d48",
+    footer_note: "Aracınıza birebir uyumlu 1. sınıf ABS plastik ve PP komple bodykit setlerinde sepette ekstra indirim avantajı.",
+    badge_text: "BODYKIT FIRSATI",
+    bg_image_url: "https://images.unsplash.com/photo-1617788138017-80ad40651399?w=1600&auto=format&fit=crop&q=80",
+    bg_color: "#dce6f2",
+    source_type: "category",
+    handle: "bodykit",
+    limit: 8,
+    position: "below_collection",
+    free_shipping_text: "HIZLI KARGO",
+    active: true
+  },
+  {
+    id: "banner-carousel-difuzor",
+    title: "Arka Difüzör & Egzoz Uçları",
+    title_color: "#111827",
+    cta_text: "Difüzör Modellerini Keşfet",
+    cta_link: "/categories/difuzor",
+    cta_color: "#1d4ed8",
+    footer_note: "Çift çıkışlı, F1 çakar lambalı ve parlak siyah (Piano Black) arka difüzör modellerinde özel fiyatlar.",
+    badge_text: "DİFÜZÖR SEÇKİSİ",
+    bg_image_url: "https://images.unsplash.com/photo-1603584173870-7f23fdae1b7a?w=1600&auto=format&fit=crop&q=80",
+    bg_color: "#dbeafe",
+    source_type: "category",
+    handle: "difuzor",
+    limit: 8,
+    position: "below_collection",
+    free_shipping_text: "HIZLI KARGO",
+    active: true
+  },
+  {
+    id: "banner-carousel-spoiler",
+    title: "Bagaj & Tavan Spoiler Modelleri",
+    title_color: "#111827",
+    cta_text: "Spoiler Fırsatlarını İncele",
+    cta_link: "/categories/spoiler",
+    cta_color: "#c91d82",
+    footer_note: "M4, PSM, Clubsport ve R-Line tasarım bagaj üstü ve tavan spoiler modellerinde hızlı kargo avantajı.",
+    badge_text: "SPOILER SERİSİ",
+    bg_image_url: "https://images.unsplash.com/photo-1544829099-b9a0c07fad1a?w=1600&auto=format&fit=crop&q=80",
+    bg_color: "#fce7f3",
+    source_type: "category",
+    handle: "spoiler",
+    limit: 8,
+    position: "below_collection",
+    free_shipping_text: "HIZLI KARGO",
+    active: true
+  },
+  {
+    id: "banner-carousel-tampon",
+    title: "Ön Lip & Tampon Ekleri",
+    title_color: "#111827",
+    cta_text: "Sportif Stili Yakala",
+    cta_link: "/categories/tampon-ek",
+    cta_color: "#7c3aed",
+    footer_note: "Esnek kırılmaz yapılı, boyalı ve boyasız ön tampon eki (lip) ve splitter modellerinde özel indirimler.",
+    badge_text: "SPORTİF GÖRÜNÜM",
+    bg_image_url: "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=1600&auto=format&fit=crop&q=80",
+    bg_color: "#ede9fe",
+    source_type: "category",
+    handle: "tampon-ek",
+    limit: 8,
+    position: "below_collection",
+    free_shipping_text: "HIZLI KARGO",
+    active: true
+  },
+  {
+    id: "banner-carousel-marspiyel",
+    title: "Yan Marşpiyel Takımları",
+    title_color: "#111827",
+    cta_text: "Marşpiyel Setlerini Gör",
+    cta_link: "/categories/marspiyel",
+    cta_color: "#b45309",
+    footer_note: "Sağ-sol takım yan marşpiyel ve marşpiyel altı bıçak setlerinde sezonun en iyi fiyatları.",
+    badge_text: "AERODİNAMİK SET",
+    bg_image_url: "https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=1600&auto=format&fit=crop&q=80",
+    bg_color: "#fef3c7",
+    source_type: "category",
+    handle: "marspiyel",
+    limit: 8,
+    position: "below_collection",
+    free_shipping_text: "HIZLI KARGO",
+    active: true
+  },
+  {
+    id: "banner-carousel-panjur",
+    title: "Spor Panjur & Böbrek Izgara",
+    title_color: "#111827",
+    cta_text: "Tüm Modelleri Gör",
+    cta_link: "/categories/panjur",
+    cta_color: "#059669",
+    footer_note: "Diamond, GT-R Panamericana, M Çift Çizgi ve RS petek ön panjur modellerinde sepette ekstra indirim.",
+    badge_text: "RS & M PERFORMANCE",
+    bg_image_url: "https://images.unsplash.com/photo-1555215695-3004980ad54e?w=1600&auto=format&fit=crop&q=80",
+    bg_color: "#d1fae5",
+    source_type: "category",
+    handle: "panjur",
+    limit: 8,
+    position: "below_collection",
+    free_shipping_text: "HIZLI KARGO",
+    active: true
+  },
+  {
+    id: "banner-carousel-aydinlatma",
+    title: "LED Far & Stop Aydınlatma",
+    title_color: "#111827",
+    cta_text: "Aydınlatma Ürünlerini Keşfet",
+    cta_link: "/categories/aydinlatma",
+    cta_color: "#e11d48",
+    footer_note: "Kayar sinyalli LED stop, lazer far ve sis farı takımlarında kaçırılmayacak fiyatlar.",
+    badge_text: "LED TEKNOLOJİSİ",
+    bg_image_url: "https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=1600&auto=format&fit=crop&q=80",
+    bg_color: "#ffe4e6",
+    source_type: "category",
+    handle: "aydinlatma",
+    limit: 8,
+    position: "below_collection",
+    free_shipping_text: "HIZLI KARGO",
+    active: true
+  },
+  {
+    id: "banner-carousel-aksesuar",
+    title: "İç & Dış Oto Aksesuar",
+    title_color: "#111827",
+    cta_text: "Aksesuar Koleksiyonunu Gör",
+    cta_link: "/categories/aksesuar",
+    cta_color: "#9333ea",
+    footer_note: "Yarasa ayna kapağı, kelebek cam panjuru (louver), rüzgarlık ve karbon detaylarla aracınızı tamamlayın.",
+    badge_text: "TREND AKSESUAR",
+    bg_image_url: "https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=1600&auto=format&fit=crop&q=80",
+    bg_color: "#f3e8ff",
+    source_type: "category",
+    handle: "aksesuar",
+    limit: 8,
+    position: "below_collection",
+    free_shipping_text: "HIZLI KARGO",
+    active: true
+  },
+  {
+    id: "banner-carousel-yeni",
+    title: "Yeni Gelen Bodykit Ürünleri",
+    title_color: "#111827",
+    cta_text: "Yeni Ürünleri Keşfet",
+    cta_link: "/store",
+    cta_color: "#f02d9c",
+    footer_note: "Haftanın en yeni BodyKit Merkezi tasarımları stoklarla sınırlı özel lansman fiyatlarıyla.",
+    badge_text: "YENİ SEZON",
+    bg_image_url: "https://images.unsplash.com/photo-1502877338535-766e1452684a?w=1600&auto=format&fit=crop&q=80",
+    bg_color: "#fce7f3",
+    source_type: "latest",
+    handle: "",
+    limit: 8,
+    position: "below_collection",
+    free_shipping_text: "HIZLI KARGO",
+    active: true
+  },
+  {
+    id: "banner-carousel-coksatan",
+    title: "Çok Satan Favori Modeller",
+    title_color: "#111827",
+    cta_text: "Popüler Ürünleri İncele",
+    cta_link: "/store",
+    cta_color: "#ea580c",
+    footer_note: "Müşterilerimizin en çok tercih ettiği bodykit, spoiler ve difüzör setleri hızlı kargo fırsatıyla.",
+    badge_text: "BEST SELLER 🔥",
+    bg_image_url: "https://images.unsplash.com/photo-1511919884226-fd3cad34687c?w=1600&auto=format&fit=crop&q=80",
+    bg_color: "#ffedd5",
+    source_type: "collection",
+    handle: "cok-satanlar",
+    limit: 8,
+    position: "below_collection",
+    free_shipping_text: "HIZLI KARGO",
+    active: true
+  }
+]
+
+const defaultTrustBadges = [
+  { id: "tb-1", title: "Ücretsiz Kargo", description: "3000 ₺ üzeri tüm siparişlerinizde kargo bedava", icon: "truck" },
+  { id: "tb-2", title: "Hızlı Teslimat", description: "Siparişleriniz 24 saat içinde özenle kargoya teslim edilir", icon: "clock" },
+  { id: "tb-3", title: "%100 Güvenli Ödeme", description: "256-bit SSL şifreleme ile kredi kartı ve kapıda ödeme", icon: "shield" },
+  { id: "tb-4", title: "Kolay İade & Değişim", description: "14 gün içinde koşulsuz iade ve beden/ürün değişimi garantisi", icon: "refresh" }
+]
+
 const defaultData = {
-  tag: "BODYKİT MERKEZİ",
+  tag: "BODYKİT MERKEZİ • ÖZEL SERİ",
   title: "BodyKit Merkezi'ne Hoş Geldiniz",
-  subtitle: "Aracınızın görünümünü baştan yaratacak yeni sezon body kit, tampon, spoiler ve difüzör koleksiyonumuzu keşfedin",
+  subtitle: "Aracınıza özel en kaliteli bodykit, difüzör, spoiler, ön lip ve marşpiyel modellerini hemen keşfedin",
   btn_text: "Şimdi Alışverişe Başla",
   btn_link: "/store",
-  media_type: "image", // "image" or "video"
-  media_url: "",
+  media_type: "image",
+  media_url: "/uploads/hero-1774921088469-819611420.jpg",
+  mobile_media_url: "",
+  hero_height: "75vh",
+  hero_overlay_opacity: 15,
+  hero_text_color: "#09090B",
+  hero_btn_bg: "#7C3AED",
+  hero_btn_text_color: "#ffffff",
+  hero_autoplay: true,
+  hero_interval: 5000,
+  show_hero_banner: true,
+  hero_display_mode: "standard_hero",
+  hero_slides: [],
   categories: defaultCategories,
   banners: defaultBanners,
-  top_announcement: "2026 YAZ SEZONU MODELLERİ",
+  carousel_blocks: defaultCarouselBlocks,
+  banner_carousels: defaultBannerCarousels,
+  trust_badges: defaultTrustBadges,
+  show_promo_banners: true,
+  show_category_circles: true,
+  show_trust_badges: true,
+  top_announcement: "2026 YENİ SEZON BODYKİT & AKSESUAR KOLEKSİYONU",
   top_announcement_enabled: true,
   top_announcement_bg: "#000000",
   top_announcement_text_color: "#ffffff",
@@ -90,113 +292,181 @@ const defaultData = {
   scrolling_text_home_enabled: true,
   scrolling_text_home_bg: "#000000",
   scrolling_text_home_text_color: "#ffffff",
-  scrolling_text_product: "Sepette %10 İndirim Kodu : MDS10 • 3000 ₺ Üzeri Ücretsiz Kargo",
+  scrolling_text_product: "Sepette %10 İndirim Kodu : BODYKIT10 • 3000 ₺ Üzeri Ücretsiz Kargo",
   scrolling_text_product_enabled: true,
   scrolling_text_product_bg: "#FFD700",
   scrolling_text_product_text_color: "#000000",
-  // Button Settings
   buy_now_enabled: true,
+  buy_now_text: "HEMEN AL",
   buy_now_bg: "#E50000",
   buy_now_text_color: "#ffffff",
   add_to_cart_enabled: true,
+  add_to_cart_text: "SEPETE EKLE",
   add_to_cart_bg: "#000000",
   add_to_cart_text_color: "#ffffff",
   whatsapp_enabled: true,
+  whatsapp_text: "WHATSAPP İLE SİPARİŞ",
   whatsapp_number: "905323370081",
   whatsapp_bg: "#ffffff",
   whatsapp_text_color: "#25D366",
-}
-
-function readConfig() {
-  try {
-    if (fs.existsSync(configFilePath)) {
-      const content = fs.readFileSync(configFilePath, "utf-8")
-      const parsed = JSON.parse(content)
-      if (parsed.title === "XOOX Mağazasına Hoş Geldiniz") {
-        parsed.title = defaultData.title
-      }
-      if (parsed.tag === "MEDUSA V2 × NEXT.JS") {
-        parsed.tag = defaultData.tag
-      }
-      if (parsed.subtitle === "Medusa V2 altyapısıyla güçlendirilen yeni 2026 koleksiyonumuzu keşfedin") {
-        parsed.subtitle = defaultData.subtitle
-      }
-      return {
-        ...defaultData,
-        ...parsed,
-        categories: parsed.categories || defaultCategories,
-        banners: parsed.banners || defaultBanners,
-      }
-    }
-  } catch (err) {
-    console.error("Error reading hero config in admin api:", err)
+  button_border_radius: "0px",
+  header_settings: {
+    sticky: true,
+    bg_color: "#ffffff",
+    text_color: "#000000",
+    border_color: "#e5e7eb",
+    logo_height_desktop: 44,
+    logo_height_mobile: 36,
+    show_search: true,
+    show_account: true,
+    show_cart: true
+  },
+  footer_settings: {
+    bg_color: "#0a0a0c",
+    text_color: "#ffffff",
+    accent_color: "#ffffff",
+    show_social: true,
+    instagram_url: "https://instagram.com/bodykitmerkezi",
+    facebook_url: "https://facebook.com/bodykitmerkezi",
+    whatsapp_url: "https://wa.me/905323370081",
+    tiktok_url: "",
+    youtube_url: "",
+    ssl_badge_text: "Bu site 256 Bit SSL sertifikası ile korunmaktadır.",
+    show_payment_icons: true
+  },
+  product_detail_settings: {
+    show_live_viewers: true,
+    live_viewers_min: 12,
+    live_viewers_max: 34,
+    show_favorite_button: true,
+    show_reviews_link: true,
+    show_trust_row: true,
+    trust_badge_1_text: "Güvenli Ödeme",
+    trust_badge_2_text: "Aynı Gün Kargo",
+    shipping_info_text: "Saat 15:00'a kadar verilen tüm siparişleriniz aynı gün kargoya teslim edilmektedir. Teslimat süresi ortalama 1-3 iş günüdür.",
+    return_policy_text: "Siparişinizdeki ürünleri teslim aldığınız tarihten itibaren 14 gün içerisinde, kullanılmamış ve boyanmamış/monte edilmemiş olması şartıyla iade edebilirsiniz.",
+    show_sticky_mobile_bar: true
+  },
+  cart_settings: {
+    page_title: "Alışveriş Sepetim",
+    show_free_shipping_bar: true,
+    free_shipping_threshold: 3000,
+    free_shipping_bar_color: "#10B981",
+    show_coupon_box: true,
+    checkout_btn_text: "Güvenli Ödemeye Geç",
+    checkout_btn_bg: "#000000",
+    checkout_btn_text_color: "#ffffff",
+    trust_note_text: "256-Bit SSL Güvencesiyle Hızlı & Güvenli Alışveriş"
+  },
+  checkout_settings: {
+    modal_title: "Hızlı ve Güvenli Ödeme",
+    delivery_section_title: "Teslimat Adresi",
+    payment_section_title: "Ödeme Yöntemi",
+    accent_color: "#111827",
+    submit_btn_text: "Siparişi Tamamla",
+    submit_btn_bg: "#1A1A1A",
+    submit_btn_text_color: "#ffffff",
+    show_email: true,
+    require_email: true,
+    show_order_note: true,
+    show_coupon: true,
+    show_invoice_type: true,
+    default_payment_method: "credit_card",
+    ssl_badge_text: "Tüm bilgileriniz 256 bit SSL Sertifikası ile korunmaktadır.",
+    copyright_text: "© 2026 BodyKit Merkezi. Tüm hakları saklıdır."
+  },
+  coupon_banner: {
+    enabled: true,
+    eyebrow: "BODYKİT MERKEZİ'NE ÖZEL",
+    title_prefix: "SEPETTE EKSTRA",
+    highlight_text: "%10",
+    title_suffix: "İNDİRİM",
+    description: "Kupon kodunu sepette veya hızlı ödeme ekranında girmeniz yeterli. Kampanya tüm yeni sezon ürünlerinde geçerlidir.",
+    code_label: "KOD",
+    code: "BODYKIT10",
+    copy_text: "KOPYALA",
+    copied_text: "KOPYALANDI",
+    bg_color: "#0b0b0c",
+    glow_color: "#c81e2d",
+    accent_color: "#ff6a6a",
+    show_popup_on_copy: true,
+    popup_title: "Kupon Kodunuz Tanımlandı! 🎉",
+    popup_description: "İndirim kuponunuz panoya kopyalandı ve ödeme formunuza otomatik olarak tanımlandı. Alışverişinizi tamamlarken ekstra indiriminiz anında uygulanacaktır.",
+    popup_btn_text: "Alışverişe Başla & İndirimi Kullan",
+    popup_btn_link: "/store",
+    auto_apply_checkout: true
+  },
+  category_tab_carousel: {
+    title: "BodyKit Collection",
+    view_all_text: "Tümünü Gör",
+    view_all_link: "/store",
+    accent_color: "#c91d82",
+    free_shipping_text: "HIZLI KARGO",
+    show_installment_badge: true,
+    show_coupon_badge: true,
+    sepette_badge_text: "Sepette Ekstra %10 İndirim"
   }
-  return defaultData
 }
 
-function writeConfig(data: any) {
-  try {
-    const dir = path.dirname(configFilePath)
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true })
-    }
-    fs.writeFileSync(configFilePath, JSON.stringify(data, null, 2), "utf-8")
-    return true
-  } catch (err) {
-    console.error("Error writing hero config in admin api:", err)
-    return false
+function readHeroConfig() {
+  if (!fs.existsSync(CONFIG_PATH)) {
+    return defaultData
+  }
+  const content = fs.readFileSync(CONFIG_PATH, "utf-8")
+  const parsed = JSON.parse(content)
+  if (parsed.title && parsed.title.includes("XOOX")) {
+    parsed.tag = defaultData.tag
+    parsed.title = defaultData.title
+    parsed.subtitle = defaultData.subtitle
+  }
+  return {
+    ...defaultData,
+    ...parsed,
+    categories: parsed.categories && parsed.categories.length > 0 ? parsed.categories : defaultCategories,
+    banners: parsed.banners && parsed.banners.length > 0 ? parsed.banners : defaultBanners,
+    carousel_blocks: parsed.carousel_blocks && parsed.carousel_blocks.length > 0 ? parsed.carousel_blocks : defaultCarouselBlocks,
+    banner_carousels: parsed.banner_carousels && parsed.banner_carousels.length > 0 ? parsed.banner_carousels : defaultBannerCarousels,
+    trust_badges: parsed.trust_badges && parsed.trust_badges.length > 0 ? parsed.trust_badges : defaultTrustBadges,
+    header_settings: { ...defaultData.header_settings, ...(parsed.header_settings || {}) },
+    footer_settings: { ...defaultData.footer_settings, ...(parsed.footer_settings || {}) },
+    product_detail_settings: { ...defaultData.product_detail_settings, ...(parsed.product_detail_settings || {}) },
+    cart_settings: { ...defaultData.cart_settings, ...(parsed.cart_settings || {}) },
+    checkout_settings: { ...defaultData.checkout_settings, ...(parsed.checkout_settings || {}) },
+    coupon_banner: { ...defaultData.coupon_banner, ...(parsed.coupon_banner || {}) },
+    category_tab_carousel: { ...defaultData.category_tab_carousel, ...(parsed.category_tab_carousel || {}) }
   }
 }
 
 export async function GET(req: MedusaRequest, res: MedusaResponse) {
-  const config = readConfig()
-  res.json({ config })
+  try {
+    return res.status(200).json({ config: readHeroConfig() })
+  } catch (err) {
+    return res.status(200).json({ config: defaultData })
+  }
 }
 
 export async function POST(req: MedusaRequest, res: MedusaResponse) {
-  const body = req.body as any
-  const config = readConfig()
-
-  const updatedConfig = {
-    tag: body.tag ?? config.tag,
-    title: body.title ?? config.title,
-    subtitle: body.subtitle ?? config.subtitle,
-    btn_text: body.btn_text ?? config.btn_text,
-    btn_link: body.btn_link ?? config.btn_link,
-    media_type: body.media_type ?? config.media_type,
-    media_url: body.media_url ?? config.media_url,
-    categories: body.categories ?? config.categories,
-    banners: body.banners ?? config.banners,
-    top_announcement: body.top_announcement ?? config.top_announcement,
-    top_announcement_enabled: body.top_announcement_enabled ?? config.top_announcement_enabled,
-    top_announcement_bg: body.top_announcement_bg ?? config.top_announcement_bg,
-    top_announcement_text_color: body.top_announcement_text_color ?? config.top_announcement_text_color,
-    scrolling_text_home: body.scrolling_text_home ?? config.scrolling_text_home,
-    scrolling_text_home_enabled: body.scrolling_text_home_enabled ?? config.scrolling_text_home_enabled,
-    scrolling_text_home_bg: body.scrolling_text_home_bg ?? config.scrolling_text_home_bg,
-    scrolling_text_home_text_color: body.scrolling_text_home_text_color ?? config.scrolling_text_home_text_color,
-    scrolling_text_product: body.scrolling_text_product ?? config.scrolling_text_product,
-    scrolling_text_product_enabled: body.scrolling_text_product_enabled ?? config.scrolling_text_product_enabled,
-    scrolling_text_product_bg: body.scrolling_text_product_bg ?? config.scrolling_text_product_bg,
-    scrolling_text_product_text_color: body.scrolling_text_product_text_color ?? config.scrolling_text_product_text_color,
-    // Button Settings
-    buy_now_enabled: body.buy_now_enabled ?? config.buy_now_enabled,
-    buy_now_bg: body.buy_now_bg ?? config.buy_now_bg,
-    buy_now_text_color: body.buy_now_text_color ?? config.buy_now_text_color,
-    add_to_cart_enabled: body.add_to_cart_enabled ?? config.add_to_cart_enabled,
-    add_to_cart_bg: body.add_to_cart_bg ?? config.add_to_cart_bg,
-    add_to_cart_text_color: body.add_to_cart_text_color ?? config.add_to_cart_text_color,
-    whatsapp_enabled: body.whatsapp_enabled ?? config.whatsapp_enabled,
-    whatsapp_number: body.whatsapp_number ?? config.whatsapp_number,
-    whatsapp_bg: body.whatsapp_bg ?? config.whatsapp_bg,
-    whatsapp_text_color: body.whatsapp_text_color ?? config.whatsapp_text_color,
-  }
-
-  const success = writeConfig(updatedConfig)
-  if (success) {
-    res.json({ success: true, config: updatedConfig })
-  } else {
-    res.status(500).json({ success: false, message: "Could not write configuration" })
+  try {
+    const dir = path.dirname(CONFIG_PATH)
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true })
+    }
+    const current = readHeroConfig()
+    const body = (req.body || {}) as Record<string, any>
+    const newData = {
+      ...current,
+      ...body,
+      header_settings: { ...current.header_settings, ...(body.header_settings || {}) },
+      footer_settings: { ...current.footer_settings, ...(body.footer_settings || {}) },
+      product_detail_settings: { ...current.product_detail_settings, ...(body.product_detail_settings || {}) },
+      cart_settings: { ...current.cart_settings, ...(body.cart_settings || {}) },
+      checkout_settings: { ...current.checkout_settings, ...(body.checkout_settings || {}) },
+      coupon_banner: { ...current.coupon_banner, ...(body.coupon_banner || {}) },
+      category_tab_carousel: { ...current.category_tab_carousel, ...(body.category_tab_carousel || {}) }
+    }
+    fs.writeFileSync(CONFIG_PATH, JSON.stringify(newData, null, 2), "utf-8")
+    return res.status(200).json({ config: newData })
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message })
   }
 }
-

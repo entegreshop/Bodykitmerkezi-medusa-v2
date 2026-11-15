@@ -70,7 +70,23 @@ export default function QuickCheckoutModal({
   const ARAS_BASE64 = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iNDAiPjx0ZXh0IHg9IjEwIiB5PSIyNSIgZmlsbD0iIzEzMkI1QiIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjIyIiBmb250LXdlaWdodD0iYm9sZCI+QVJBUzwvdGV4dD48L3N2Zz4=";
   const [arasLogoUrl, setArasLogoUrl] = useState(ARAS_BASE64);
   const [storeLogoUrl, setStoreLogoUrl] = useState("/logo.png");
-  const [copyrightText, setCopyrightText] = useState(`© ${new Date().getFullYear()} BodyKit Merkezi. Tüm hakları saklıdır.`);
+  const [checkoutConfig, setCheckoutConfig] = useState({
+    modal_title: "Hızlı ve Güvenli Ödeme",
+    delivery_section_title: "Teslimat Adresi",
+    payment_section_title: "Ödeme",
+    accent_color: "#111827",
+    submit_btn_text: "Siparişi Tamamla",
+    submit_btn_bg: "#1A1A1A",
+    submit_btn_text_color: "#ffffff",
+    show_email: true,
+    require_email: true,
+    show_order_note: true,
+    show_coupon: true,
+    show_invoice_type: true,
+    default_payment_method: "credit_card",
+    ssl_badge_text: "Tüm bilgileriniz 256bit SSL Sertifikası ile korunmaktadır.",
+    copyright_text: `© ${new Date().getFullYear()} BodyKit Merkezi. Tüm hakları saklıdır.`,
+  });
 
   // Popup açma fonksiyonu
   const openPopup = (e: React.MouseEvent<HTMLAnchorElement>, url: string) => {
@@ -79,20 +95,19 @@ export default function QuickCheckoutModal({
   };
 
   // COD Settings
-  const [codSettings, setCodSettings] = useState({ is_active: false, additional_fee: 40, min_amount: 10000 });
-  const [codCcSettings, setCodCcSettings] = useState({ is_active: false, additional_fee: 40, min_amount: 10000 });
+  const [codSettings, setCodSettings] = useState({ is_active: true, additional_fee: 70, min_amount: 3000 });
+  const [codCcSettings, setCodCcSettings] = useState({ is_active: false, additional_fee: 70, min_amount: 3000 });
   const [paymentSettings, setPaymentSettings] = useState({
      bank_active: true,
-     bank_instructions: "",
      paytr_active: true,
   });
   const hasTrackedPaymentRef = useRef(false);
 
   // Shipping Settings
   const [shippingSettings, setShippingSettings] = useState({
-     standard_rate: 0,
+     standard_rate: 60,
      free_shipping_limit: 3000,
-     free_shipping_enabled: false
+     free_shipping_enabled: true
   });
 
   // --- PRICE PRE-CALCULATION FOR META EVENTS ---
@@ -100,38 +115,27 @@ export default function QuickCheckoutModal({
   let numericalPrice = 0;
   let cartSubtotal = 0;
   let cartDiscount = 0;
-  let kargoFiyatiStr = "Sonraki Adımda Hesaplanacak";
   
   if (mode === "product" && product) {
      const v = product.variants?.find((vx: any) => vx.id === variantId) || product.variants?.[0] as any
      numericalPrice = ((v?.calculated_price?.calculated_amount || 0) / 100) * quantity;
      priceStr = v?.calculated_price?.calculated_amount ? `${(numericalPrice).toLocaleString("tr-TR", {minimumFractionDigits: 2, maximumFractionDigits: 2})} TL` : "Detaylı Ücret Seçilmedi"
   } else if (mode === "cart" && cart) {
-     cartSubtotal = (cart.item_subtotal ?? cart.subtotal ?? 0) / 100;
-     cartDiscount = (cart.discount_total ?? cart.discount_subtotal ?? 0) / 100;
-     numericalPrice = Math.max(0, cartSubtotal - cartDiscount);
-     
-     priceStr = `${cartSubtotal.toLocaleString("tr-TR", {minimumFractionDigits: 2, maximumFractionDigits: 2})} TL`;
+     numericalPrice = (cart.total || 0) / 100;
+     cartSubtotal = ((cart.item_subtotal || 0) + (cart.tax_total || 0)) / 100; // Ara toplam ve vergi (indirimsiz tutarı görebilmek için)
+     cartDiscount = (cart.discount_total || cart.discount_subtotal || 0) / 100;
+     // Eğer indirim varsa Sepet fiyatı kısmında asıl fiyatı gösterelim, aşağıda indirimi düşeriz.
+     priceStr = `${(cartDiscount > 0 ? (numericalPrice + cartDiscount) : numericalPrice).toLocaleString("tr-TR", {minimumFractionDigits: 2, maximumFractionDigits: 2})} TL`
   }
 
+  let kargoFiyati = shippingSettings.standard_rate;
+  if (shippingSettings.free_shipping_enabled && numericalPrice >= shippingSettings.free_shipping_limit) {
+      kargoFiyati = 0;
+  }
+  
   const isCodActive = formData.payment_method === "cash_on_delivery";
   const isCodCcActive = formData.payment_method === "cod_cc";
-  const codFee = isCodActive ? codSettings.additional_fee : (isCodCcActive ? codCcSettings.additional_fee : 0);
-  
-  let calculatedShipping = 0;
-  if (shippingSettings.free_shipping_enabled && numericalPrice >= shippingSettings.free_shipping_limit) {
-      calculatedShipping = 0;
-  } else {
-      calculatedShipping = shippingSettings.standard_rate;
-  }
-  
-  if (calculatedShipping === 0) {
-      kargoFiyatiStr = "Karşı Ödemeli";
-  } else {
-      kargoFiyatiStr = `${calculatedShipping.toLocaleString("tr-TR", {minimumFractionDigits: 2, maximumFractionDigits: 2})} TL`;
-  }
-  
-  const finalValue = numericalPrice > 0 ? numericalPrice + codFee + calculatedShipping : 0;
+  const finalValue = numericalPrice > 0 ? numericalPrice + kargoFiyati + (isCodActive ? codSettings.additional_fee : (isCodCcActive ? codCcSettings.additional_fee : 0)) : 0;
   const totalWithShippingStr = numericalPrice > 0 ? `${finalValue.toLocaleString("tr-TR", {minimumFractionDigits: 2, maximumFractionDigits: 2})} TL` : priceStr;
 
   useEffect(() => {
@@ -146,36 +150,52 @@ export default function QuickCheckoutModal({
           headers: { "x-publishable-api-key": PUBLISHABLE_KEY }
        };
 
+       try {
+          const savedCoupon = window.localStorage.getItem("cizgibutik_active_coupon")
+          if (savedCoupon) {
+             setFormData(prev => ({ ...prev, coupon: prev.coupon || savedCoupon }))
+          }
+       } catch {}
+
+       fetch(`${MEDUSA_URL}/store/hero-config`, fetchOptions)
+          .then(res => res.json())
+          .then(data => {
+             if (data?.config?.checkout_settings) {
+                setCheckoutConfig(prev => ({ ...prev, ...data.config.checkout_settings }))
+                if (data.config.checkout_settings.default_payment_method) {
+                   setFormData(prev => ({ ...prev, payment_method: data.config.checkout_settings.default_payment_method }))
+                }
+             }
+          }).catch(() => {})
+
+       fetch(`${MEDUSA_URL}/store/logo-config`, fetchOptions)
+          .then(res => res.json())
+          .then(data => {
+             let cfg = data?.config || data || null
+             while (cfg && typeof cfg === "object" && cfg.config && typeof cfg.config === "object") {
+                cfg = cfg.config
+             }
+             if (cfg) {
+                const logo = cfg.checkoutLogo || cfg.headerLogo || cfg.logo || cfg.logoUrl || cfg.mobileLogo
+                if (logo) setStoreLogoUrl(logo.replace(/http:\/\/localhost:9000/g, MEDUSA_URL))
+                const copyCandidate = cfg.footerCopyrightText || cfg.copyrightText
+                if (copyCandidate) {
+                   setCheckoutConfig(prev => ({ ...prev, copyright_text: copyCandidate }))
+                }
+             }
+          }).catch(() => {})
+
        fetch(`${MEDUSA_URL}/store/custom/payment-cod`, fetchOptions)
           .then(res => res.json())
           .then(data => {
              if (data?.settings) {
                 setCodSettings({
-                   is_active: Boolean(data.settings.is_active),
+                   is_active: data.settings.is_active,
                    additional_fee: parseFloat(data.settings.additional_fee) || 0,
                    min_amount: parseFloat(data.settings.min_amount) || Infinity
                 })
              }
           }).catch(err => console.error("COD bilgieri çekilemedi", err))
-
-       fetch(`${MEDUSA_URL}/store/logo-config`, fetchOptions)
-          .then(res => res.json())
-          .then(data => {
-              let cfg = data?.config || data || null;
-              while (cfg && typeof cfg === "object" && cfg.config && typeof cfg.config === "object") {
-                  cfg = cfg.config;
-              }
-              if (cfg) {
-                  const logoCandidate = cfg.checkoutLogo || cfg.logo || cfg.logoUrl || cfg.mobileLogo;
-                  if (logoCandidate) {
-                      setStoreLogoUrl(logoCandidate.replace(/http:\/\/localhost:9000/g, MEDUSA_URL));
-                  }
-                  const copyCandidate = cfg.footerCopyrightText || cfg.copyrightText;
-                  if (copyCandidate) {
-                      setCopyrightText(copyCandidate);
-                  }
-              }
-          }).catch(() => {})
 
        fetch(`${MEDUSA_URL}/store/custom/settings`, fetchOptions)
           .then(res => res.json())
@@ -187,45 +207,23 @@ export default function QuickCheckoutModal({
                           mainLogo = mainLogo.replace(/http:\/\/localhost:9000/g, MEDUSA_URL);
                       }
                       setStoreLogoUrl(mainLogo);
-                  } else if (data.settings.logo_config?.logo || data.settings.logo_config?.logoUrl) {
-                      let mainLogo = data.settings.logo_config.logo || data.settings.logo_config.logoUrl;
-                      if (mainLogo.includes("localhost:9000")) {
-                          mainLogo = mainLogo.replace(/http:\/\/localhost:9000/g, MEDUSA_URL);
-                      }
-                      setStoreLogoUrl(mainLogo);
-                  }
-                  if (data.settings.logo_config?.footerCopyrightText || data.settings.logo_config?.copyrightText || data.settings["footer-telif"]?.copyright_text) {
-                      setCopyrightText(
-                        data.settings.logo_config?.footerCopyrightText ||
-                        data.settings.logo_config?.copyrightText ||
-                        data.settings["footer-telif"]?.copyright_text
-                      );
                   }
                   
                   setPaymentSettings({
-                     bank_active: data.settings.payment_bank?.active !== false,
-                     bank_instructions: data.settings.payment_bank?.instructions || "",
+                     bank_active: data.settings.payment_bank?.active !== false, // default true if undefined
                      paytr_active: data.settings.payment_paytr?.active !== false,
                   });
-                  if (data.settings.payment_cod) {
-                     setCodSettings({
-                        is_active: Boolean(data.settings.payment_cod.is_active),
-                        additional_fee: parseFloat(data.settings.payment_cod.additional_fee) || 0,
-                        min_amount: parseFloat(data.settings.payment_cod.min_amount) || Infinity
-                     });
-                  }
                   if (data.settings.payment_cod_cc) {
                      setCodCcSettings({
-                        is_active: Boolean(data.settings.payment_cod_cc.is_active),
+                        is_active: data.settings.payment_cod_cc.is_active ?? false,
                         additional_fee: parseFloat(data.settings.payment_cod_cc.additional_fee) || 0,
                         min_amount: parseFloat(data.settings.payment_cod_cc.min_amount) || Infinity
                      });
                   }
                   
                   if (data.settings.shipping_settings) {
-                     const parsedRate = parseFloat(data.settings.shipping_settings.standard_rate);
                      setShippingSettings({
-                        standard_rate: Number.isFinite(parsedRate) ? parsedRate : 100,
+                        standard_rate: parseFloat(data.settings.shipping_settings.standard_rate) || 60,
                         free_shipping_limit: parseFloat(data.settings.shipping_settings.free_shipping_limit) || 3000,
                         free_shipping_enabled: data.settings.shipping_settings.free_shipping_enabled !== false
                      });
@@ -300,13 +298,23 @@ export default function QuickCheckoutModal({
     setError("")
 
     try {
+        let clientIpv4 = ""
+        if (formData.payment_method === "credit_card") {
+            try {
+                const ipRes = await fetch("https://api.ipify.org?format=json", { signal: AbortSignal.timeout(2500) })
+                const ipData = await ipRes.json()
+                if (ipData?.ip) clientIpv4 = ipData.ip
+            } catch {}
+        }
+
         // Doğrudan Server Action çağrılır
         const result = await processQuickCheckout({
             ...formData,
             country_code: region.countries?.[0]?.iso_2 || "tr",
             cart_id: cart?.id,
             variant_id: variantId,
-            quantity: quantity
+            quantity: quantity,
+            client_ip: clientIpv4 || undefined
         })
 
         if (result.success) {
@@ -427,7 +435,7 @@ export default function QuickCheckoutModal({
                {/* Header */}
                <div className="px-5 py-4 flex items-center justify-between border-b border-gray-200 bg-white shadow-sm">
                   <div className="flex-1 flex items-center">
-                    <img src={storeLogoUrl} alt="BodyKit Merkezi" className="h-8 md:h-9 object-contain w-auto" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/logo.png'; }} />
+                    <img src={storeLogoUrl} alt="Logo" className="h-[22px] md:h-[26px] object-contain w-auto" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/logo.png'; }} />
                   </div>
                   <button type="button" onClick={onClose} className="p-2" aria-label="Close Checkout">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M6 18L18 6M6 6l12 12"/></svg>
@@ -443,13 +451,17 @@ export default function QuickCheckoutModal({
 
             {/* Teslimat Adresi (Heading block) */}
             <div className="pt-0">
-               <h2 className="text-2xl font-bold mb-6">Teslimat Adresi</h2>
+               <h2 className="text-2xl font-bold mb-6">{checkoutConfig.delivery_section_title || "Teslimat Adresi"}</h2>
                
                {/* Iletisim Bilgileri */}
-               <h3 className="text-base font-bold mb-3">İletişim Bilgileri</h3>
-               <div className="mb-6">
-                 <input type="email" name="email" required placeholder="E-posta" className="w-full border border-gray-300 rounded-md p-3.5 text-sm focus:border-black focus:ring-1 focus:ring-black outline-none" value={formData.email} onChange={handleInputChange} />
-               </div>
+               {checkoutConfig.show_email !== false && (
+                 <>
+                   <h3 className="text-base font-bold mb-3">İletişim Bilgileri</h3>
+                   <div className="mb-6">
+                     <input type="email" name="email" required={checkoutConfig.require_email !== false} placeholder="E-posta" className="w-full border border-gray-300 rounded-md p-3.5 text-sm focus:border-black focus:ring-1 focus:ring-black outline-none" value={formData.email} onChange={handleInputChange} />
+                   </div>
+                 </>
+               )}
 
                {/* Teslimat Adresi Form */}
                <h3 className="text-base font-bold mb-3">Teslimat Adresi</h3>
@@ -467,7 +479,9 @@ export default function QuickCheckoutModal({
                   </div>
                   
                   <input required type="text" name="address" placeholder="Adres" className="w-full border border-gray-300 rounded-md p-3.5 text-sm focus:border-black focus:ring-1 focus:ring-black outline-none" value={formData.address} onChange={handleInputChange} />
-                  <input type="text" name="order_note" placeholder="Apartman, daire, vb. (İsteğe Bağlı)" className="w-full border border-gray-300 rounded-md p-3.5 text-sm focus:border-black focus:ring-1 focus:ring-black outline-none" value={formData.order_note} onChange={handleInputChange} />
+                  {checkoutConfig.show_order_note !== false && (
+                    <input type="text" name="order_note" placeholder="Apartman, daire, vb. (İsteğe Bağlı)" className="w-full border border-gray-300 rounded-md p-3.5 text-sm focus:border-black focus:ring-1 focus:ring-black outline-none" value={formData.order_note} onChange={handleInputChange} />
+                  )}
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                      <div className="relative">
@@ -503,6 +517,7 @@ export default function QuickCheckoutModal({
             </div>
 
             {/* Fatura Bilgileri (E-Fatura Entegrasyonu) */}
+            {checkoutConfig.show_invoice_type !== false && (
             <div className="pt-2">
                <h2 className="text-2xl font-bold mb-6">Fatura Bilgileri</h2>
                
@@ -536,6 +551,7 @@ export default function QuickCheckoutModal({
                    )}
                </div>
             </div>
+            )}
 
             {/* Kargo Yöntemi */}
             <div className="pt-2">
@@ -547,10 +563,10 @@ export default function QuickCheckoutModal({
                      <span className="text-[15px] font-medium text-black">Standart Kargo</span>
                    </label>
                    <span className="text-[15px] font-bold text-gray-900">
-                     {kargoFiyatiStr}
+                     {kargoFiyati === 0 ? "Ücretsiz" : `₺${kargoFiyati.toLocaleString("tr-TR", {minimumFractionDigits: 2})}`}
                    </span>
                  </div>
-                 {shippingSettings.free_shipping_enabled && numericalPrice > 0 && numericalPrice < shippingSettings.free_shipping_limit && (
+                 {shippingSettings.free_shipping_enabled && kargoFiyati > 0 && numericalPrice > 0 && (
                     <div className="bg-gray-50 p-3 border-t border-gray-200 text-sm text-gray-600 font-medium text-center">
                        {`₺${(shippingSettings.free_shipping_limit - numericalPrice).toLocaleString("tr-TR", {minimumFractionDigits: 2})} daha alışveriş yapın, kargonuz ücretsiz olsun!`}
                     </div>
@@ -562,14 +578,9 @@ export default function QuickCheckoutModal({
 
             {/* Odeme Yontemi */}
             <div className="pt-2">
-              <h2 className="text-2xl font-bold mb-6">Ödeme</h2>
+              <h2 className="text-2xl font-bold mb-6">{checkoutConfig.payment_section_title || "Ödeme"}</h2>
               <div className="space-y-4">
-                 {[
-                    "credit_card:Kredi / Banka Kartı (PayTR)",
-                    "havale:Havale / EFT",
-                    "cash_on_delivery:Kapıda Ödeme (Nakit)",
-                    "cod_cc:Kapıda Ödeme (Kredi Kartı)"
-                 ].map(m => {
+                 {["cash_on_delivery:Kapıda Nakit Ödeme", "cod_cc:Kapıda Kredi Kartı ile Ödeme", "havale:Havale / EFT", "credit_card:Kredi / Banka Kartı (PayTR)"].map(m => {
                     const [val, label] = m.split(":")
                     if (val === 'cash_on_delivery' && (!codSettings.is_active || numericalPrice > codSettings.min_amount)) {
                         return null;
@@ -595,12 +606,6 @@ export default function QuickCheckoutModal({
                             <span className="text-[15px] text-black tracking-wide">{label}</span>
                           </label>
                           
-                          {isSelected && val === "havale" && paymentSettings.bank_instructions && (
-                              <div className="p-4 pt-0 text-xs text-gray-700 whitespace-pre-line leading-relaxed font-medium bg-gray-50 border-t border-gray-200">
-                                 {paymentSettings.bank_instructions}
-                              </div>
-                          )}
-
                           {isSelected && val === "credit_card" && (
                               <div className="p-4 pt-0 space-y-3.5 bg-gray-50">
                                  <input type="text" name="cc_owner" required placeholder="Kart Üzerindeki İsim" className="w-full border border-gray-300 p-3.5 text-sm rounded-md bg-white outline-none focus:border-black" value={formData.cc_owner} onChange={handleInputChange} />
@@ -664,6 +669,7 @@ export default function QuickCheckoutModal({
                                     </div>
                                     <div className="space-y-0.5 text-center px-0.5">
                                        <p className="text-[12px] text-[#6b7280] truncate font-medium">{priceStr}</p>
+                                       <p className="text-[11px] text-[#8c8c8c]">Variant: {product.variants?.find((v:any) => v.id === preselectedVariantId)?.title?.split(" ")?.[0] || "Standart"}</p>
                                     </div>
                                  </div>
                               )}
@@ -678,6 +684,7 @@ export default function QuickCheckoutModal({
                                     </div>
                                     <div className="space-y-0.5 text-center px-0.5">
                                        <p className="text-[12px] text-[#6b7280] truncate font-medium">{((item.unit_price || 0) / 100).toLocaleString("tr-TR", {minimumFractionDigits: 2, maximumFractionDigits: 2})} TL</p>
+                                       <p className="text-[11px] text-[#8c8c8c]">Variant: {item.variant?.title?.split(" ")?.[0] || "Std"}</p>
                                     </div>
                                  </div>
                               ))}
@@ -699,7 +706,7 @@ export default function QuickCheckoutModal({
                         )}
                         <div className="flex justify-between text-[#6b7280]">
                            <span>Kargo</span>
-                           <span>{kargoFiyatiStr}</span>
+                           <span>60,00 TL</span>
                         </div>
                         {isCodActive && codSettings.additional_fee > 0 && (
                            <div className="flex justify-between text-[#6b7280]">
@@ -727,6 +734,7 @@ export default function QuickCheckoutModal({
                      </div>
 
                      {/* KUPON ALANI */}
+                     {checkoutConfig.show_coupon !== false && (
                      <div className="pt-2 px-1">
                         <div className="flex flex-col gap-y-2">
                            {formData.coupon ? (
@@ -741,6 +749,7 @@ export default function QuickCheckoutModal({
                            )}
                         </div>
                      </div>
+                     )}
                   </div>
                </div>
             </div>
@@ -758,19 +767,32 @@ export default function QuickCheckoutModal({
             </div>
 
             {/* Siparis Tamamla Butonu */}
-            <button form="quick-checkout" type="submit" disabled={loading} className="w-full bg-[#1A1A1A] hover:bg-black text-white py-4 rounded-md font-bold text-base flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+            <button
+               form="quick-checkout"
+               type="submit"
+               disabled={loading}
+               className="w-full py-4 rounded-md font-bold text-base flex items-center justify-center transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+               style={{
+                  backgroundColor: checkoutConfig.submit_btn_bg || "#1A1A1A",
+                  color: checkoutConfig.submit_btn_text_color || "#ffffff",
+               }}
+            >
                {loading ? (
                   <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
                ) : (
-                  "Siparişi Tamamla"
+                  checkoutConfig.submit_btn_text || "Siparişi Tamamla"
                )}
             </button>
             
             {/* Footer Area */}
             <div className="pt-10 pb-8 flex flex-col items-center justify-center space-y-4">
                <div className="text-center space-y-1">
-                  <p className="text-[12.5px] text-[#8c8c8c] font-medium tracking-wide">Tüm bilgileriniz 256bit SSL Sertifikası ile korunmaktadır.</p>
-                  <p className="text-[12.5px] text-[#8c8c8c] font-medium tracking-wide">{copyrightText}</p>
+                  <p className="text-[12.5px] text-[#8c8c8c] font-medium tracking-wide">
+                     {checkoutConfig.ssl_badge_text || "Tüm bilgileriniz 256bit SSL Sertifikası ile korunmaktadır."}
+                  </p>
+                  <p className="text-[12.5px] text-[#8c8c8c] font-medium tracking-wide">
+                     {checkoutConfig.copyright_text || `© ${new Date().getFullYear()} BodyKit Merkezi. Tüm hakları saklıdır.`}
+                  </p>
                </div>
                <div className="flex items-center gap-x-3 mt-4 w-full justify-center">
                   <div className="w-[50px] h-[32px] border border-gray-200 rounded flex items-center justify-center bg-white shadow-[0_1px_2px_rgba(0,0,0,0.02)] px-1.5">

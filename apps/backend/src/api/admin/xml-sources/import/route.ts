@@ -74,6 +74,11 @@ export async function POST(
     const channels = await salesChannelService.listSalesChannels()
     const channelId = channels[0]?.id
 
+    // Resolve Shipping Profile
+    const fulfillmentService = req.scope.resolve("fulfillment")
+    const shippingProfiles = await fulfillmentService.listShippingProfiles()
+    const defaultProfileId = shippingProfiles[0]?.id
+
     // Resolve Product Categories
     const productModuleService = req.scope.resolve("product")
     const existingCategories = await productModuleService.listProductCategories({}, { take: 1000 })
@@ -232,6 +237,7 @@ export async function POST(
         handle: handle,
         description: String(description),
         status: "published" as any,
+        shipping_profile_id: defaultProfileId,
         images: images,
         categories: productCategories,
         metadata: {

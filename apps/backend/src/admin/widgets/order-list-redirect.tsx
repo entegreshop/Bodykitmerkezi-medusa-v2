@@ -1500,7 +1500,7 @@ const SiparisYonetimiPage = () => {
                 </div>
 
                 <div class="footer">
-                  <div>https://www.cizgibutik.com/admin/orders/refund</div>
+                  <div>https://api.bodykitmerkezi.com/admin/orders/refund</div>
                   <div>${idx + 1}/${ordersToPrint.length}</div>
                 </div>
               </div>

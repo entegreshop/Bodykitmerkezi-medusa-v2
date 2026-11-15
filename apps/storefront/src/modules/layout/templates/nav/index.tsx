@@ -11,7 +11,7 @@ import SideMenu from "@modules/layout/components/side-menu"
 import SearchModal from "@modules/layout/components/search-modal"
 import TopAnnouncementCarousel from "@modules/layout/components/top-announcement-carousel"
 
-const NEXT_PUBLIC_MEDUSA_BACKEND_URL = process.env.MEDUSA_BACKEND_URL || "http://localhost:9000"
+const NEXT_PUBLIC_MEDUSA_BACKEND_URL = process.env.MEDUSA_BACKEND_URL || "https://api.bodykitmerkezi.com"
 const NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
 
 async function getHeroConfig() {
@@ -64,15 +64,20 @@ export default async function Nav() {
     getLogoConfig(),
   ])
 
-  const mainLogo = logoConfig?.logo || logoConfig?.logoUrl || logoConfig?.mobileLogo || "/logo.png"
-  const mobileLogo = logoConfig?.mobileLogo || logoConfig?.logo || logoConfig?.logoUrl || "/logo.png"
+  const mainLogo = logoConfig?.headerLogo || logoConfig?.logo || logoConfig?.logoUrl || logoConfig?.mobileLogo || "/logo.png"
+  const mobileLogo = logoConfig?.mobileLogo || logoConfig?.headerLogo || logoConfig?.logo || logoConfig?.logoUrl || "/logo.png"
 
   const topAnnouncementPhrases = config?.top_announcement
     ? config.top_announcement.split(",").map((s: string) => s.trim()).filter(Boolean)
     : []
 
+  const headerSettings = config?.header_settings || {}
+  const isSticky = headerSettings.sticky !== false
+  const headerBg = headerSettings.bg_color || "#ffffff"
+  const headerText = headerSettings.text_color || "#18181b"
+
   return (
-    <div className="sticky top-0 inset-x-0 z-50 group">
+    <div className={`${isSticky ? "sticky top-0" : "relative"} inset-x-0 z-50 group`}>
       {config?.top_announcement_enabled !== false && topAnnouncementPhrases.length > 0 && (
         <TopAnnouncementCarousel
           phrases={topAnnouncementPhrases}
@@ -80,8 +85,11 @@ export default async function Nav() {
           textColor={config.top_announcement_text_color || "#ffffff"}
         />
       )}
-      <header className="relative h-16 mx-auto border-b duration-200 bg-white/80 backdrop-blur-md border-zinc-200/80">
-        <nav className="content-container txt-xsmall-plus text-zinc-600 flex items-center justify-between w-full h-full text-small-regular">
+      <header
+        className="relative h-16 mx-auto border-b duration-200 backdrop-blur-md border-zinc-200/80"
+        style={{ backgroundColor: headerBg, color: headerText }}
+      >
+        <nav className="content-container txt-xsmall-plus flex items-center justify-between w-full h-full text-small-regular">
           <div className="flex-1 basis-0 h-full flex items-center">
             <div className="h-full">
               <SideMenu regions={regions} locales={locales} currentLocale={currentLocale} categories={categories} logoConfig={logoConfig} />
@@ -94,38 +102,41 @@ export default async function Nav() {
               className="txt-compact-xlarge-plus text-zinc-950 hover:text-violet-600 font-bold uppercase tracking-widest flex items-center gap-1.5 transition-colors"
               data-testid="nav-store-link"
             >
-              <img src={mobileLogo} alt="BodyKit Merkezi" className="h-9 w-auto object-contain block md:hidden" />
-              <img src={mainLogo} alt="BodyKit Merkezi" className="h-11 w-auto object-contain hidden md:block" />
+              <img src={mobileLogo} alt={logoConfig?.siteTitle || "BodyKit Merkezi"} className="h-9 w-auto object-contain block md:hidden" />
+              <img src={mainLogo} alt={logoConfig?.siteTitle || "BodyKit Merkezi"} className="h-11 w-auto object-contain hidden md:block" />
             </LocalizedClientLink>
           </div>
 
           <div className="flex items-center gap-x-5 h-full flex-1 basis-0 justify-end">
-            <SearchModal logoUrl={mainLogo} />
-            <LocalizedClientLink
-              className="hover:text-zinc-950 transition-colors text-zinc-700 p-1 flex items-center justify-center"
-              href="/account"
-              data-testid="nav-account-link"
-              aria-label="Hesabım"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth="1.5"
-                stroke="currentColor"
-                className="w-6 h-6"
+            {headerSettings.show_search !== false && <SearchModal logoUrl={mainLogo} />}
+            {headerSettings.show_account !== false && (
+              <LocalizedClientLink
+                className="hover:opacity-75 transition-opacity p-1 flex items-center justify-center"
+                href="/account"
+                data-testid="nav-account-link"
+                aria-label="Hesabım"
+                style={{ color: headerText }}
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"
-                />
-              </svg>
-            </LocalizedClientLink>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth="1.5"
+                  stroke="currentColor"
+                  className="w-6 h-6"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"
+                  />
+                </svg>
+              </LocalizedClientLink>
+            )}
             <Suspense
               fallback={
                 <LocalizedClientLink
-                  className="hover:text-zinc-950 transition-colors text-zinc-700 flex items-center justify-center"
+                  className="hover:opacity-75 transition-opacity flex items-center justify-center"
                   href="/cart"
                   data-testid="nav-cart-link"
                 >
@@ -136,7 +147,7 @@ export default async function Nav() {
                       viewBox="0 0 24 24"
                       strokeWidth="1.5"
                       stroke="currentColor"
-                      className="w-6 h-6 text-zinc-700"
+                      className="w-6 h-6"
                     >
                       <path
                         strokeLinecap="round"
