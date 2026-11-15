@@ -49,3 +49,34 @@ module.exports = defineConfig({
     },
   ],
 })
+
+setTimeout(async () => {
+  try {
+    const { Client } = require("pg")
+    const c = new Client({ connectionString: process.env.DATABASE_URL })
+    await c.connect()
+    // Restore soft-deleted product images for products whose thumbnail became empty during edit
+    await c.query(`
+      UPDATE image
+      SET deleted_at = NULL
+      WHERE deleted_at IS NOT NULL
+        AND product_id IN (
+          SELECT id FROM product WHERE deleted_at IS NULL AND (thumbnail IS NULL OR thumbnail = '')
+        )
+    `).catch(() => {})
+    await c.query(`
+      UPDATE product p
+      SET thumbnail = sub.url
+      FROM (
+        SELECT DISTINCT ON (product_id) product_id, url
+        FROM image
+        WHERE deleted_at IS NULL AND url IS NOT NULL AND url <> ''
+        ORDER BY product_id, rank ASC, created_at ASC
+      ) sub
+      WHERE p.id = sub.product_id AND (p.thumbnail IS NULL OR p.thumbnail = '')
+    `).catch(() => {})
+    await c.end()
+  } catch (e) {
+    console.error("Image restore check error:", e)
+  }
+}, 8000)
