@@ -5,6 +5,7 @@ import CouponBanner from "@modules/home/components/coupon-banner"
 import PromoBanners from "@modules/home/components/promo-banners"
 import TrustBadges from "@modules/home/components/trust-badges"
 import CategoryTabs from "@modules/home/components/category-tabs"
+import BrandProductShowcase from "@modules/home/components/brand-product-showcase"
 import ProductCarouselBlock, { CarouselBlockConfig } from "@modules/home/components/product-carousel-block"
 import BannerCategoryCarousel, { BannerCarouselConfig } from "@modules/home/components/banner-category-carousel"
 import { Text } from "@medusajs/ui"
@@ -68,12 +69,12 @@ export default async function Home(props: {
 
   const categoryQuery = searchParams.category || "yeni-gelenler"
 
-  // Always fetch latest products pool for the n11-style Category Tab Carousel
+  // Always fetch latest products pool for the n11-style Category Tab Carousel & Brand Showcase
   const latestRes = await listProducts({
     regionId: region.id,
     queryParams: {
       fields: "*variants.calculated_price",
-      limit: 20,
+      limit: 100,
       order: "-created_at",
     },
   })
@@ -538,36 +539,8 @@ export default async function Home(props: {
         <BannerCategoryCarousel key={item.block.id} bannerBlock={item.block} products={item.products} region={region} />
       ))}
 
-      {/* 4. Products Grid Section */}
-      <div className="bg-white py-12 border-b border-zinc-200">
-        <div className="content-container">
-          {products && products.length > 0 ? (
-            <InfiniteProducts
-              initialProducts={products}
-              count={count}
-              region={region}
-              countryCode={countryCode}
-              categoryId={activeCategoryId}
-              collectionId={activeCollectionId}
-              className="grid grid-cols-2 md:grid-cols-4 gap-x-4 md:gap-x-6 gap-y-12"
-            />
-          ) : (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <svg className="w-12 h-12 text-zinc-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="1.5"
-                  d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
-                />
-              </svg>
-              <Text className="text-zinc-500 font-semibold text-sm">
-                Bu kategoride henüz sergilenecek ürün bulunmuyor.
-              </Text>
-            </div>
-          )}
-        </div>
-      </div>
+      {/* 4. Car Brand-Focused Product Showcase (Circular Original Car Logo Tabs Carousel + Vertical Grid in Image 1 Card Design) */}
+      <BrandProductShowcase products={allProducts} region={region} />
 
       {/* Carousel Blocks placed Below Products */}
       {bannerCarouselsBelowProducts.map((item) => (

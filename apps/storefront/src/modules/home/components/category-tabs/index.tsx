@@ -67,7 +67,8 @@ export function N11ProductCard({
   const imgUrl = product.thumbnail || product.images?.[0]?.url || "/placeholder.png"
 
   // Calculate discount percentage & original price for the green price block & top-left black circular badge
-  const calculatedNum = cheapestPrice?.calculated_price_number || 0
+  const rawCalculatedNum = cheapestPrice?.calculated_price_number || 0
+  const calculatedNum = rawCalculatedNum > 50000 ? rawCalculatedNum / 100 : rawCalculatedNum
   const fallbackRates = [41, 31, 31, 35, 41]
   const fallbackRate = fallbackRates[index % fallbackRates.length]
 
@@ -80,7 +81,7 @@ export function N11ProductCard({
     cheapestPrice?.price_type === "sale" && cheapestPrice?.original_price
       ? cheapestPrice.original_price
       : calculatedNum > 0
-      ? `₺${Math.round(calculatedNum / (1 - discountPercent / 100)).toLocaleString("tr-TR", {
+      ? `₺${(calculatedNum / (1 - discountPercent / 100)).toLocaleString("tr-TR", {
           minimumFractionDigits: 2,
           maximumFractionDigits: 2,
         })}`
