@@ -291,7 +291,7 @@ export async function syncGunesliGarajCatalog(container: MedusaContainer) {
             categoryLinksToInsert.push({ productId: existing.id, categoryId: cid })
           }
         }
-        if ((!existing.thumbnail || existing.thumbnail === "") && item.thumbnail) {
+        if (item.thumbnail && existing.thumbnail !== item.thumbnail) {
           thumbnailUpdates.push({
             productId: existing.id,
             thumbnail: item.thumbnail,
@@ -382,39 +382,62 @@ export async function syncGunesliGarajCatalog(container: MedusaContainer) {
       }
     }
 
-    // 4. Apply direct SQL category links & thumbnail restorations for existing products
+    // 4. Apply direct SQL category links, remove red-template GG cover images, & update clean thumbnails/images
     let linkedCategoriesCount = 0
-    if (categoryLinksToInsert.length > 0 || thumbnailUpdates.length > 0) {
-      try {
-        const { Client } = require("pg")
-        const client = new Client({ connectionString: process.env.DATABASE_URL })
-        await client.connect()
+    let cleanedImagesCount = 0
+    try {
+      const { Client } = require("pg")
+      const client = new Client({ connectionString: process.env.DATABASE_URL })
+      await client.connect()
 
-        for (const link of categoryLinksToInsert) {
-          await client
-            .query(
-              `INSERT INTO product_category_product (product_id, product_category_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
-              [link.productId, link.categoryId]
-            )
-            .then(() => {
-              linkedCategoriesCount++
-            })
-            .catch(() => {})
-        }
+      // Remove all red-triangle GG cover images (gg-*, 1web.jpg, etc.) from product image gallery
+      await client
+        .query(`DELETE FROM image WHERE url ~* '/(gg[-_][a-z0-9_-]+|1web|1-web|web)\\.(jpg|jpeg|png|webp)'`)
+        .catch(() => {})
 
-        for (const tu of thumbnailUpdates) {
-          await client
-            .query(`UPDATE product SET thumbnail = $1 WHERE id = $2 AND (thumbnail IS NULL OR thumbnail = '')`, [
-              tu.thumbnail,
-              tu.productId,
-            ])
-            .catch(() => {})
-        }
-
-        await client.end()
-      } catch (pgErr) {
-        console.error("PG category link update error:", pgErr)
+      for (const link of categoryLinksToInsert) {
+        await client
+          .query(
+            `INSERT INTO product_category_product (product_id, product_category_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+            [link.productId, link.categoryId]
+          )
+          .then(() => {
+            linkedCategoriesCount++
+          })
+          .catch(() => {})
       }
+
+      for (const tu of thumbnailUpdates) {
+        await client
+          .query(`UPDATE product SET thumbnail = $1 WHERE id = $2`, [tu.thumbnail, tu.productId])
+          .then(() => {
+            cleanedImagesCount++
+          })
+          .catch(() => {})
+
+        // Ensure clean gallery images exist in `image` table for this product
+        const existingImgsRes = await client
+          .query(`SELECT url FROM image WHERE product_id = $1 AND deleted_at IS NULL`, [tu.productId])
+          .catch(() => ({ rows: [] }))
+        const existingUrlSet = new Set((existingImgsRes?.rows || []).map((r: any) => r.url))
+
+        for (let rIdx = 0; rIdx < (tu.images || []).length; rIdx++) {
+          const imgUrl = tu.images[rIdx]
+          if (imgUrl && !existingUrlSet.has(imgUrl)) {
+            const imgId = `img_clean_${tu.productId.slice(-10)}_${rIdx}_${Math.floor(1000 + Math.random() * 8999)}`
+            await client
+              .query(
+                `INSERT INTO image (id, url, rank, product_id, created_at, updated_at) VALUES ($1, $2, $3, $4, NOW(), NOW()) ON CONFLICT DO NOTHING`,
+                [imgId, imgUrl, rIdx, tu.productId]
+              )
+              .catch(() => {})
+          }
+        }
+      }
+
+      await client.end()
+    } catch (pgErr) {
+      console.error("PG category & clean image update error:", pgErr)
     }
 
     isSyncRunning = false
@@ -422,6 +445,7 @@ export async function syncGunesliGarajCatalog(container: MedusaContainer) {
       status: "success",
       totalCatalogProducts: catalog.length,
       createdProductsCount: createdCount,
+      cleanedImagesCount,
       existingProductsUpdatedLinks: linkedCategoriesCount,
       categoriesTotal: allCategories.length,
     }

@@ -14,6 +14,19 @@ type ThumbnailProps = {
   "data-testid"?: string
 }
 
+function isRedCoverTemplateUrl(url?: string | null): boolean {
+  if (!url) return true
+  const fname = (url.split("/").pop() || "").split("?")[0].toLowerCase()
+  return (
+    fname.startsWith("gg-") ||
+    fname.startsWith("gg_") ||
+    fname.includes("1web") ||
+    fname === "web.jpg" ||
+    fname === "1-web.jpg" ||
+    fname.includes("kapak")
+  )
+}
+
 const Thumbnail: React.FC<ThumbnailProps> = ({
   thumbnail,
   images,
@@ -22,7 +35,11 @@ const Thumbnail: React.FC<ThumbnailProps> = ({
   className,
   "data-testid": dataTestid,
 }) => {
-  const initialImage = thumbnail || images?.[0]?.url
+  const cleanFromGallery = (images || []).map((i: any) => i?.url).find((u: string) => u && !isRedCoverTemplateUrl(u))
+  const initialImage =
+    thumbnail && !isRedCoverTemplateUrl(thumbnail)
+      ? thumbnail
+      : cleanFromGallery || thumbnail || images?.[0]?.url
 
   return (
     <Container
@@ -54,9 +71,10 @@ const ImageOrPlaceholder = ({
     <Image
       src={image}
       alt="Thumbnail"
-      className="absolute inset-0 object-cover object-center"
+      unoptimized
+      className="absolute inset-0 object-contain object-center bg-white p-1"
       draggable={false}
-      quality={50}
+      quality={75}
       sizes="(max-width: 576px) 280px, (max-width: 768px) 360px, (max-width: 992px) 480px, 800px"
       fill
     />

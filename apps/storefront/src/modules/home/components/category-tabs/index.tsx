@@ -38,6 +38,31 @@ function toTitleCaseTr(str: string) {
   return str
 }
 
+function isRedCoverTemplateUrl(url?: string | null): boolean {
+  if (!url) return true
+  const fname = (url.split("/").pop() || "").split("?")[0].toLowerCase()
+  return (
+    fname.startsWith("gg-") ||
+    fname.startsWith("gg_") ||
+    fname.includes("1web") ||
+    fname === "web.jpg" ||
+    fname === "1-web.jpg" ||
+    fname.includes("kapak")
+  )
+}
+
+export function selectCleanProductImage(product: HttpTypes.StoreProduct): string {
+  const candidates: string[] = []
+  if (product.thumbnail) candidates.push(product.thumbnail)
+  for (const img of product.images || []) {
+    if (img?.url && !candidates.includes(img.url)) {
+      candidates.push(img.url)
+    }
+  }
+  const clean = candidates.find((u) => !isRedCoverTemplateUrl(u))
+  return clean || candidates[0] || "/placeholder.png"
+}
+
 export function N11ProductCard({
   product,
   region,
@@ -64,7 +89,7 @@ export function N11ProductCard({
     }
   }, [product])
 
-  const imgUrl = product.thumbnail || product.images?.[0]?.url || "/placeholder.png"
+  const imgUrl = selectCleanProductImage(product)
 
   // Calculate discount percentage & original price for the green price block & top-left black circular badge
   const rawCalculatedNum = cheapestPrice?.calculated_price_number || 0
@@ -90,12 +115,12 @@ export function N11ProductCard({
   return (
     <div className="group/card relative flex flex-col justify-between rounded-[8px] border border-[#e5e7eb] bg-white overflow-hidden transition-all duration-200 hover:shadow-[0_6px_20px_rgba(0,0,0,0.08)] hover:border-[#d1d5db] h-full">
       {/* Top Image & Overlay Badges */}
-      <div className="relative w-full aspect-[3/4] bg-[#f8f9fa] overflow-hidden">
-        <LocalizedClientLink href={`/products/${product.handle}`} className="block w-full h-full">
+      <div className="relative w-full aspect-[3/4] bg-white overflow-hidden flex items-center justify-center p-1.5">
+        <LocalizedClientLink href={`/products/${product.handle}`} className="w-full h-full flex items-center justify-center">
           <img
             src={imgUrl}
             alt={product.title}
-            className="w-full h-full object-cover object-top transition-transform duration-500 group-hover/card:scale-105"
+            className="w-full h-full object-contain object-center transition-transform duration-500 group-hover/card:scale-105"
             loading="lazy"
           />
         </LocalizedClientLink>

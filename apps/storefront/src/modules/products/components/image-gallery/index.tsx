@@ -8,9 +8,25 @@ type ImageGalleryProps = {
   images: HttpTypes.StoreProductImage[]
 }
 
-const ImageGallery = ({ images }: ImageGalleryProps) => {
+function isRedCoverTemplateUrl(url?: string | null): boolean {
+  if (!url) return true
+  const fname = (url.split("/").pop() || "").split("?")[0].toLowerCase()
+  return (
+    fname.startsWith("gg-") ||
+    fname.startsWith("gg_") ||
+    fname.includes("1web") ||
+    fname === "web.jpg" ||
+    fname === "1-web.jpg" ||
+    fname.includes("kapak")
+  )
+}
+
+const ImageGallery = ({ images: rawImages }: ImageGalleryProps) => {
   const [activeIndex, setActiveIndex] = useState(0)
   const carouselRef = useRef<HTMLDivElement>(null)
+
+  const cleanFiltered = (rawImages || []).filter((img) => img?.url && !isRedCoverTemplateUrl(img.url))
+  const images = cleanFiltered.length > 0 ? cleanFiltered : (rawImages || [])
 
   if (!images || images.length === 0) {
     return (
@@ -74,7 +90,8 @@ const ImageGallery = ({ images }: ImageGalleryProps) => {
                     alt={`Thumbnail ${index + 1}`}
                     src={image.url}
                     fill
-                    className="object-cover"
+                    unoptimized
+                    className="object-contain bg-white p-1"
                     sizes="80px"
                   />
                 )
@@ -85,7 +102,7 @@ const ImageGallery = ({ images }: ImageGalleryProps) => {
       )}
 
       {/* Main Image */}
-      <div className="relative aspect-[3/4] w-full flex-grow overflow-hidden bg-gray-50 border border-gray-100 group">
+      <div className="relative aspect-square w-full flex-grow overflow-hidden bg-white border border-gray-200 rounded-lg group">
         {/* Scrollable Carousel Container */}
         <div
           ref={carouselRef}
@@ -95,7 +112,7 @@ const ImageGallery = ({ images }: ImageGalleryProps) => {
           {images.map((image, index) => (
             <div
               key={image.id}
-              className="relative w-full h-full flex-shrink-0 snap-center"
+              className="relative w-full h-full flex-shrink-0 snap-center bg-white"
             >
               {image.url && (
                 image.url.match(/\.(mp4|webm|mov)$/i) ? (
@@ -105,15 +122,16 @@ const ImageGallery = ({ images }: ImageGalleryProps) => {
                     loop
                     muted
                     playsInline
-                    className="absolute inset-0 w-full h-full object-cover"
+                    className="absolute inset-0 w-full h-full object-contain"
                   />
                 ) : (
                   <Image
                     alt="Product Image"
                     src={image.url}
                     fill
+                    unoptimized
                     priority={index === 0}
-                    className="object-cover"
+                    className="object-contain p-2"
                     sizes="(max-width: 1024px) 100vw, 800px"
                   />
                 )

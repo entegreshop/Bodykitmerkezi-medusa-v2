@@ -55,13 +55,19 @@ setTimeout(async () => {
     const { Client } = require("pg")
     const c = new Client({ connectionString: process.env.DATABASE_URL })
     await c.connect()
+    // Remove red-triangle Güneşli Garaj cover images (gg-*, 1web.jpg) from image gallery
+    await c.query(`
+      DELETE FROM image
+      WHERE url ~* '/(gg[-_][a-z0-9_-]+|1web|1-web|web)\\.(jpg|jpeg|png|webp)'
+    `).catch(() => {})
     // Restore soft-deleted product images for products whose thumbnail became empty during edit
     await c.query(`
       UPDATE image
       SET deleted_at = NULL
       WHERE deleted_at IS NOT NULL
+        AND url !~* '/(gg[-_][a-z0-9_-]+|1web|1-web|web)\\.(jpg|jpeg|png|webp)'
         AND product_id IN (
-          SELECT id FROM product WHERE deleted_at IS NULL AND (thumbnail IS NULL OR thumbnail = '')
+          SELECT id FROM product WHERE deleted_at IS NULL AND (thumbnail IS NULL OR thumbnail = '' OR thumbnail ~* '/(gg[-_][a-z0-9_-]+|1web|1-web|web)\\.(jpg|jpeg|png|webp)')
         )
     `).catch(() => {})
     await c.query(`
@@ -70,10 +76,14 @@ setTimeout(async () => {
       FROM (
         SELECT DISTINCT ON (product_id) product_id, url
         FROM image
-        WHERE deleted_at IS NULL AND url IS NOT NULL AND url <> ''
+        WHERE deleted_at IS NULL
+          AND url IS NOT NULL
+          AND url <> ''
+          AND url !~* '/(gg[-_][a-z0-9_-]+|1web|1-web|web)\\.(jpg|jpeg|png|webp)'
         ORDER BY product_id, rank ASC, created_at ASC
       ) sub
-      WHERE p.id = sub.product_id AND (p.thumbnail IS NULL OR p.thumbnail = '')
+      WHERE p.id = sub.product_id
+        AND (p.thumbnail IS NULL OR p.thumbnail = '' OR p.thumbnail ~* '/(gg[-_][a-z0-9_-]+|1web|1-web|web)\\.(jpg|jpeg|png|webp)')
     `).catch(() => {})
     await c.end()
   } catch (e) {

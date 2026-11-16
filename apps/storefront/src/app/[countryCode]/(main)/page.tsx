@@ -73,7 +73,7 @@ export default async function Home(props: {
   const latestRes = await listProducts({
     regionId: region.id,
     queryParams: {
-      fields: "*variants.calculated_price,*categories",
+      fields: "*variants.calculated_price,*categories,*images",
       limit: 500,
       order: "-created_at",
     },
@@ -104,7 +104,7 @@ export default async function Home(props: {
         regionId: region.id,
         queryParams: {
           collection_id: [cokSatanlarCollection.id],
-          fields: "*variants.calculated_price",
+          fields: "*variants.calculated_price,*images",
           limit: 16,
         },
       })
@@ -121,7 +121,7 @@ export default async function Home(props: {
         regionId: region.id,
         queryParams: {
           category_id: [categoryObj.id],
-          fields: "*variants.calculated_price",
+          fields: "*variants.calculated_price,*images",
           limit: 16,
         },
       })
@@ -148,7 +148,7 @@ export default async function Home(props: {
               regionId: region.id,
               queryParams: {
                 category_id: [catObj.id],
-                fields: "*variants.calculated_price",
+                fields: "*variants.calculated_price,*images",
                 limit,
               },
             })
@@ -161,7 +161,7 @@ export default async function Home(props: {
               regionId: region.id,
               queryParams: {
                 collection_id: [colObj.id],
-                fields: "*variants.calculated_price",
+                fields: "*variants.calculated_price,*images",
                 limit,
               },
             })
@@ -172,7 +172,7 @@ export default async function Home(props: {
         const res = await listProducts({
           regionId: region.id,
           queryParams: {
-            fields: "*variants.calculated_price",
+            fields: "*variants.calculated_price,*images",
             limit,
             order: "-created_at",
           },
@@ -401,7 +401,7 @@ export default async function Home(props: {
               regionId: region.id,
               queryParams: {
                 category_id: [catObj.id],
-                fields: "*variants.calculated_price",
+                fields: "*variants.calculated_price,*images",
                 limit,
               },
             })
@@ -416,7 +416,7 @@ export default async function Home(props: {
               regionId: region.id,
               queryParams: {
                 collection_id: [colObj.id],
-                fields: "*variants.calculated_price",
+                fields: "*variants.calculated_price,*images",
                 limit,
               },
             })

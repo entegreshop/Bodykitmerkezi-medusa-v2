@@ -59,6 +59,22 @@ const nextConfig = {
         protocol: "http",
         hostname: "api.bodykitmerkezi.com",
       },
+      {
+        protocol: "https",
+        hostname: "www.gunesligaraj.com",
+      },
+      {
+        protocol: "https",
+        hostname: "gunesligaraj.com",
+      },
+      {
+        protocol: "https",
+        hostname: "**",
+      },
+      {
+        protocol: "http",
+        hostname: "**",
+      },
       ...(S3_HOSTNAME && S3_PATHNAME
         ? [
             {
