@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import { Button, Heading } from "@medusajs/ui"
 import Link from "next/link"
 
@@ -15,8 +15,32 @@ export interface SlideData {
   mobile_media_url?: string
 }
 
+const PUBLIC_BACKEND_URL =
+  process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL && !process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL.includes("localhost")
+    ? process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL
+    : "https://api.bodykitmerkezi.com"
+
+function normalizePublicMediaUrl(url?: string) {
+  if (!url) return ""
+  const trimmed = url.trim()
+  if (!trimmed || trimmed === "/uploads/hero-1774921088469-819611420.jpg") return ""
+  if (trimmed.startsWith("/uploads/")) {
+    return `${PUBLIC_BACKEND_URL}${trimmed}`
+  }
+  return trimmed
+    .replace(/^http:\/\/localhost:\d+/i, PUBLIC_BACKEND_URL)
+    .replace(/^http:\/\/127\.0\.0\.1:\d+/i, PUBLIC_BACKEND_URL)
+    .replace(/^http:\/\/api\.bodykitmerkezi\.com/i, "https://api.bodykitmerkezi.com")
+}
+
+function isVideoMedia(mediaType?: string, url?: string) {
+  if (!url) return false
+  if (/\.(mp4|mov|webm|m4v)(\?|$)/i.test(url)) return true
+  return mediaType === "video"
+}
+
 export default function HeroSlider({
-  slides,
+  slides: initialSlides,
   height = "75vh",
   overlayOpacity = 15,
   btnBg = "#7C3AED",
@@ -32,7 +56,67 @@ export default function HeroSlider({
   autoplay?: boolean
   interval?: number
 }) {
+  const [slides, setSlides] = useState<SlideData[]>(initialSlides)
   const [current, setCurrent] = useState(0)
+  const [isMobile, setIsMobile] = useState(false)
+  const [failedUrls, setFailedUrls] = useState<Record<string, boolean>>({})
+  const videoRef = useRef<HTMLVideoElement | null>(null)
+
+  useEffect(() => {
+    setSlides(initialSlides)
+  }, [initialSlides])
+
+  // Detect mobile viewport for mobile_media_url support
+  useEffect(() => {
+    const checkViewport = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    checkViewport()
+    window.addEventListener("resize", checkViewport)
+    return () => window.removeEventListener("resize", checkViewport)
+  }, [])
+
+  // Client-side sync with /store/hero-config so live admin video/banner updates reflect immediately on mobile & desktop
+  useEffect(() => {
+    const pubKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
+    const headers: Record<string, string> = {}
+    if (pubKey) headers["x-publishable-api-key"] = pubKey
+
+    fetch(`${PUBLIC_BACKEND_URL}/store/hero-config`, { headers, cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        const cfg = data?.config
+        if (!cfg) return
+        const dUrl = normalizePublicMediaUrl(cfg.media_url)
+        const mUrl = normalizePublicMediaUrl(cfg.mobile_media_url)
+        const primary: SlideData = {
+          tag: cfg.tag || initialSlides[0]?.tag || "BODYKİT MERKEZİ • ÖZEL SERİ",
+          title: cfg.title || initialSlides[0]?.title || "BodyKit Merkezi'ne Hoş Geldiniz",
+          subtitle: cfg.subtitle || initialSlides[0]?.subtitle || "",
+          btn_text: cfg.btn_text || initialSlides[0]?.btn_text || "Şimdi Alışverişe Başla",
+          btn_link: cfg.btn_link || initialSlides[0]?.btn_link || "/store",
+          media_type: isVideoMedia(cfg.media_type, dUrl || mUrl) ? "video" : "image",
+          media_url: dUrl,
+          mobile_media_url: mUrl,
+        }
+        const extras: SlideData[] = Array.isArray(cfg.hero_slides)
+          ? cfg.hero_slides
+              .filter((s: any) => s && s.active !== false)
+              .map((s: any) => {
+                const sd = normalizePublicMediaUrl(s.media_url)
+                const sm = normalizePublicMediaUrl(s.mobile_media_url)
+                return {
+                  ...s,
+                  media_type: isVideoMedia(s.media_type, sd || sm) ? "video" : "image",
+                  media_url: sd,
+                  mobile_media_url: sm,
+                }
+              })
+          : []
+        setSlides([primary, ...extras])
+      })
+      .catch(() => {})
+  }, [])
 
   useEffect(() => {
     if (!autoplay || slides.length <= 1) return
@@ -43,6 +127,52 @@ export default function HeroSlider({
   }, [autoplay, interval, slides.length])
 
   const slide = slides[current] || slides[0]
+
+  const desktopUrl = normalizePublicMediaUrl(slide?.media_url)
+  const mobileUrl = normalizePublicMediaUrl(slide?.mobile_media_url)
+  const activeMediaUrl = isMobile && mobileUrl ? mobileUrl : desktopUrl || mobileUrl
+  const hasValidMedia = Boolean(activeMediaUrl && !failedUrls[activeMediaUrl])
+  const activeIsVideo = isVideoMedia(slide?.media_type, activeMediaUrl)
+
+  // Ensure iOS Safari / Android Chrome auto-plays muted inline video reliably
+  useEffect(() => {
+    const videoEl = videoRef.current
+    if (!videoEl || !hasValidMedia || !activeIsVideo) return
+
+    videoEl.defaultMuted = true
+    videoEl.muted = true
+    videoEl.playsInline = true
+    videoEl.setAttribute("muted", "")
+    videoEl.setAttribute("playsinline", "true")
+    videoEl.setAttribute("webkit-playsinline", "true")
+
+    const attemptPlay = () => {
+      if (!videoEl) return
+      videoEl.muted = true
+      const p = videoEl.play()
+      if (p && typeof p.catch === "function") {
+        p.catch(() => {})
+      }
+    }
+
+    attemptPlay()
+    videoEl.addEventListener("loadedmetadata", attemptPlay)
+    videoEl.addEventListener("canplay", attemptPlay)
+
+    const onFirstTouch = () => {
+      if (videoEl.paused) {
+        attemptPlay()
+      }
+    }
+    window.addEventListener("touchstart", onFirstTouch, { passive: true, once: true })
+
+    return () => {
+      videoEl.removeEventListener("loadedmetadata", attemptPlay)
+      videoEl.removeEventListener("canplay", attemptPlay)
+      window.removeEventListener("touchstart", onFirstTouch)
+    }
+  }, [activeMediaUrl, activeIsVideo, hasValidMedia, current])
+
   if (!slide) return null
 
   return (
@@ -50,30 +180,37 @@ export default function HeroSlider({
       className="w-full relative bg-zinc-50 overflow-hidden border-b border-zinc-200 transition-all duration-500"
       style={{ height }}
     >
-      {slide.media_url ? (
+      {hasValidMedia ? (
         <>
-          {slide.media_type === "video" ? (
+          {activeIsVideo ? (
             <video
+              key={activeMediaUrl}
+              ref={videoRef}
               autoPlay
               loop
               muted
               playsInline
-              className="absolute inset-0 w-full h-full object-cover z-0"
-              src={slide.media_url}
-            />
+              preload="auto"
+              onError={() => setFailedUrls((prev) => ({ ...prev, [activeMediaUrl]: true }))}
+              className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none"
+              src={activeMediaUrl}
+            >
+              <source src={activeMediaUrl} type={activeMediaUrl.toLowerCase().endsWith(".mov") ? "video/quicktime" : "video/mp4"} />
+            </video>
           ) : (
             <picture>
-              {slide.mobile_media_url && <source media="(max-width: 767px)" srcSet={slide.mobile_media_url} />}
+              {mobileUrl && <source media="(max-width: 767px)" srcSet={mobileUrl} />}
               <img
                 className="absolute inset-0 w-full h-full object-cover z-0 transition-opacity duration-500"
-                src={slide.media_url}
+                src={desktopUrl || mobileUrl}
                 alt={slide.title || "Hero Banner"}
+                onError={() => setFailedUrls((prev) => ({ ...prev, [activeMediaUrl]: true }))}
               />
             </picture>
           )}
           <div
-            className="absolute inset-0 z-0"
-            style={{ backgroundColor: `rgba(255,255,255,${Math.max(0.15, (100 - overlayOpacity) / 140)})` }}
+            className="absolute inset-0 z-0 pointer-events-none"
+            style={{ backgroundColor: `rgba(0,0,0,${Math.min(0.75, Math.max(0.15, (overlayOpacity ?? 15) / 100))})` }}
           />
         </>
       ) : (
@@ -94,12 +231,18 @@ export default function HeroSlider({
         <span className="flex flex-col gap-3 max-w-3xl">
           <Heading
             level="h1"
-            className="text-4xl md:text-6xl font-bold tracking-tight text-zinc-950 font-sans leading-tight"
+            className={`text-4xl md:text-6xl font-bold tracking-tight font-sans leading-tight ${
+              hasValidMedia ? "text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.55)]" : "text-zinc-950"
+            }`}
           >
             {slide.title}
           </Heading>
           {slide.subtitle && (
-            <p className="text-base md:text-xl text-zinc-700 font-medium max-w-xl mx-auto leading-relaxed">
+            <p
+              className={`text-base md:text-xl font-medium max-w-xl mx-auto leading-relaxed ${
+                hasValidMedia ? "text-zinc-100 drop-shadow-[0_1px_8px_rgba(0,0,0,0.55)]" : "text-zinc-700"
+              }`}
+            >
               {slide.subtitle}
             </p>
           )}
@@ -130,7 +273,13 @@ export default function HeroSlider({
                 onClick={() => setCurrent(idx)}
                 aria-label={`Slayt ${idx + 1}`}
                 className={`h-2.5 rounded-full transition-all ${
-                  idx === current ? "w-8 bg-zinc-900" : "w-2.5 bg-zinc-400/60 hover:bg-zinc-600"
+                  idx === current
+                    ? hasValidMedia
+                      ? "w-8 bg-white"
+                      : "w-8 bg-zinc-900"
+                    : hasValidMedia
+                    ? "w-2.5 bg-white/60 hover:bg-white"
+                    : "w-2.5 bg-zinc-400/60 hover:bg-zinc-600"
                 }`}
               />
             ))}

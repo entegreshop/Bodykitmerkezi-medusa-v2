@@ -1,4 +1,5 @@
 import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
+import { Modules } from "@medusajs/framework/utils"
 import * as fs from "fs"
 import * as path from "path"
 
@@ -266,7 +267,7 @@ const defaultData = {
   btn_text: "Şimdi Alışverişe Başla",
   btn_link: "/store",
   media_type: "image",
-  media_url: "/uploads/hero-1774921088469-819611420.jpg",
+  media_url: "",
   mobile_media_url: "",
   hero_height: "75vh",
   hero_overlay_opacity: 15,
@@ -572,16 +573,14 @@ const defaultData = {
   ]
 }
 
-function readHeroConfig() {
-  if (!fs.existsSync(CONFIG_PATH)) {
-    return defaultData
-  }
-  const content = fs.readFileSync(CONFIG_PATH, "utf-8")
-  const parsed = JSON.parse(content)
+function mergeHeroConfig(parsed: Record<string, any>) {
   if (parsed.title && parsed.title.includes("XOOX")) {
     parsed.tag = defaultData.tag
     parsed.title = defaultData.title
     parsed.subtitle = defaultData.subtitle
+  }
+  if (parsed.media_url === "/uploads/hero-1774921088469-819611420.jpg") {
+    parsed.media_url = ""
   }
   return {
     ...defaultData,
@@ -603,9 +602,40 @@ function readHeroConfig() {
   }
 }
 
+export async function readHeroConfigWithFallback(scope?: any) {
+  if (fs.existsSync(CONFIG_PATH)) {
+    const content = fs.readFileSync(CONFIG_PATH, "utf-8")
+    const parsed = JSON.parse(content)
+    return mergeHeroConfig(parsed)
+  }
+
+  // If container was redeployed and CONFIG_PATH does not exist on disk yet, restore from store.metadata.hero_config
+  if (scope) {
+    try {
+      const storeModule = scope.resolve(Modules.STORE)
+      const stores = await storeModule.listStores({}, { select: ["id", "metadata"] })
+      const savedHeroConfig = stores[0]?.metadata?.hero_config as Record<string, any> | undefined
+      if (savedHeroConfig && typeof savedHeroConfig === "object") {
+        const merged = mergeHeroConfig(savedHeroConfig)
+        try {
+          const dir = path.dirname(CONFIG_PATH)
+          if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true })
+          }
+          fs.writeFileSync(CONFIG_PATH, JSON.stringify(merged, null, 2), "utf-8")
+        } catch {}
+        return merged
+      }
+    } catch {}
+  }
+
+  return defaultData
+}
+
 export async function GET(req: MedusaRequest, res: MedusaResponse) {
   try {
-    return res.status(200).json({ success: true, config: readHeroConfig() })
+    const config = await readHeroConfigWithFallback(req.scope)
+    return res.status(200).json({ success: true, config })
   } catch (err) {
     return res.status(200).json({ success: true, config: defaultData })
   }
@@ -617,7 +647,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true })
     }
-    const current = readHeroConfig()
+    const current = await readHeroConfigWithFallback(req.scope)
     const body = (req.body || {}) as Record<string, any>
     const newData = {
       ...current,
@@ -633,6 +663,23 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
       brand_showcase: { ...current.brand_showcase, ...(body.brand_showcase || {}) }
     }
     fs.writeFileSync(CONFIG_PATH, JSON.stringify(newData, null, 2), "utf-8")
+
+    // Also persist to store.metadata.hero_config so container rebuilds/redeploys never lose hero video & settings
+    try {
+      const storeModule = req.scope.resolve(Modules.STORE)
+      const stores = await storeModule.listStores({}, { select: ["id", "metadata"] })
+      if (stores[0]) {
+        await storeModule.updateStores(stores[0].id, {
+          metadata: {
+            ...(stores[0].metadata || {}),
+            hero_config: newData,
+          },
+        })
+      }
+    } catch (metaErr) {
+      console.warn("Could not persist hero_config to store metadata:", metaErr)
+    }
+
     return res.status(200).json({ success: true, config: newData })
   } catch (err: any) {
     return res.status(500).json({ success: false, error: err.message })

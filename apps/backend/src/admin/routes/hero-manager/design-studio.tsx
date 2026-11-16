@@ -1524,7 +1524,13 @@ export const DesignStudio: React.FC<DesignStudioProps> = ({ initialSection = "he
                     <input
                       type="text"
                       value={config.media_url || ""}
-                      onChange={(e) => updateField("media_url", e.target.value)}
+                      onChange={(e) => {
+                        const val = e.target.value
+                        updateField("media_url", val)
+                        if (/\.(mp4|mov|webm|m4v)(\?|$)/i.test(val)) {
+                          updateField("media_type", "video")
+                        }
+                      }}
                       placeholder="Görsel/Video URL veya aşağıdan yükleyin"
                       className="w-full h-[34px] px-2.5 rounded border border-[#e2e5ec] text-[12px] mb-2"
                     />
@@ -1533,7 +1539,7 @@ export const DesignStudio: React.FC<DesignStudioProps> = ({ initialSection = "he
                         {uploadingKey === "hero-desktop" ? "Yükleniyor..." : "📁 Dosya Seç & Yükle"}
                         <input
                           type="file"
-                          accept="image/*,video/mp4,video/webm"
+                          accept="image/*,video/mp4,video/webm,video/quicktime"
                           className="hidden"
                           onChange={(e) => {
                             const f = e.target.files?.[0]
@@ -1559,26 +1565,35 @@ export const DesignStudio: React.FC<DesignStudioProps> = ({ initialSection = "he
                   </div>
 
                   <div className="p-3.5 bg-white rounded-[6px] border border-[#e2e5ec]">
-                    <label className="block text-[12px] font-bold text-[#1e293b] mb-1.5">Mobil Özel Görsel (İsteğe Bağlı)</label>
+                    <label className="block text-[12px] font-bold text-[#1e293b] mb-1.5">Mobil Özel Görsel veya Video (İsteğe Bağlı)</label>
                     <input
                       type="text"
                       value={config.mobile_media_url || ""}
-                      onChange={(e) => updateField("mobile_media_url", e.target.value)}
-                      placeholder="Boş bırakılırsa masaüstü görseli kullanılır"
+                      onChange={(e) => {
+                        const val = e.target.value
+                        updateField("mobile_media_url", val)
+                        if (/\.(mp4|mov|webm|m4v)(\?|$)/i.test(val)) {
+                          updateField("media_type", "video")
+                        }
+                      }}
+                      placeholder="Boş bırakılırsa masaüstü görsel/videosu kullanılır"
                       className="w-full h-[34px] px-2.5 rounded border border-[#e2e5ec] text-[12px] mb-2"
                     />
                     <div className="flex items-center gap-2">
                       <label className="px-3 py-1.5 rounded bg-[#eef4ff] text-[#3d94fb] text-[12px] font-semibold cursor-pointer hover:bg-[#dbeafe]">
-                        {uploadingKey === "hero-mobile" ? "Yükleniyor..." : "📱 Mobil Görsel Yükle"}
+                        {uploadingKey === "hero-mobile" ? "Yükleniyor..." : "📱 Mobil Görsel/Video Yükle"}
                         <input
                           type="file"
-                          accept="image/*"
+                          accept="image/*,video/mp4,video/webm,video/quicktime"
                           className="hidden"
                           onChange={(e) => {
                             const f = e.target.files?.[0]
                             if (f) {
-                              uploadMediaFile(f, "hero-mobile", (url) => {
+                              uploadMediaFile(f, "hero-mobile", (url, mType) => {
                                 updateField("mobile_media_url", url)
+                                if (mType === "video") {
+                                  updateField("media_type", "video")
+                                }
                               })
                             }
                           }}
@@ -1672,11 +1687,24 @@ export const DesignStudio: React.FC<DesignStudioProps> = ({ initialSection = "he
                 <div
                   className="relative flex-1 min-h-[290px] rounded-[10px] border border-[#e2e5ec] overflow-hidden flex flex-col items-center justify-center text-center p-6"
                   style={{
-                    backgroundImage: config.media_url ? `url(${config.media_url})` : "linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)",
+                    backgroundImage:
+                      config.media_url && !(config.media_type === "video" || /\.(mp4|mov|webm|m4v)(\?|$)/i.test(config.media_url))
+                        ? `url(${config.media_url})`
+                        : "linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)",
                     backgroundSize: "cover",
                     backgroundPosition: "center",
                   }}
                 >
+                  {config.media_url && (config.media_type === "video" || /\.(mp4|mov|webm|m4v)(\?|$)/i.test(config.media_url)) && (
+                    <video
+                      src={config.media_url}
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                      className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+                    />
+                  )}
                   <div
                     className="absolute inset-0 pointer-events-none"
                     style={{ backgroundColor: `rgba(0,0,0,${(config.hero_overlay_opacity ?? 15) / 100})` }}
