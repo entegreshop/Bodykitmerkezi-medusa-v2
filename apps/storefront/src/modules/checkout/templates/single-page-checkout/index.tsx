@@ -385,20 +385,10 @@ export default function SinglePageCheckout({
     return subtotalAmount >= freeShippingThreshold
   }, [subtotalAmount, freeShippingThreshold, shippingSettings])
 
-  // Kargo seçeneğinin güncellenmiş ücreti (cents bazında)
+  // Kargo seçeneğinin güncellenmiş ücreti (Ücret Alıcı - ekstra kargo ücreti yansıtılmaz)
   const shippingSubtotalCents = useMemo(() => {
-    if (isFreeShipping) return 0
-    if (shippingSettings) {
-      if (shippingSettings.standardShippingEnabled === false) return 0
-      return Math.round(Number(shippingSettings.standardShippingFee || 0) * 100)
-    }
-    const selectedMethod = cart.shipping_methods?.at(-1)
-    const original = cart.shipping_subtotal ?? 0
-    if (selectedMethod) {
-      return original
-    }
-    return original
-  }, [isFreeShipping, cart.shipping_methods, cart.shipping_subtotal, shippingSettings])
+    return 0
+  }, [])
 
   // Check availability of payment methods based on settings and cart subtotal
   const {
@@ -955,16 +945,8 @@ export default function SinglePageCheckout({
               <h2 className="text-xl font-bold text-zinc-900 mb-4">Kargo Yöntemi</h2>
               
               <div className="grid grid-cols-1 gap-2">
-                {shippingMethods && shippingMethods.map((sm) => {
+                {shippingMethods && shippingMethods.length > 0 ? shippingMethods.map((sm) => {
                   const isSelected = shippingMethodId === sm.id
-                  
-                  // Calculate dynamic option price
-                  const basePrice = sm.amount ? (sm.amount / 100) : 0
-                  const optionPrice = shippingSettings
-                    ? (shippingSettings.standardShippingEnabled === false ? 0 : Number(shippingSettings.standardShippingFee || 0))
-                    : basePrice
-                    
-                  const displayPrice = isFreeShipping ? 0 : optionPrice
                   
                   return (
                     <div
@@ -983,24 +965,30 @@ export default function SinglePageCheckout({
                             className="w-4 h-4 text-black focus:ring-black accent-black"
                           />
                           <span className="text-sm font-semibold text-zinc-900">
-                            {sm.name === "Standard Delivery" ? "Standart Kargo" : sm.name}
+                            Ücret Alıcı
                           </span>
                         </div>
                         <span className="text-sm font-bold text-zinc-900">
-                          {displayPrice === 0 ? "Karşı Ödemeli" : `₺${displayPrice.toFixed(2)}`}
+                          Ücret Alıcı
                         </span>
                       </div>
                     </div>
                   )
-                })}
+                }) : (
+                  <div className="flex items-center justify-between p-4 border border-black bg-zinc-50">
+                    <div className="flex items-center gap-x-3">
+                      <input
+                        type="radio"
+                        checked
+                        readOnly
+                        className="w-4 h-4 text-black focus:ring-black accent-black"
+                      />
+                      <span className="text-sm font-semibold text-zinc-900">Ücret Alıcı</span>
+                    </div>
+                    <span className="text-sm font-bold text-zinc-900">Ücret Alıcı</span>
+                  </div>
+                )}
               </div>
-
-              {/* Free shipping banner */}
-              {shippingSettings?.freeShippingEnabled && shippingSettings?.standardShippingEnabled !== false && neededForFreeShipping > 0 && isFinite(neededForFreeShipping) && (
-                <div className="mt-3 bg-zinc-50 border border-zinc-200 p-3 text-xs text-zinc-700 font-medium text-center">
-                  ₺{neededForFreeShipping.toFixed(2)} daha alışveriş yapın, kargonuz ücretsiz olsun!
-                </div>
-              )}
             </div>
 
             {/* 3. Ödeme */}

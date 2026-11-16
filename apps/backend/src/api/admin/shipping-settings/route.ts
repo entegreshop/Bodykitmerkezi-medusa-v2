@@ -7,11 +7,11 @@ const configFilePath = path.join(process.cwd(), "uploads", "shipping-settings.js
 
 const defaultData = {
   systemType: "advanced", // "advanced" | "simple"
-  standardShippingEnabled: true,
-  standardShippingFee: 100,
+  standardShippingEnabled: false,
+  standardShippingFee: 0,
   standardShippingCurrency: "TL",
-  standardShippingCartType: "Tüm sepetlere ekle",
-  freeShippingEnabled: true,
+  standardShippingCartType: "Ücret Alıcı",
+  freeShippingEnabled: false,
   freeShippingThreshold: 500,
   freeShippingCurrency: "TL",
   regions: [
@@ -228,23 +228,14 @@ function writeConfig(data: any) {
   }
 }
 
-export function calculateEffectiveShippingKurus(itemsNetKurus: number, shippingConfig?: any): number {
-  const cfg = shippingConfig || readConfig()
-  if (!cfg || cfg.standardShippingEnabled === false) {
-    return 0
-  }
-  const itemsNetTl = itemsNetKurus / 100
-  if (cfg.freeShippingEnabled && itemsNetTl >= Number(cfg.freeShippingThreshold || 0)) {
-    return 0
-  }
-  return Math.max(0, Math.round(Number(cfg.standardShippingFee ?? 0) * 100))
+export function calculateEffectiveShippingKurus(_itemsNetKurus: number, _shippingConfig?: any): number {
+  // Kargo Ücret Alıcı: siparişe ekstra kargo ücreti yansıtılmaz
+  return 0
 }
 
-export async function syncMedusaShippingOptionPrices(scope: any, shippingConfig?: any): Promise<void> {
+export async function syncMedusaShippingOptionPrices(scope: any, _shippingConfig?: any): Promise<void> {
   try {
-    const cfg = shippingConfig || readConfig()
-    const fee = Number(cfg.standardShippingFee ?? 0)
-    const medusaAmount = cfg.standardShippingEnabled === false ? 0 : Math.max(0, Math.round(fee * 100))
+    const medusaAmount = 0
 
     const { ContainerRegistrationKeys, Modules } = await import("@medusajs/framework/utils")
     const { updateShippingOptionsWorkflow } = await import("@medusajs/core-flows")

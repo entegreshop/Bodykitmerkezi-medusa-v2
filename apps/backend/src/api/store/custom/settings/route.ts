@@ -47,9 +47,10 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
       min_amount: paymentParsed.card_on_delivery?.max_total ?? 10000,
     }
     settings.shipping_settings = {
-      standard_rate: 100,
+      standard_rate: 0,
       free_shipping_limit: paymentParsed.free_shipping_threshold ?? 3000,
-      free_shipping_enabled: true,
+      free_shipping_enabled: false,
+      shipping_label: "Ücret Alıcı",
     }
   } catch (err) {}
 
@@ -62,20 +63,13 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
     }
     settings.shipping_settings = {
       ...settings.shipping_settings,
-      standard_rate:
-        shippingParsed.standardShippingEnabled === false
-          ? 0
-          : shippingParsed.standardShippingFee !== undefined
-          ? Number(shippingParsed.standardShippingFee)
-          : 100,
+      standard_rate: 0,
       free_shipping_limit:
         shippingParsed.freeShippingThreshold !== undefined
           ? Number(shippingParsed.freeShippingThreshold)
           : settings.shipping_settings?.free_shipping_limit,
-      free_shipping_enabled:
-        shippingParsed.freeShippingEnabled !== undefined
-          ? Boolean(shippingParsed.freeShippingEnabled)
-          : true,
+      free_shipping_enabled: false,
+      shipping_label: "Ücret Alıcı",
     }
   } catch (err) {}
 

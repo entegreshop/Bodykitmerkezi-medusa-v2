@@ -17,12 +17,12 @@ type SummaryProps = {
 const Summary = ({ cart }: SummaryProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [cartSettings, setCartSettings] = useState({
-    show_free_shipping_bar: true,
-    free_shipping_threshold: 3000,
+    show_free_shipping_bar: false,
+    free_shipping_threshold: 0,
     free_shipping_bar_color: "#10B981",
     show_coupon_box: true,
     checkout_btn_text: "Güvenli Ödemeye Geç",
-    checkout_btn_bg: "#25D366",
+    checkout_btn_bg: "#000000",
     checkout_btn_text_color: "#ffffff",
     trust_note_text: "256-Bit SSL Güvencesiyle Hızlı & Güvenli Alışveriş",
   })
@@ -57,33 +57,6 @@ const Summary = ({ cart }: SummaryProps) => {
       <Heading level="h2" className="text-[2rem] leading-[2.75rem]">
         Sipariş Özeti
       </Heading>
-
-      {cartSettings.show_free_shipping_bar !== false && threshold > 0 && (
-        <div className="p-3.5 rounded-lg bg-zinc-50 border border-zinc-200 space-y-2">
-          <div className="text-xs font-semibold text-zinc-800">
-            {remainingTry <= 0 ? (
-              <span className="text-emerald-700 font-bold">🎉 Tebrikler! Siparişinizde Kargo Ücretsiz!</span>
-            ) : (
-              <span>
-                Ücretsiz kargo için sepetinize{" "}
-                <strong className="font-bold text-black">
-                  {remainingTry.toLocaleString("tr-TR", { maximumFractionDigits: 0 })} ₺
-                </strong>{" "}
-                daha ürün ekleyin!
-              </span>
-            )}
-          </div>
-          <div className="w-full h-2 bg-zinc-200 rounded-full overflow-hidden">
-            <div
-              className="h-full transition-all duration-500 rounded-full"
-              style={{
-                width: `${progressPct}%`,
-                backgroundColor: cartSettings.free_shipping_bar_color || "#10B981",
-              }}
-            />
-          </div>
-        </div>
-      )}
 
       {cartSettings.show_coupon_box !== false && <DiscountCode cart={cart} />}
       <Divider />

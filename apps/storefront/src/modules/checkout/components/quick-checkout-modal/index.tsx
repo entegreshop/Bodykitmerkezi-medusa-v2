@@ -103,11 +103,11 @@ export default function QuickCheckoutModal({
   });
   const hasTrackedPaymentRef = useRef(false);
 
-  // Shipping Settings
+  // Shipping Settings (Ücret Alıcı - Ekstra kargo ücreti yansıtılmaz)
   const [shippingSettings, setShippingSettings] = useState({
-     standard_rate: 60,
+     standard_rate: 0,
      free_shipping_limit: 3000,
-     free_shipping_enabled: true
+     free_shipping_enabled: false
   });
 
   // --- PRICE PRE-CALCULATION FOR META EVENTS ---
@@ -121,17 +121,15 @@ export default function QuickCheckoutModal({
      numericalPrice = ((v?.calculated_price?.calculated_amount || 0) / 100) * quantity;
      priceStr = v?.calculated_price?.calculated_amount ? `${(numericalPrice).toLocaleString("tr-TR", {minimumFractionDigits: 2, maximumFractionDigits: 2})} TL` : "Detaylı Ücret Seçilmedi"
   } else if (mode === "cart" && cart) {
-     numericalPrice = (cart.total || 0) / 100;
+     const cartShipping = (cart.shipping_total || cart.shipping_subtotal || 0) / 100;
+     numericalPrice = Math.max(0, ((cart.total || 0) / 100) - cartShipping);
      cartSubtotal = ((cart.item_subtotal || 0) + (cart.tax_total || 0)) / 100; // Ara toplam ve vergi (indirimsiz tutarı görebilmek için)
      cartDiscount = (cart.discount_total || cart.discount_subtotal || 0) / 100;
      // Eğer indirim varsa Sepet fiyatı kısmında asıl fiyatı gösterelim, aşağıda indirimi düşeriz.
      priceStr = `${(cartDiscount > 0 ? (numericalPrice + cartDiscount) : numericalPrice).toLocaleString("tr-TR", {minimumFractionDigits: 2, maximumFractionDigits: 2})} TL`
   }
 
-  let kargoFiyati = shippingSettings.standard_rate;
-  if (shippingSettings.free_shipping_enabled && numericalPrice >= shippingSettings.free_shipping_limit) {
-      kargoFiyati = 0;
-  }
+  const kargoFiyati = 0;
   
   const isCodActive = formData.payment_method === "cash_on_delivery";
   const isCodCcActive = formData.payment_method === "cod_cc";
@@ -223,9 +221,9 @@ export default function QuickCheckoutModal({
                   
                   if (data.settings.shipping_settings) {
                      setShippingSettings({
-                        standard_rate: parseFloat(data.settings.shipping_settings.standard_rate) || 60,
+                        standard_rate: 0,
                         free_shipping_limit: parseFloat(data.settings.shipping_settings.free_shipping_limit) || 3000,
-                        free_shipping_enabled: data.settings.shipping_settings.free_shipping_enabled !== false
+                        free_shipping_enabled: false
                      });
                   }
               }
@@ -560,17 +558,12 @@ export default function QuickCheckoutModal({
                  <div className="p-4 flex flex-row items-center justify-between">
                    <label className="flex items-center gap-x-4 cursor-pointer w-full">
                      <input type="radio" checked readOnly className="w-5 h-5 accent-black cursor-pointer" />
-                     <span className="text-[15px] font-medium text-black">Standart Kargo</span>
+                     <span className="text-[15px] font-medium text-black">Ücret Alıcı</span>
                    </label>
-                   <span className="text-[15px] font-bold text-gray-900">
-                     {kargoFiyati === 0 ? "Ücretsiz" : `₺${kargoFiyati.toLocaleString("tr-TR", {minimumFractionDigits: 2})}`}
+                   <span className="text-[15px] font-bold text-gray-900 whitespace-nowrap">
+                     Ücret Alıcı
                    </span>
                  </div>
-                 {shippingSettings.free_shipping_enabled && kargoFiyati > 0 && numericalPrice > 0 && (
-                    <div className="bg-gray-50 p-3 border-t border-gray-200 text-sm text-gray-600 font-medium text-center">
-                       {`₺${(shippingSettings.free_shipping_limit - numericalPrice).toLocaleString("tr-TR", {minimumFractionDigits: 2})} daha alışveriş yapın, kargonuz ücretsiz olsun!`}
-                    </div>
-                 )}
                </div>
             </div>
 
@@ -706,7 +699,7 @@ export default function QuickCheckoutModal({
                         )}
                         <div className="flex justify-between text-[#6b7280]">
                            <span>Kargo</span>
-                           <span>60,00 TL</span>
+                           <span className="font-semibold text-gray-800">Ücret Alıcı</span>
                         </div>
                         {isCodActive && codSettings.additional_fee > 0 && (
                            <div className="flex justify-between text-[#6b7280]">
