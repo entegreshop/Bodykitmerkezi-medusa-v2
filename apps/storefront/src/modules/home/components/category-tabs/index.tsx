@@ -332,8 +332,38 @@ export default function CategoryTabs({
     }
     const keyword = selectedTab.replace(/-/g, " ").toLocaleLowerCase("tr-TR")
     const matched = pool.filter((p) => {
+      const catHandles = ((p as any).categories || []).map((c: any) => (c.handle || "").toLowerCase())
+      if (catHandles.includes(selectedTab.toLowerCase())) return true
+
       const t = (p.title || "").toLocaleLowerCase("tr-TR")
       const h = (p.handle || "").toLocaleLowerCase("tr-TR")
+      if (selectedTab === "bodykit" || selectedTab === "body-kit-seti") {
+        return t.includes("body kit") || t.includes("bodykit") || h.includes("body-kit") || h.includes("bodykit")
+      }
+      if (selectedTab === "difuzor" || selectedTab === "arka-tampon-difuzoru") {
+        return t.includes("difüzör") || t.includes("difuzor") || h.includes("difuzor")
+      }
+      if (selectedTab === "tampon-ek" || selectedTab === "on-tampon-eki") {
+        return t.includes("ön ek") || h.includes("on-ek") || t.includes("ön lip") || h.includes("on-lip") || t.includes("tampon")
+      }
+      if (selectedTab === "on-lip") {
+        return t.includes("ön lip") || h.includes("on-lip") || t.includes("lip")
+      }
+      if (selectedTab === "arka-ek") {
+        return t.includes("arka ek") || h.includes("arka-ek") || t.includes("arka tampon eki")
+      }
+      if (selectedTab === "marspiyel") {
+        return t.includes("marşpiyel") || t.includes("marspiyel") || h.includes("marspiyel") || h.includes("marsbiyel")
+      }
+      if (selectedTab === "spoiler") {
+        return t.includes("spoiler") || t.includes("spoyler") || h.includes("spoiler")
+      }
+      if (selectedTab === "bagaj-havuzu") {
+        return t.includes("bagaj havuzu") || h.includes("bagaj-havuzu")
+      }
+      if (selectedTab === "panjur" || selectedTab === "on-panjur") {
+        return t.includes("panjur") || h.includes("panjur")
+      }
       return t.includes(keyword) || h.includes(selectedTab)
     })
     return matched.length > 0 ? matched : pool

@@ -4346,6 +4346,29 @@ const IkasProductsPage = () => {
                   <div className={`flex flex-wrap items-center gap-2 ${showProductFilters ? "mb-1" : ""}`}>
                     <button
                       type="button"
+                      onClick={async () => {
+                        try {
+                          const res = await fetch("/admin/sync-gunesligaraj", { method: "POST" })
+                          const data = await res.json()
+                          if (data?.status === "success") {
+                            alert(
+                              `Güneşli Garaj Katalog Senkronizasyonu Tamamlandı!\n• Toplam Katalog: ${data.totalCatalogProducts} ürün\n• Yeni Eklenen: ${data.createdProductsCount} ürün\n• Kategori Eşleştirmesi Güncellenen: ${data.existingProductsUpdatedLinks} bağlantı\n• Toplam Kategori: ${data.categoriesTotal}`
+                            )
+                            fetchData()
+                          } else {
+                            alert(data?.message || "Senkronizasyon başlatıldı.")
+                          }
+                        } catch (err) {
+                          alert("Senkronizasyon sırasında hata oluştu.")
+                        }
+                      }}
+                      className="h-9 px-3.5 rounded-md bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-xs font-bold inline-flex items-center gap-1.5 shadow-2xs transition cursor-pointer"
+                    >
+                      <span>⚡</span>
+                      <span>Güneşli Garaj Katalog Senkronize Et (842 Ürün)</span>
+                    </button>
+                    <button
+                      type="button"
                       onClick={initCreateMode}
                       className="h-9 px-4 rounded-md bg-[#10b981] hover:bg-[#059669] text-white text-xs font-bold inline-flex items-center gap-2 shadow-2xs transition cursor-pointer"
                     >

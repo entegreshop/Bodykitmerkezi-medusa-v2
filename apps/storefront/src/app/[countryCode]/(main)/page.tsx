@@ -73,8 +73,8 @@ export default async function Home(props: {
   const latestRes = await listProducts({
     regionId: region.id,
     queryParams: {
-      fields: "*variants.calculated_price",
-      limit: 100,
+      fields: "*variants.calculated_price,*categories",
+      limit: 500,
       order: "-created_at",
     },
   })

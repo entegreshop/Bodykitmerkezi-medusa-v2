@@ -5,15 +5,17 @@ import * as path from "path"
 const CONFIG_PATH = path.join(process.cwd(), "uploads", "hero-config-bodykit.json")
 
 const defaultCategories = [
-  { id: "yeni-gelenler", name: "Yeni Gelenler", icon: "sparkles", link: "/store", image_url: "", badge_text: "YENİ", active: true },
-  { id: "bodykit", name: "Bodykit Setleri", icon: "car", link: "/categories/bodykit", image_url: "", badge_text: "POPÜLER", active: true },
-  { id: "difuzor", name: "Difüzör", icon: "exhaust", link: "/categories/difuzor", image_url: "", badge_text: "", active: true },
-  { id: "spoiler", name: "Spoiler", icon: "wing", link: "/categories/spoiler", image_url: "", badge_text: "", active: true },
-  { id: "tampon-ek", name: "Tampon Ekleri", icon: "bumper", link: "/categories/tampon-ek", image_url: "", badge_text: "", active: true },
-  { id: "marspiyel", name: "Marşpiyel", icon: "sideskirt", link: "/categories/marspiyel", image_url: "", badge_text: "", active: true },
-  { id: "panjur", name: "Ön Panjur", icon: "grille", link: "/categories/panjur", image_url: "", badge_text: "", active: true },
-  { id: "aydinlatma", name: "Aydınlatma", icon: "headlight", link: "/categories/aydinlatma", image_url: "", badge_text: "", active: true },
-  { id: "aksesuar", name: "Aksesuar", icon: "gear", link: "/categories/aksesuar", image_url: "", badge_text: "", active: true }
+  { id: "yeni-gelenler", handle: "yeni-gelenler", name: "Yeni Gelenler", icon: "sparkles", link: "/store", image_url: "", badge_text: "YENİ", active: true },
+  { id: "bodykit", handle: "bodykit", name: "Bodykit Setleri", icon: "car", link: "/categories/bodykit", image_url: "", badge_text: "POPÜLER", active: true },
+  { id: "on-tampon-eki", handle: "on-tampon-eki", name: "Ön Tampon Eki", icon: "bumper", link: "/categories/on-tampon-eki", image_url: "", badge_text: "", active: true },
+  { id: "on-lip", handle: "on-lip", name: "Ön Lip", icon: "bumper", link: "/categories/on-lip", image_url: "", badge_text: "", active: true },
+  { id: "difuzor", handle: "difuzor", name: "Arka Difüzör", icon: "exhaust", link: "/categories/difuzor", image_url: "", badge_text: "", active: true },
+  { id: "arka-ek", handle: "arka-ek", name: "Arka Ek", icon: "bumper", link: "/categories/arka-ek", image_url: "", badge_text: "", active: true },
+  { id: "marspiyel", handle: "marspiyel", name: "Marşpiyel", icon: "sideskirt", link: "/categories/marspiyel", image_url: "", badge_text: "", active: true },
+  { id: "spoiler", handle: "spoiler", name: "Spoiler", icon: "wing", link: "/categories/spoiler", image_url: "", badge_text: "", active: true },
+  { id: "bagaj-havuzu", handle: "bagaj-havuzu", name: "Bagaj Havuzu", icon: "gear", link: "/categories/bagaj-havuzu", image_url: "", badge_text: "", active: true },
+  { id: "panjur", handle: "panjur", name: "Ön Panjur", icon: "grille", link: "/categories/panjur", image_url: "", badge_text: "", active: true },
+  { id: "aksesuar", handle: "aksesuar", name: "Oto Aksesuar", icon: "gear", link: "/categories/aksesuar", image_url: "", badge_text: "", active: true }
 ]
 
 const defaultBanners = [

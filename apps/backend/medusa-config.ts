@@ -79,4 +79,16 @@ setTimeout(async () => {
   } catch (e) {
     console.error("Image restore check error:", e)
   }
+
+  // Trigger automatic GunesliGaraj 842-product & category sync once HTTP server is ready
+  setTimeout(async () => {
+    try {
+      const port = process.env.PORT || "9000"
+      const res = await fetch(`http://127.0.0.1:${port}/custom/sync-gunesligaraj`)
+      const data = await res.json().catch(() => null)
+      console.log("[GunesliGaraj Auto-Sync]:", data)
+    } catch (syncErr) {
+      console.error("[GunesliGaraj Auto-Sync Error]:", syncErr)
+    }
+  }, 6000)
 }, 8000)
