@@ -24,18 +24,38 @@ function normalizePublicMediaUrl(url?: string) {
   if (!url) return ""
   const trimmed = url.trim()
   if (!trimmed || trimmed === "/uploads/hero-1774921088469-819611420.jpg") return ""
-  if (trimmed.startsWith("/uploads/")) {
-    return `${PUBLIC_BACKEND_URL}${trimmed}`
+
+  if (trimmed.startsWith("/api/hero-media/")) {
+    return trimmed
   }
+
+  const uploadsMatch = trimmed.match(/\/uploads\/([^?#]+)$/i)
+  if (uploadsMatch && uploadsMatch[1]) {
+    const filename = uploadsMatch[1]
+    if (/\.(mp4|mov|webm|m4v)$/i.test(filename)) {
+      return `/api/hero-media/${filename}`
+    }
+    return `${PUBLIC_BACKEND_URL}/uploads/${filename}`
+  }
+
   return trimmed
     .replace(/^http:\/\/localhost:\d+/i, PUBLIC_BACKEND_URL)
     .replace(/^http:\/\/127\.0\.0\.1:\d+/i, PUBLIC_BACKEND_URL)
     .replace(/^http:\/\/api\.bodykitmerkezi\.com/i, "https://api.bodykitmerkezi.com")
 }
 
+function getDirectBackendVideoUrl(url?: string) {
+  if (!url) return ""
+  const mediaMatch = url.match(/\/api\/hero-media\/([^?#]+)$/i)
+  if (mediaMatch && mediaMatch[1]) {
+    return `${PUBLIC_BACKEND_URL}/uploads/${mediaMatch[1]}`
+  }
+  return url
+}
+
 function isVideoMedia(mediaType?: string, url?: string) {
   if (!url) return false
-  if (/\.(mp4|mov|webm|m4v)(\?|$)/i.test(url)) return true
+  if (/\.(mp4|mov|webm|m4v)(\?|$)/i.test(url) || url.startsWith("/api/hero-media/")) return true
   return mediaType === "video"
 }
 
@@ -59,14 +79,11 @@ export default function HeroSlider({
   const [slides, setSlides] = useState<SlideData[]>(initialSlides)
   const [current, setCurrent] = useState(0)
   const [isMobile, setIsMobile] = useState(false)
-  const [failedUrls, setFailedUrls] = useState<Record<string, boolean>>({})
+  const [blobUrls, setBlobUrls] = useState<Record<string, string>>({})
+  const [failedImageUrls, setFailedImageUrls] = useState<Record<string, boolean>>({})
   const videoRef = useRef<HTMLVideoElement | null>(null)
+  const blobLoadingRef = useRef<Record<string, boolean>>({})
 
-  useEffect(() => {
-    setSlides(initialSlides)
-  }, [initialSlides])
-
-  // Detect mobile viewport for mobile_media_url support
   useEffect(() => {
     const checkViewport = () => {
       setIsMobile(window.innerWidth < 768)
@@ -76,7 +93,7 @@ export default function HeroSlider({
     return () => window.removeEventListener("resize", checkViewport)
   }, [])
 
-  // Client-side sync with /store/hero-config so live admin video/banner updates reflect immediately on mobile & desktop
+  // Only update slides from /store/hero-config if the server-rendered slides had no media_url or changed
   useEffect(() => {
     const pubKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
     const headers: Record<string, string> = {}
@@ -113,7 +130,12 @@ export default function HeroSlider({
                 }
               })
           : []
-        setSlides([primary, ...extras])
+        const nextSlides = [primary, ...extras]
+        setSlides((prev) => {
+          const prevKey = prev.map((s) => `${s.media_url}|${s.mobile_media_url}|${s.title}`).join(";;")
+          const nextKey = nextSlides.map((s) => `${s.media_url}|${s.mobile_media_url}|${s.title}`).join(";;")
+          return prevKey === nextKey ? prev : nextSlides
+        })
       })
       .catch(() => {})
   }, [])
@@ -131,10 +153,37 @@ export default function HeroSlider({
   const desktopUrl = normalizePublicMediaUrl(slide?.media_url)
   const mobileUrl = normalizePublicMediaUrl(slide?.mobile_media_url)
   const activeMediaUrl = isMobile && mobileUrl ? mobileUrl : desktopUrl || mobileUrl
-  const hasValidMedia = Boolean(activeMediaUrl && !failedUrls[activeMediaUrl])
   const activeIsVideo = isVideoMedia(slide?.media_type, activeMediaUrl)
+  const hasValidMedia = Boolean(
+    activeMediaUrl && (activeIsVideo || !failedImageUrls[activeMediaUrl])
+  )
+  const effectiveVideoSrc = blobUrls[activeMediaUrl] || activeMediaUrl
 
-  // Ensure iOS Safari / Android Chrome auto-plays muted inline video reliably
+  // Fallback helper: if native <video> range streaming stalls or errors on iOS/Chrome, fetch as Blob and play from memory
+  const loadVideoAsBlobFallback = (mediaKey: string) => {
+    if (!mediaKey || blobUrls[mediaKey] || blobLoadingRef.current[mediaKey]) return
+    blobLoadingRef.current[mediaKey] = true
+
+    const candidates = [mediaKey, getDirectBackendVideoUrl(mediaKey)].filter(Boolean)
+    ;(async () => {
+      for (const candidateUrl of Array.from(new Set(candidates))) {
+        try {
+          const resp = await fetch(candidateUrl)
+          if (resp.ok) {
+            const buf = await resp.arrayBuffer()
+            if (buf.byteLength > 1000) {
+              const blob = new Blob([buf], { type: "video/mp4" })
+              const objUrl = URL.createObjectURL(blob)
+              setBlobUrls((prev) => ({ ...prev, [mediaKey]: objUrl }))
+              return
+            }
+          }
+        } catch {}
+      }
+    })()
+  }
+
+  // Ensure Chrome & iOS Safari auto-play muted inline video reliably
   useEffect(() => {
     const videoEl = videoRef.current
     if (!videoEl || !hasValidMedia || !activeIsVideo) return
@@ -157,46 +206,56 @@ export default function HeroSlider({
 
     attemptPlay()
     videoEl.addEventListener("loadedmetadata", attemptPlay)
+    videoEl.addEventListener("loadeddata", attemptPlay)
     videoEl.addEventListener("canplay", attemptPlay)
 
+    // If video hasn't loaded any metadata within 1500ms (e.g. CDN/Range issue), trigger Blob fallback
+    const fallbackTimer = window.setTimeout(() => {
+      if (videoEl && videoEl.readyState === 0 && !blobUrls[activeMediaUrl]) {
+        loadVideoAsBlobFallback(activeMediaUrl)
+      } else if (videoEl && videoEl.paused) {
+        attemptPlay()
+      }
+    }, 1500)
+
     const onFirstTouch = () => {
-      if (videoEl.paused) {
+      if (videoEl && videoEl.paused) {
         attemptPlay()
       }
     }
     window.addEventListener("touchstart", onFirstTouch, { passive: true, once: true })
 
     return () => {
+      window.clearTimeout(fallbackTimer)
       videoEl.removeEventListener("loadedmetadata", attemptPlay)
+      videoEl.removeEventListener("loadeddata", attemptPlay)
       videoEl.removeEventListener("canplay", attemptPlay)
       window.removeEventListener("touchstart", onFirstTouch)
     }
-  }, [activeMediaUrl, activeIsVideo, hasValidMedia, current])
+  }, [effectiveVideoSrc, activeMediaUrl, activeIsVideo, hasValidMedia, current])
 
   if (!slide) return null
 
   return (
     <div
-      className="w-full relative bg-zinc-50 overflow-hidden border-b border-zinc-200 transition-all duration-500"
+      className="w-full relative bg-zinc-900 overflow-hidden border-b border-zinc-200 transition-all duration-500"
       style={{ height }}
     >
       {hasValidMedia ? (
         <>
           {activeIsVideo ? (
             <video
-              key={activeMediaUrl}
+              key={effectiveVideoSrc}
               ref={videoRef}
               autoPlay
               loop
               muted
               playsInline
               preload="auto"
-              onError={() => setFailedUrls((prev) => ({ ...prev, [activeMediaUrl]: true }))}
+              onError={() => loadVideoAsBlobFallback(activeMediaUrl)}
               className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none"
-              src={activeMediaUrl}
-            >
-              <source src={activeMediaUrl} type={activeMediaUrl.toLowerCase().endsWith(".mov") ? "video/quicktime" : "video/mp4"} />
-            </video>
+              src={effectiveVideoSrc}
+            />
           ) : (
             <picture>
               {mobileUrl && <source media="(max-width: 767px)" srcSet={mobileUrl} />}
@@ -204,7 +263,7 @@ export default function HeroSlider({
                 className="absolute inset-0 w-full h-full object-cover z-0 transition-opacity duration-500"
                 src={desktopUrl || mobileUrl}
                 alt={slide.title || "Hero Banner"}
-                onError={() => setFailedUrls((prev) => ({ ...prev, [activeMediaUrl]: true }))}
+                onError={() => setFailedImageUrls((prev) => ({ ...prev, [activeMediaUrl]: true }))}
               />
             </picture>
           )}
@@ -214,11 +273,11 @@ export default function HeroSlider({
           />
         </>
       ) : (
-        <>
-          <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-[400px] h-[400px] rounded-full bg-violet-500/10 blur-[120px] pointer-events-none z-0" />
-          <div className="absolute top-1/3 right-1/4 -translate-y-1/2 w-[350px] h-[350px] rounded-full bg-indigo-500/10 blur-[100px] pointer-events-none z-0" />
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,#e4e4e7_1px,transparent_1px),linear-gradient(to_bottom,#e4e4e7_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] opacity-50 z-0" />
-        </>
+        <div className="absolute inset-0 bg-zinc-50 z-0">
+          <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-[400px] h-[400px] rounded-full bg-violet-500/10 blur-[120px] pointer-events-none" />
+          <div className="absolute top-1/3 right-1/4 -translate-y-1/2 w-[350px] h-[350px] rounded-full bg-indigo-500/10 blur-[100px] pointer-events-none" />
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,#e4e4e7_1px,transparent_1px),linear-gradient(to_bottom,#e4e4e7_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] opacity-50" />
+        </div>
       )}
 
       <div className="absolute inset-0 z-10 flex flex-col justify-center items-center text-center px-6 small:p-32 gap-6">

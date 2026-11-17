@@ -31,9 +31,17 @@ export function resolveHeroMediaUrl(url?: string) {
   if (!url) return ""
   const trimmed = url.trim()
   if (!trimmed || trimmed === "/uploads/hero-1774921088469-819611420.jpg") return ""
-  if (trimmed.startsWith("/uploads/")) {
-    return `${PUBLIC_BACKEND_URL}${trimmed}`
+
+  // Extract /uploads/<filename> if pointing to backend uploads
+  const uploadsMatch = trimmed.match(/\/uploads\/([^?#]+)$/i)
+  if (uploadsMatch && uploadsMatch[1]) {
+    const filename = uploadsMatch[1]
+    if (/\.(mp4|mov|webm|m4v)$/i.test(filename)) {
+      return `/api/hero-media/${filename}`
+    }
+    return `${PUBLIC_BACKEND_URL}/uploads/${filename}`
   }
+
   return trimmed
     .replace(/^http:\/\/localhost:\d+/i, PUBLIC_BACKEND_URL)
     .replace(/^http:\/\/127\.0\.0\.1:\d+/i, PUBLIC_BACKEND_URL)
@@ -42,14 +50,14 @@ export function resolveHeroMediaUrl(url?: string) {
 
 function detectMediaType(explicitType?: string, url?: string, mobileUrl?: string): "image" | "video" {
   const candidate = url || mobileUrl || ""
-  if (/\.(mp4|mov|webm|m4v)(\?|$)/i.test(candidate)) {
+  if (/\.(mp4|mov|webm|m4v)(\?|$)/i.test(candidate) || candidate.startsWith("/api/hero-media/")) {
     return "video"
   }
   return explicitType === "video" ? "video" : "image"
 }
 
-const Hero = async ({ dict }: { dict: any }) => {
-  const config = await getHeroConfig()
+const Hero = async ({ dict, initialConfig }: { dict: any; initialConfig?: any }) => {
+  const config = initialConfig || (await getHeroConfig())
 
   const rawTitle = config?.title || dict?.hero?.title || "BodyKit Merkezi'ne Hoş Geldiniz"
   const cleanTitle = rawTitle === "XOOX Mağazasına Hoş Geldiniz" ? "BodyKit Merkezi'ne Hoş Geldiniz" : rawTitle

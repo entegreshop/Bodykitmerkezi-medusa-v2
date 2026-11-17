@@ -54,39 +54,45 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
     const fileSize = stat.size
     const range = req.headers.range
 
+    // Prevent Express compression middleware and CDNs from stripping Content-Length or chunking video streams
     res.setHeader("Accept-Ranges", "bytes")
     res.setHeader("Access-Control-Allow-Origin", "*")
-    res.setHeader("Cache-Control", "public, max-age=31536000, immutable")
+    res.setHeader("Cache-Control", "public, max-age=31536000, no-transform")
+    res.setHeader("Content-Encoding", "identity")
 
-    // HTTP 206 Partial Content support (Required by iOS Safari / iPhone for <video> playback)
     if (range) {
       const parts = range.replace(/bytes=/, "").split("-")
       const start = parseInt(parts[0], 10)
-      const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1
+      const requestedEnd = parts[1] ? parseInt(parts[1], 10) : fileSize - 1
+      const end = Math.min(requestedEnd, fileSize - 1)
 
-      if (isNaN(start) || isNaN(end) || start >= fileSize || end >= fileSize || start > end) {
+      if (isNaN(start) || isNaN(end) || start >= fileSize || end >= fileSize || start > end || start < 0) {
         res.status(416)
         res.setHeader("Content-Range", `bytes */${fileSize}`)
         return res.end()
       }
 
       const chunkSize = end - start + 1
+      const chunkBuffer = Buffer.alloc(chunkSize)
+      const fd = fs.openSync(filePath, "r")
+      try {
+        fs.readSync(fd, chunkBuffer, 0, chunkSize, start)
+      } finally {
+        fs.closeSync(fd)
+      }
+
       res.status(206)
       res.setHeader("Content-Range", `bytes ${start}-${end}/${fileSize}`)
       res.setHeader("Content-Length", String(chunkSize))
       res.setHeader("Content-Type", contentType)
-
-      const stream = fs.createReadStream(filePath, { start, end })
-      stream.pipe(res)
-      return
+      return res.end(chunkBuffer)
     }
 
+    const fullBuffer = fs.readFileSync(filePath)
     res.status(200)
     res.setHeader("Content-Length", String(fileSize))
     res.setHeader("Content-Type", contentType)
-
-    const stream = fs.createReadStream(filePath)
-    stream.pipe(res)
+    return res.end(fullBuffer)
   } catch (error) {
     res.status(500).send("Internal Server Error")
   }

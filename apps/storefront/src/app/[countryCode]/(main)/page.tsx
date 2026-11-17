@@ -30,7 +30,7 @@ async function getHeroConfig() {
       headers["x-publishable-api-key"] = NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
     }
     const res = await fetch(`${NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/hero-config`, {
-      next: { revalidate: 10 },
+      cache: "no-store",
       headers,
     })
     const data = await res.json()
@@ -49,13 +49,14 @@ export default async function Home(props: {
   const searchParams = await props.searchParams
   const { countryCode } = params
 
-  const region = await getRegion(countryCode)
+  const region = (await getRegion(countryCode)) || (await getRegion("tr"))
 
-  const { collections } = await listCollections({
+  const { collections: rawCollections } = await listCollections({
     fields: "id, handle, title",
-  })
+  }).catch(() => ({ collections: [] }))
+  const collections = rawCollections || []
 
-  if (!collections || !region) {
+  if (!region) {
     return null
   }
 
@@ -464,7 +465,7 @@ export default async function Home(props: {
       <CouponBanner config={config?.coupon_banner} />
 
       {/* 1. Campaign Hero Slider (or Banner-Overlaid Category Carousel if configured to replace Hero) */}
-      {showHeroBanner && <Hero dict={dict} />}
+      {showHeroBanner && <Hero dict={dict} initialConfig={config} />}
 
       {bannerCarouselsReplaceHero.map((item) => (
         <BannerCategoryCarousel key={item.block.id} bannerBlock={item.block} products={item.products} region={region} />

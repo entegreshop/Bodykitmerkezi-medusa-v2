@@ -1,5 +1,5 @@
 import { Metadata } from "next"
-import { notFound } from "next/navigation"
+import { redirect } from "next/navigation"
 import { listProducts } from "@lib/data/products"
 import { getRegion, listRegions } from "@lib/data/regions"
 import ProductTemplate from "@modules/products/templates"
@@ -220,22 +220,57 @@ function findVariantIdByOptions(
   return match?.id
 }
 
+async function resolveProductByHandle(countryCode: string, handle: string) {
+  const exact = await listProducts({
+    countryCode,
+    queryParams: { handle },
+  })
+    .then(({ response }) => response.products[0])
+    .catch(() => undefined)
+
+  if (exact) return exact
+
+  // Fallback for handles that had a numeric ID suffix appended during catalog sync
+  const queryWords = handle
+    .replace(/-\d+$/, "")
+    .split("-")
+    .filter((w) => w.length > 1)
+    .slice(0, 5)
+    .join(" ")
+
+  if (!queryWords) return undefined
+
+  const candidates = await listProducts({
+    countryCode,
+    queryParams: { q: queryWords, limit: 24 },
+  })
+    .then(({ response }) => response.products || [])
+    .catch(() => [])
+
+  return (
+    candidates.find(
+      (p) =>
+        p.handle === handle ||
+        p.handle?.startsWith(`${handle}-`) ||
+        handle.startsWith(`${p.handle}-`)
+    ) || candidates[0]
+  )
+}
+
 export async function generateMetadata(props: Props): Promise<Metadata> {
   const params = await props.params
   const { handle } = params
-  const region = await getRegion(params.countryCode)
+  const countryCode = params.countryCode || "tr"
+  const region = (await getRegion(countryCode)) || (await getRegion("tr"))
 
   if (!region) {
-    notFound()
+    return { title: "BodyKit Merkezi" }
   }
 
-  const product = await listProducts({
-    countryCode: params.countryCode,
-    queryParams: { handle },
-  }).then(({ response }) => response.products[0])
+  const product = await resolveProductByHandle(region.countries?.[0]?.iso_2 || "tr", handle)
 
   if (!product) {
-    notFound()
+    return { title: "BodyKit Merkezi" }
   }
 
   return {
@@ -251,16 +286,19 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
 
 export default async function ProductPage(props: Props) {
   const params = await props.params
-  const region = await getRegion(params.countryCode)
+  const countryCode = params.countryCode || "tr"
+  const region = (await getRegion(countryCode)) || (await getRegion("tr"))
   const searchParams = await props.searchParams
 
-  const pricedProduct = await listProducts({
-    countryCode: params.countryCode,
-    queryParams: { handle: params.handle },
-  }).then(({ response }) => response.products[0])
+  if (!region) {
+    redirect("/tr")
+  }
+
+  const effectiveCountry = region.countries?.[0]?.iso_2 || "tr"
+  const pricedProduct = await resolveProductByHandle(effectiveCountry, params.handle)
 
   if (!pricedProduct) {
-    notFound()
+    redirect(`/${effectiveCountry}/store`)
   }
 
   let selectedVariantId = searchParams.v_id
@@ -268,21 +306,13 @@ export default async function ProductPage(props: Props) {
     selectedVariantId = findVariantIdByOptions(pricedProduct, searchParams)
   }
 
-  console.log("[ProductPage Server] searchParams:", searchParams);
-  console.log("[ProductPage Server] selectedVariantId:", selectedVariantId);
-
-  if (!region) {
-    notFound()
-  }
-
   const images = getImagesForVariant(pricedProduct, selectedVariantId) || []
-  console.log("[ProductPage Server] filtered images count:", images.length, images.map(img => img.url));
 
   return (
     <ProductTemplate
       product={pricedProduct}
       region={region}
-      countryCode={params.countryCode}
+      countryCode={effectiveCountry}
       images={images}
     />
   )
