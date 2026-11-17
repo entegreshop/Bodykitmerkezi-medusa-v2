@@ -345,7 +345,7 @@ export default function CategoryTabs({
     if (!pool || pool.length === 0) return []
 
     if (selectedTab === "yeni-gelenler" || selectedTab === "tumu") {
-      return pool
+      return pool.slice(0, 20)
     }
     if (selectedTab === "cok-satanlar") {
       const rotated = [...pool]
@@ -353,7 +353,7 @@ export default function CategoryTabs({
         const firstTwo = rotated.splice(0, 2)
         rotated.push(...firstTwo)
       }
-      return rotated
+      return rotated.slice(0, 20)
     }
     const keyword = selectedTab.replace(/-/g, " ").toLocaleLowerCase("tr-TR")
     const matched = pool.filter((p) => {
@@ -391,7 +391,7 @@ export default function CategoryTabs({
       }
       return t.includes(keyword) || h.includes(selectedTab)
     })
-    return matched.length > 0 ? matched : pool
+    return (matched.length > 0 ? matched : pool).slice(0, 20)
   }, [products, allProducts, selectedTab])
 
   const accentColor = sectionConfig?.accent_color || "#c91d82"

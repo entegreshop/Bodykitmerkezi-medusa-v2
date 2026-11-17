@@ -355,6 +355,7 @@ export default function BrandProductShowcase({
 
   const defaultBrand = initialBrand || showcaseConfig?.default_active_brand || "tumu"
   const [selectedBrand, setSelectedBrand] = useState<string>(defaultBrand)
+  const [expandedBrands, setExpandedBrands] = useState<Record<string, boolean>>({})
   const [showLeftArrow, setShowLeftArrow] = useState(false)
   const [showRightArrow, setShowRightArrow] = useState(true)
 
@@ -440,12 +441,13 @@ export default function BrandProductShowcase({
       const targetBrand = activeBrandsList.find((b) => b.id === selectedBrand)
       if (!targetBrand) return []
       const brandProds = brandMap[targetBrand.id] || []
-      const sliced =
-        maxProductsPerBrand > 0 ? brandProds.slice(0, maxProductsPerBrand) : brandProds
+      const isExpanded = Boolean(expandedBrands[targetBrand.id])
+      const singleBrandLimit = maxProductsPerBrand > 0 ? maxProductsPerBrand : 25
+      const sliced = isExpanded ? brandProds : brandProds.slice(0, singleBrandLimit)
       return [
         {
           brand: targetBrand,
-          products: sliced.length > 0 ? sliced : products.slice(0, maxProductsPerBrand > 0 ? maxProductsPerBrand : 10),
+          products: sliced.length > 0 ? sliced : products.slice(0, 10),
           totalCount: brandProds.length,
           isFallback: brandProds.length === 0,
         },
@@ -453,10 +455,12 @@ export default function BrandProductShowcase({
     }
 
     // When "tumu" is selected, list each brand that has matching products one below another (alt alta)
+    const perBrandInitialLimit = maxProductsPerBrand > 0 ? maxProductsPerBrand : 10
     const sections = activeBrandsList
       .map((brand) => {
         const fullList = brandMap[brand.id] || []
-        const sliced = maxProductsPerBrand > 0 ? fullList.slice(0, maxProductsPerBrand) : fullList
+        const isExpanded = Boolean(expandedBrands[brand.id])
+        const sliced = isExpanded ? fullList : fullList.slice(0, perBrandInitialLimit)
         return {
           brand,
           products: sliced,
@@ -467,7 +471,7 @@ export default function BrandProductShowcase({
       .filter((sec) => sec.products.length > 0)
 
     return sections
-  }, [selectedBrand, brandMap, products, activeBrandsList, maxProductsPerBrand])
+  }, [selectedBrand, brandMap, products, activeBrandsList, maxProductsPerBrand, expandedBrands])
 
   return (
     <section className="w-full bg-white py-10 border-b border-zinc-200 select-none">
@@ -757,6 +761,23 @@ export default function BrandProductShowcase({
                   </div>
                 ))}
               </div>
+
+              {section.totalCount > section.products.length && (
+                <div className="flex justify-center pt-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setExpandedBrands((prev) => ({
+                        ...prev,
+                        [section.brand.id]: true,
+                      }))
+                    }
+                    className="px-6 py-2.5 rounded-full border border-zinc-300 bg-white hover:bg-zinc-900 hover:text-white hover:border-zinc-900 text-xs font-extrabold uppercase tracking-wider text-zinc-800 transition-all cursor-pointer shadow-2xs"
+                  >
+                    Tüm {section.brand.name} Ürünlerini Göster (+{section.totalCount - section.products.length} Ürün Daha)
+                  </button>
+                </div>
+              )}
             </div>
           ))}
 
@@ -787,7 +808,7 @@ export default function BrandProductShowcase({
               </div>
 
               <div className={gridColsClass}>
-                {unmatchedProducts.map((product, idx) => (
+                {(expandedBrands["__unmatched__"] ? unmatchedProducts : unmatchedProducts.slice(0, 10)).map((product, idx) => (
                   <div key={`unmatched-${product.id}`} className="h-full">
                     <N11ProductCard
                       product={product}
@@ -799,6 +820,23 @@ export default function BrandProductShowcase({
                   </div>
                 ))}
               </div>
+
+              {!expandedBrands["__unmatched__"] && unmatchedProducts.length > 10 && (
+                <div className="flex justify-center pt-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setExpandedBrands((prev) => ({
+                        ...prev,
+                        __unmatched__: true,
+                      }))
+                    }
+                    className="px-6 py-2.5 rounded-full border border-zinc-300 bg-white hover:bg-zinc-900 hover:text-white hover:border-zinc-900 text-xs font-extrabold uppercase tracking-wider text-zinc-800 transition-all cursor-pointer shadow-2xs"
+                  >
+                    Tüm Üniversal Ürünleri Göster (+{unmatchedProducts.length - 10} Ürün Daha)
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>

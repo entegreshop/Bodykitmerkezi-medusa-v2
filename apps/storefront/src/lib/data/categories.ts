@@ -18,7 +18,10 @@ export const CATEGORY_HANDLE_ALIASES: Record<string, string[]> = {
   bodykit: ["bodykit", "body-kit", "body-kit-"],
   difuzor: ["difuzor", "difizor", "arka-difuzor"],
   spoiler: ["spoiler", "spoyler"],
-  tamponek: ["on-tampon", "arka-tampon", "tampon-ek", "tampon"],
+  tamponek: ["on-tampon", "arka-tampon", "tampon-ek", "tampon", "on-tampon-eki", "on-lip", "arka-ek"],
+  ontamponeki: ["on-tampon-eki", "on-tampon"],
+  onlip: ["on-lip", "on-tampon-eki"],
+  arkaek: ["arka-ek", "arka-tampon"],
   ontampon: ["on-tampon"],
   arkatampon: ["arka-tampon"],
   marspiyel: ["marspiyel", "yan-marspiyel"],
@@ -28,28 +31,47 @@ export const CATEGORY_HANDLE_ALIASES: Record<string, string[]> = {
   aydinlatma: ["aydinlatma", "oto-aksesuar"],
 }
 
+let cachedAllCategories: {
+  data: HttpTypes.StoreProductCategory[]
+  expiresAt: number
+} | null = null
+
 export const listCategories = async (query?: Record<string, any>) => {
-  const next = {
-    ...(await getCacheOptions("categories")),
+  const isDefaultQuery = !query || Object.keys(query).length === 0
+  if (isDefaultQuery && cachedAllCategories && Date.now() < cachedAllCategories.expiresAt) {
+    return cachedAllCategories.data
   }
 
-  const limit = query?.limit || 500
+  const next = {
+    ...(await getCacheOptions("categories")),
+    revalidate: 60,
+  }
 
-  return sdk.client
+  const limit = query?.limit || 100
+
+  const product_categories = await sdk.client
     .fetch<{ product_categories: HttpTypes.StoreProductCategory[] }>(
       "/store/product-categories",
       {
         query: {
           fields:
-            "*category_children, *products, *parent_category, *parent_category.parent_category",
+            "id,name,handle,description,*category_children,*parent_category",
           limit,
           ...query,
         },
         next,
-        cache: "no-store",
       }
     )
-    .then(({ product_categories }) => product_categories)
+    .then(({ product_categories }) => product_categories || [])
+
+  if (isDefaultQuery && product_categories.length > 0) {
+    cachedAllCategories = {
+      data: product_categories,
+      expiresAt: Date.now() + 60 * 1000,
+    }
+  }
+
+  return product_categories
 }
 
 export const resolveCategoriesByHandle = async (
@@ -106,30 +128,27 @@ export const resolveCategoriesByHandle = async (
 
 export const getCategoryByHandle = async (categoryHandle: string[]) => {
   const handle = decodeURIComponent(categoryHandle.join("/"))
+  const resolved = await resolveCategoriesByHandle(handle)
+  if (resolved.length > 0) {
+    return resolved[0]
+  }
 
   const next = {
     ...(await getCacheOptions("categories")),
+    revalidate: 60,
   }
 
-  const exactMatch = await sdk.client
+  return sdk.client
     .fetch<HttpTypes.StoreProductCategoryListResponse>(
       `/store/product-categories`,
       {
         query: {
-          fields: "*category_children, *products",
+          fields: "id,name,handle,description,*category_children",
           handle: [handle, `/${handle}`],
         },
         next,
-        cache: "no-store",
       }
     )
     .then(({ product_categories }) => product_categories?.[0])
     .catch(() => undefined)
-
-  if (exactMatch) {
-    return exactMatch
-  }
-
-  const resolved = await resolveCategoriesByHandle(handle)
-  return resolved[0]
 }

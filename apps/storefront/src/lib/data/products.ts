@@ -7,6 +7,11 @@ import { SortOptions } from "@modules/store/components/refinement-list/sort-prod
 import { getAuthHeaders, getCacheOptions } from "./cookies"
 import { getRegion, retrieveRegion } from "./regions"
 
+const bulkProductsCache = new Map<
+  string,
+  { products: HttpTypes.StoreProduct[]; count: number; expiresAt: number }
+>()
+
 export const listProducts = async ({
   pageParam = 1,
   queryParams,
@@ -45,12 +50,27 @@ export const listProducts = async ({
     }
   }
 
+  const cacheKey = `${region.id}:${offset}:${limit}:${JSON.stringify(queryParams || {})}`
+  const cached = bulkProductsCache.get(cacheKey)
+  if (cached && Date.now() < cached.expiresAt) {
+    const nextPage = cached.count > offset + limit ? pageParam + 1 : null
+    return {
+      response: {
+        products: cached.products,
+        count: cached.count,
+      },
+      nextPage,
+      queryParams,
+    }
+  }
+
   const headers = {
     ...(await getAuthHeaders()),
   }
 
   const next = {
     ...(await getCacheOptions("products")),
+    revalidate: 60,
   }
 
   return sdk.client
@@ -68,10 +88,17 @@ export const listProducts = async ({
         },
         headers,
         next,
-        cache: "no-store",
       }
     )
     .then(({ products, count }) => {
+      if (products && products.length > 0) {
+        bulkProductsCache.set(cacheKey, {
+          products,
+          count,
+          expiresAt: Date.now() + 60 * 1000,
+        })
+      }
+
       const nextPage = count > offset + limit ? pageParam + 1 : null
 
       return {
@@ -85,10 +112,6 @@ export const listProducts = async ({
     })
 }
 
-/**
- * This will fetch 100 products to the Next.js cache and sort them based on the sortBy parameter.
- * It will then return the paginated products based on the page and limit parameters.
- */
 export const listProductsWithSort = async ({
   page = 0,
   queryParams,
@@ -130,7 +153,7 @@ export const listProductsWithSort = async ({
       products: paginatedProducts,
       count,
     },
-    nextPage: nextPage,
+    nextPage,
     queryParams,
   }
 }

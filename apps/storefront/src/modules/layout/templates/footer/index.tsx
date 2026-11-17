@@ -28,7 +28,7 @@ async function getLogoConfig() {
       headers["x-publishable-api-key"] = NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
     }
     const res = await fetch(`${NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/logo-config`, {
-      cache: "no-store",
+      next: { revalidate: 30 },
       headers,
     })
     const data = await res.json()
