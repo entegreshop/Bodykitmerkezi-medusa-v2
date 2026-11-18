@@ -1,8 +1,8 @@
 import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
-import { readConfig, recordGaRealtimeHit } from "../../admin/pixel-settings/route"
+import { readPixelConfigWithFallback, recordGaRealtimeHit } from "../../admin/pixel-settings/route"
 
 export async function GET(req: MedusaRequest, res: MedusaResponse) {
-  const config = readConfig()
+  const config = await readPixelConfigWithFallback(req.scope)
   res.json({ config })
 }
 

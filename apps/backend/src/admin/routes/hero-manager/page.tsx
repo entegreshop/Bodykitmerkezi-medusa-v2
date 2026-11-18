@@ -65,6 +65,147 @@ const defaultBanners: Banner[] = [
   },
 ]
 
+interface ThemePoolItem {
+  id: string
+  name: string
+  category: string
+  tier: "standard" | "premium"
+  price: number
+  currency: string
+  unlocked: boolean
+  license_key?: string
+  version: string
+  preview_image: string
+  demo_url?: string
+  features: string[]
+  custom_css: string
+  custom_js: string
+}
+
+const DEFAULT_THEME_POOL: ThemePoolItem[] = [
+  {
+    id: "cizgi-modern-v5",
+    name: "BodyKit Merkezi Modern V5.2 (Aktif Tema)",
+    category: "Moda, Kadın Giyim & Butik",
+    tier: "standard",
+    price: 0,
+    currency: "TRY",
+    unlocked: true,
+    version: "5.2.1",
+    preview_image: "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=900&auto=format&fit=crop&q=80",
+    demo_url: "https://bodykitmerkezi.com/tr",
+    features: ["10'lu Kategori Carousel", "Yuvarlak Kategori Tabları", "Hızlı Ödeme Modal", "100/100 Google Hız"],
+    custom_css: "/* BodyKit Merkezi Modern V5.2 Varsayılan Stil */\n:root {\n  --entegre-primary: #111827;\n  --entegre-accent: #7c3aed;\n}",
+    custom_js: "// BodyKit Merkezi V5.2 Aktif Tema Scripti\nconsole.log('[EntegreShop Theme] BodyKit Merkezi Modern V5.2 aktif');",
+  },
+  {
+    id: "entegreshop-classic-starter",
+    name: "EntegreShop Minimal Starter V5",
+    category: "Genel & Çok Amaçlı Mağaza",
+    tier: "standard",
+    price: 0,
+    currency: "TRY",
+    unlocked: true,
+    version: "5.1.0",
+    preview_image: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=900&auto=format&fit=crop&q=80",
+    demo_url: "https://bodykitmerkezi.com/tr",
+    features: ["Standart Paket", "Sade Grid Vitrin", "%100 Mobil Uyumlu"],
+    custom_css: "/* Minimal Starter CSS */\n:root {\n  --entegre-primary: #0f172a;\n  --entegre-accent: #2563eb;\n}",
+    custom_js: "console.log('[EntegreShop Theme] Minimal Starter V5 aktif');",
+  },
+  {
+    id: "entegreshop-fast-boutique",
+    name: "FastBoutique Express (Standart)",
+    category: "Tekstil & Hızlı Moda",
+    tier: "standard",
+    price: 0,
+    currency: "TRY",
+    unlocked: true,
+    version: "5.0.4",
+    preview_image: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=900&auto=format&fit=crop&q=80",
+    demo_url: "https://bodykitmerkezi.com/tr",
+    features: ["Standart Paket", "Instagram Story Bar", "WhatsApp Sipariş"],
+    custom_css: "/* FastBoutique Express CSS */\n:root {\n  --entegre-primary: #18181b;\n  --entegre-accent: #db2777;\n}",
+    custom_js: "console.log('[EntegreShop Theme] FastBoutique Express aktif');",
+  },
+  {
+    id: "silabutik-luxury-couture-pro",
+    name: "Sıla & Bell Butik Luxury Couture Pro",
+    category: "Lüks Kadın Giyim & Abiye",
+    tier: "premium",
+    price: 4990,
+    currency: "TRY",
+    unlocked: false,
+    version: "5.2.1",
+    preview_image: "https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=900&auto=format&fit=crop&q=80",
+    demo_url: "https://bodykitmerkezi.com/tr",
+    features: ["Kupon Kopyalama Popup", "Editorial Lookbook", "VIP Ürün Detay", "Yüksek Dönüşüm"],
+    custom_css: "/* Luxury Couture Pro CSS */\n:root {\n  --entegre-primary: #09090b;\n  --entegre-accent: #c81e2d;\n}\nheader { backdrop-filter: blur(12px); }",
+    custom_js: "console.log('[EntegreShop Theme] Luxury Couture Pro aktif');",
+  },
+  {
+    id: "autoparts-bodykit-pro",
+    name: "AutoParts & BodyKit Merkezi Pro V5",
+    category: "Otomotiv, Tuning & Yedek Parça",
+    tier: "premium",
+    price: 6490,
+    currency: "TRY",
+    unlocked: true,
+    license_key: "ENT-PRO-BKM-2026",
+    version: "5.2.1",
+    preview_image: "https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=900&auto=format&fit=crop&q=80",
+    demo_url: "https://bodykitmerkezi.com/tr",
+    features: ["Araç Marka/Model Filtresi", "206 Hızlı Video Hero", "Taksit & Kargo Rozetleri"],
+    custom_css: "/* AutoParts & BodyKit Pro CSS */\n:root {\n  --entegre-primary: #0f172a;\n  --entegre-accent: #dc2626;\n}",
+    custom_js: "console.log('[EntegreShop Theme] AutoParts & BodyKit Pro aktif');",
+  },
+  {
+    id: "kozmetik-beauty-glow-vip",
+    name: "Cosmetic & Beauty Glow VIP",
+    category: "Kozmetik, Cilt Bakımı & Parfümeri",
+    tier: "premium",
+    price: 5490,
+    currency: "TRY",
+    unlocked: false,
+    version: "5.2.0",
+    preview_image: "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=900&auto=format&fit=crop&q=80",
+    demo_url: "https://bodykitmerkezi.com/tr",
+    features: ["Cilt Tipi Seçici", "Paket / Set İndirimi", "İçerik & Rutin Sekmeleri"],
+    custom_css: "/* Cosmetic & Beauty Glow VIP CSS */\n:root {\n  --entegre-primary: #3f2e3e;\n  --entegre-accent: #ec4899;\n}",
+    custom_js: "console.log('[EntegreShop Theme] Cosmetic & Beauty Glow VIP aktif');",
+  },
+  {
+    id: "diamond-jewelry-atelier",
+    name: "Diamond & Atelier Jewelry Luxury",
+    category: "Takı, Saat & Mücevherat",
+    tier: "premium",
+    price: 7990,
+    currency: "TRY",
+    unlocked: false,
+    version: "5.2.1",
+    preview_image: "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=900&auto=format&fit=crop&q=80",
+    demo_url: "https://bodykitmerkezi.com/tr",
+    features: ["360° Ürün Yakınlaştırma", "Sertifika & Karat Kutusu", "Hediye Paketi Seçimi"],
+    custom_css: "/* Diamond & Atelier Luxury CSS */\n:root {\n  --entegre-primary: #1c1917;\n  --entegre-accent: #b45309;\n}",
+    custom_js: "console.log('[EntegreShop Theme] Diamond & Atelier Luxury aktif');",
+  },
+  {
+    id: "megastore-electronics-max",
+    name: "MegaStore Elektronik & Yapı Market Max",
+    category: "Teknoloji, Elektronik & Ev Yaşam",
+    tier: "premium",
+    price: 6990,
+    currency: "TRY",
+    unlocked: false,
+    version: "5.2.1",
+    preview_image: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=900&auto=format&fit=crop&q=80",
+    demo_url: "https://bodykitmerkezi.com/tr",
+    features: ["Gelişmiş Teknik Özellik Tablosu", "Karşılaştırma Modülü", "Süper Fırsat Sayacı"],
+    custom_css: "/* MegaStore Max CSS */\n:root {\n  --entegre-primary: #0f172a;\n  --entegre-accent: #f97316;\n}",
+    custom_js: "console.log('[EntegreShop Theme] MegaStore Max aktif');",
+  },
+]
+
 const PREVIEW_IMG_1 =
   "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAYEBQUFBAYFBQUHBgYHCQ8KCQgICRMNDgsPFhMXFxYTFRUYGyMeGBohGhUVHikfISQlJygnGB0rLismLiMmJyb/2wBDAQYHBwkICRIKChImGRUZJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJib/wAARCABAAEADASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwDudUv4La1NjauXtmZXmndfnu5Bzk55Cg9B+JrM01p73WLN5VURrMuF2jCjNZuryvpOotBqG66uXbbCAMLgKDye35VRtdXifxFpaXErzSNexoqw/LFGcg9M5J9z+lQUk3sd14m1600fVtEsbqJfLv5XjEuPuMAMcAHOSQPavN/EVoLfxikhUbTaMxGB/wA9BmvWLyzivL7Tp2iR3t5yQxUEqCOcfpXBeKbYN4iQEf8AMOlP/kRardEsgl1VLrzIo5YrtYmKtFwQig4GMfd6e/NZGq2sklmn2B0M4l35OFfbzwCOvNcVqEs1pqO2CYxO00gDAkdGPpV/RvEtw9u3mLHdbWwxGVbPvjr19KtSJt1IPGLS2z2kjwKlzLBmdQg+Z84yccdq537bJLHs3gd8YDZP0rV8WarDdyoyW7K0YZWD8+mP84rEgAfO5EOCACBnHtUy3Gj6a8faUs+p6bMB/rHYAj/rlXk2kQLB4w0nGSEvY85OSfmAr33xJCryaacfdlOP+/LV4KIFt/GtoWDAi8jOA3H3xzSeo1Jxbse92ACttI5Df0ry/wAdXU9tdrc28csspsJI08qIysC0yDdtHUKCSfYV6bbyf6TLjt0/I183fFjUdf0vxoZ1uHht5LbybT7PcMrBMfPnGMZycj6VN9DelSVSdmcv4j1RJdbaJSjGEg5jLkSFsliN3qefT09Km8JOslnOpYn97wSOpx05rKhlu/EGvW8RjAb5225Z9q8nag5wBliAOOTXQeDLe2jtZEe4ieNZNwZNyscjPPbNEdrBiKfJMwtfvkSadVjfd5m3AI5+lN0e6EsDOkeRvPyk5xirN5pxvtSa03FFluCFlBwQfcnp1og0+GykltGaWRkYDdEUcMT7g4pnOfYcptjBDBqCXBWIhlubdt5HyY+ZDz0J6ZrB1HwbpUsZ1jT75LmO2YSsY35GDnBU5I/zxWhI8pPzS7flXoPYVVlghYs4ZxNjBkQ7WI9D6j2Oai9i7JhY3rSTfLbuA5wzblIXg985/SvAfj2bZru1EUga+RiZFDHKJtGB6YJz+Ve620i2EzfaLJrqDIJe3fy3Hvt6H9K+ZPi2t/F4s1a4ujK1vd3LvYtJjcYAAFyO2BgY9jSWvyOmhpO3cxfCOpzHxZYXKwwRTFjEAqbQcgjoO/P6V1tjpsem27holyTlvLyD0x0qnaaPGvxqtNGWLzkimijZIRtLFYFyBzwcg16vN4XiLFLW/ms5Sci3vo8fgM4z+Ga0RnXlex4+kx/tG5CvIpkJJBPzHJ/nS/ZlEjMlxJGHkzukJJB9ea7jUPBmt297JPLo0N0hbcJLZvm6+n/1qx7i1tIZgswns5c8pKv/AOqqsc1z6NlOSCD/AAjn8KrNJztHX24qecSfK3lOAwHUewqm6vn5o3JHQYNYmw5yoB3P82OcV8+fH54p/FenW0bKzQ2Y80A5K7pGIB9yMfnXvTGTdtETLjnG3rXKeJvCPhbXb63vrnQZrW9ibdO63DMbthgBmA4A46CmjSnJQldnjXgWTUrH4l22tz2M8sgllmX7RuTzcgrkMeuA3X1r6h0nxToOrIlpqMX2SV+BBeINrfRuhrk7k3c6wo7ySRwKVhjkJYRr3AB6DgcD0ql9m3r5LoXj6FHXKD39jVXZE5c7PR7rwrp8g36dcz6exGQI23xn/gLZH5Yrn9S8N6wvyXOnWmtW+f8AllhX/wC+H4/I1kabNrGlJv067lhQ/wDLCbMkJ/qK6bS/GwSSFNasJbJiwHnxfPGfx7VSaMnE/9k="
 
@@ -175,6 +316,21 @@ const HeroManagerPage = () => {
   const [whatsappNumber, setWhatsappNumber] = useState("905323370081")
   const [whatsappBg, setWhatsappBg] = useState("#ffffff")
   const [whatsappTextColor, setWhatsappTextColor] = useState("#25D366")
+  const [activeThemeId, setActiveThemeId] = useState<string>("cizgi-modern-v5")
+  const [themePool, setThemePool] = useState<ThemePoolItem[]>(DEFAULT_THEME_POOL)
+  const [themeFilter, setThemeFilter] = useState<"all" | "standard" | "premium" | "unlocked">("all")
+  const [entegreLicense, setEntegreLicense] = useState<Record<string, any>>({
+    store_id: "ENT-STORE-BODYKITMERKEZI",
+    package_tier: "Enterprise Pro",
+    package_expires_at: "2027-12-31",
+    central_domain: "https://entegreshop.com",
+    webhook_url: "https://api.bodykitmerkezi.com/store/entegreshop-license",
+  })
+  const [editingThemeModal, setEditingThemeModal] = useState<ThemePoolItem | null>(null)
+  const [purchaseThemeModal, setPurchaseThemeModal] = useState<ThemePoolItem | null>(null)
+  const [purchaseModalTab, setPurchaseModalTab] = useState<"checkout" | "license">("checkout")
+  const [licenseInputKey, setLicenseInputKey] = useState<string>("")
+  const [showCentralPortalModal, setShowCentralPortalModal] = useState<boolean>(false)
 
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -226,6 +382,15 @@ const HeroManagerPage = () => {
           setWhatsappNumber(data.config.whatsapp_number || "905323370081")
           setWhatsappBg(data.config.whatsapp_bg || "#ffffff")
           setWhatsappTextColor(data.config.whatsapp_text_color || "#25D366")
+          if (data.config.active_theme_id) {
+            setActiveThemeId(data.config.active_theme_id)
+          }
+          if (Array.isArray(data.config.theme_pool) && data.config.theme_pool.length > 0) {
+            setThemePool(data.config.theme_pool)
+          }
+          if (data.config.entegreshop_license) {
+            setEntegreLicense((prev) => ({ ...prev, ...data.config.entegreshop_license }))
+          }
         }
       } catch (err) {
         console.error("Failed to load hero configuration:", err)
@@ -291,6 +456,78 @@ const HeroManagerPage = () => {
     }
   }
 
+  const persistThemePoolUpdate = async (
+    nextPool: ThemePoolItem[],
+    nextActiveId: string = activeThemeId,
+    nextLicense: Record<string, any> = entegreLicense,
+    msg = "Tema havuzu ve aktif tema ayarları kaydedildi! ✔"
+  ) => {
+    setThemePool(nextPool)
+    setActiveThemeId(nextActiveId)
+    setEntegreLicense(nextLicense)
+    try {
+      const res = await fetch("/admin/hero-config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          active_theme_id: nextActiveId,
+          theme_pool: nextPool,
+          entegreshop_license: nextLicense,
+        }),
+      })
+      if (res.ok) {
+        setToastMessage(msg)
+        setTimeout(() => setToastMessage(""), 4000)
+      }
+    } catch (e) {
+      console.error("Failed to save theme pool:", e)
+    }
+  }
+
+  const handleActivateTheme = async (theme: ThemePoolItem) => {
+    if (theme.tier === "premium" && !theme.unlocked) {
+      setPurchaseThemeModal(theme)
+      setPurchaseModalTab("checkout")
+      setLicenseInputKey("")
+      return
+    }
+    await persistThemePoolUpdate(
+      themePool,
+      theme.id,
+      entegreLicense,
+      `"${theme.name}" mağaza teması olarak etkinleştirildi! CSS ve JS kodları vitrine uygulandı. ✔`
+    )
+  }
+
+  const handleUnlockThemeWithLicense = async (theme: ThemePoolItem, keyStr: string) => {
+    const cleanKey = keyStr.trim().toUpperCase() || `ENT-PRO-${Date.now().toString().slice(-6)}`
+    const nextPool = themePool.map((t) =>
+      t.id === theme.id ? { ...t, unlocked: true, license_key: cleanKey } : t
+    )
+    await persistThemePoolUpdate(
+      nextPool,
+      theme.id,
+      entegreLicense,
+      `"${theme.name}" lisansı (${cleanKey}) doğrulandı ve tema etkinleştirildi! 👑`
+    )
+    setPurchaseThemeModal(null)
+  }
+
+  const handleSaveCustomTheme = async () => {
+    if (!editingThemeModal) return
+    const exists = themePool.some((t) => t.id === editingThemeModal.id)
+    const nextPool = exists
+      ? themePool.map((t) => (t.id === editingThemeModal.id ? editingThemeModal : t))
+      : [editingThemeModal, ...themePool]
+    await persistThemePoolUpdate(
+      nextPool,
+      activeThemeId,
+      entegreLicense,
+      `"${editingThemeModal.name}" tema havuzuna başarıyla kaydedildi! ✔`
+    )
+    setEditingThemeModal(null)
+  }
+
   const handleHeroFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, target: "hero" | "cdn") => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -348,220 +585,874 @@ const HeroManagerPage = () => {
       )}
 
       {/* 1. TEMALAR (/admin/store/theme - .selected-theme-v2 & .theme-list-v2) */}
-      {activeTab === "theme" && (
-        <div id="subview-theme-theme" className="theme-subview max-w-[1260px] w-full mx-auto px-5 py-7">
-          {/* .selected-theme-v2 */}
-          <div className="bg-white rounded-[8px] border border-[#ebedf2] p-[30px] mb-[30px] shadow-2xs grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-            <div className="lg:col-span-6">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#e0f6e7] text-[#08976d] text-[12px] font-bold mb-3">
-                <span>✓</span> Aktif Mağaza Teması
+      {activeTab === "theme" && (() => {
+        const currentActiveTheme =
+          themePool.find((t) => t.id === activeThemeId) || themePool[0] || DEFAULT_THEME_POOL[0]
+        const filteredThemes = themePool.filter((t) => {
+          if (themeFilter === "standard") return t.tier === "standard"
+          if (themeFilter === "premium") return t.tier === "premium"
+          if (themeFilter === "unlocked") return t.tier === "standard" || t.unlocked
+          return true
+        })
+
+        return (
+          <div id="subview-theme-theme" className="theme-subview max-w-[1260px] w-full mx-auto px-5 py-7">
+            {/* Top Bar: EntegreShop.com Corporate Package & License Status Banner */}
+            <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 text-white rounded-[8px] p-4 mb-6 shadow-md flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-3.5">
+                <div className="w-10 h-10 rounded-lg bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-emerald-300 font-extrabold text-[16px]">
+                  ES
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] uppercase tracking-wider font-bold text-emerald-400">
+                      ● entegreshop.com Kurumsal Bağlantısı Aktif
+                    </span>
+                    <span className="text-[11px] px-2 py-0.5 rounded bg-white/10 text-white font-semibold">
+                      Paket: {entegreLicense.package_tier || "Enterprise Pro"}
+                    </span>
+                    <span className="text-[11px] font-mono text-slate-300">
+                      ID: {entegreLicense.store_id || "ENT-STORE-BODYKITMERKEZI"}
+                    </span>
+                  </div>
+                  <div className="text-[12px] text-slate-300 mt-0.5">
+                    Standart ve Premium temaları buradan yönetebilir, CSS/JS olarak yeni tema yükleyebilir veya <strong className="text-white">entegreshop.com</strong> üzerinden müşterilerinize uzaktan paket/tema tanımlayabilirsiniz.
+                  </div>
+                </div>
               </div>
-              <div className="text-[28px] font-bold text-[#0abb87] leading-tight">EntegreShop Pro V5.2</div>
-              <p className="text-[14px] text-[#74788d] mt-2 mb-6 leading-relaxed">
-                Yüksek dönüşüm odaklı, %100 mobil uyumlu (Responsive), Google Core Web Vitals &amp; Rocket Cache hız optimizasyonlu yeni nesil e-ticaret teması.
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-[12px]">
+              <div className="flex items-center gap-2.5">
                 <button
                   type="button"
                   onClick={() => {
-                    setStudioSection("hero")
-                    setShowLiveHeroCustomizer(true)
+                    setEditingThemeModal({
+                      id: `custom-theme-${Date.now()}`,
+                      name: "Yeni Özel Mağaza Teması",
+                      category: "Moda & Genel",
+                      tier: "premium",
+                      price: 4990,
+                      currency: "TRY",
+                      unlocked: true,
+                      version: "5.2.1",
+                      preview_image: currentActiveTheme.preview_image,
+                      demo_url: "https://bodykitmerkezi.com/tr",
+                      features: ["Özel CSS & JS", "%100 Mobil Uyumlu", "100/100 Google Hız"],
+                      custom_css: currentActiveTheme.custom_css || "/* Özel Tema CSS Kodları */\n:root {\n  --entegre-primary: #111827;\n  --entegre-accent: #7c3aed;\n}",
+                      custom_js: currentActiveTheme.custom_js || "// Özel Tema JS Kodları\nconsole.log('Özel EntegreShop Teması Yüklendi');",
+                    })
                   }}
-                  className="p-[14px] rounded-[5px] border border-[#e6e6e6] bg-[#f8f9fb] hover:bg-[#eef4ff] hover:border-[#3d94fb] text-left text-[13px] font-semibold text-[#48465b] flex items-center gap-2.5 transition cursor-pointer"
+                  className="px-3.5 py-2 rounded-[5px] bg-emerald-500 hover:bg-emerald-600 text-white text-[12px] font-bold transition cursor-pointer shadow-xs"
                 >
-                  <span className="text-[16px]">🎯</span>
-                  <span>Hero Banner &amp; Vitrin Ayarları</span>
+                  + Yeni Tema Yükle / Tasarla (CSS • JS)
                 </button>
-
                 <button
                   type="button"
-                  onClick={() => {
-                    setStudioSection("coupon_popup")
-                    setShowLiveHeroCustomizer(true)
-                  }}
-                  className="p-[14px] rounded-[5px] border border-[#0abb87] bg-[#eefbf5] hover:bg-[#d7f5e8] text-left text-[13px] font-bold text-[#08976d] flex items-center gap-2.5 transition cursor-pointer"
+                  onClick={() => setShowCentralPortalModal(true)}
+                  className="px-3.5 py-2 rounded-[5px] bg-white/10 hover:bg-white/20 border border-white/20 text-white text-[12px] font-semibold transition cursor-pointer"
                 >
-                  <span className="text-[16px]">🎟️</span>
-                  <span>Hero Üstü Kupon &amp; Popup Ayarları</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setStudioSection("brand_tabs")
-                    setShowLiveHeroCustomizer(true)
-                  }}
-                  className="p-[14px] rounded-[5px] border border-[#7c3aed] bg-[#f9f6ff] hover:bg-[#f1eaff] text-left text-[13px] font-bold text-[#6d28d9] flex items-center gap-2.5 transition cursor-pointer"
-                >
-                  <span className="text-[16px]">🚗</span>
-                  <span>Yuvarlak Araç Marka Tab &amp; Vitrin</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setStudioSection("carousel")
-                    setShowLiveHeroCustomizer(true)
-                  }}
-                  className="p-[14px] rounded-[5px] border border-[#e6e6e6] bg-[#f8f9fb] hover:bg-[#eef4ff] hover:border-[#3d94fb] text-left text-[13px] font-semibold text-[#48465b] flex items-center gap-2.5 transition cursor-pointer"
-                >
-                  <span className="text-[16px]">🎠</span>
-                  <span>Ana Sayfa Carousel Blokları</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setStudioSection("header_footer")
-                    setShowLiveHeroCustomizer(true)
-                  }}
-                  className="p-[14px] rounded-[5px] border border-[#e6e6e6] bg-[#f8f9fb] hover:bg-[#eef4ff] hover:border-[#3d94fb] text-left text-[13px] font-semibold text-[#48465b] flex items-center gap-2.5 transition cursor-pointer"
-                >
-                  <span className="text-[16px]">🔝</span>
-                  <span>Header &amp; Footer Tasarımı</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setStudioSection("buttons")
-                    setShowLiveHeroCustomizer(true)
-                  }}
-                  className="p-[14px] rounded-[5px] border border-[#e6e6e6] bg-[#f8f9fb] hover:bg-[#eef4ff] hover:border-[#3d94fb] text-left text-[13px] font-semibold text-[#48465b] flex items-center gap-2.5 transition cursor-pointer"
-                >
-                  <span className="text-[16px]">🔘</span>
-                  <span>Buton Tasarım &amp; Renk Ayarları</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setStudioSection("product_detail")
-                    setShowLiveHeroCustomizer(true)
-                  }}
-                  className="p-[14px] rounded-[5px] border border-[#e6e6e6] bg-[#f8f9fb] hover:bg-[#eef4ff] hover:border-[#3d94fb] text-left text-[13px] font-semibold text-[#48465b] flex items-center gap-2.5 transition cursor-pointer"
-                >
-                  <span className="text-[16px]">👗</span>
-                  <span>Ürün Detay Tasarım &amp; Ayarlar</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setStudioSection("checkout")
-                    setShowLiveHeroCustomizer(true)
-                  }}
-                  className="p-[14px] rounded-[5px] border border-[#e6e6e6] bg-[#f8f9fb] hover:bg-[#eef4ff] hover:border-[#3d94fb] text-left text-[13px] font-semibold text-[#48465b] flex items-center gap-2.5 transition cursor-pointer"
-                >
-                  <span className="text-[16px]">💳</span>
-                  <span>Sepet &amp; Ödeme Formu Tasarımı</span>
+                  🔗 entegreshop.com Paket &amp; API Entegrasyonu
                 </button>
               </div>
             </div>
-            <div className="lg:col-span-6">
-              <div className="rounded-[10px] border border-[#e6e6e6] bg-[#f8fafc] p-4 shadow-inner">
-                <div className="bg-white rounded-[6px] border border-slate-200 overflow-hidden">
-                  <div className="bg-slate-900 text-white px-4 py-2 flex items-center justify-between text-[11px]">
-                    <div className="flex items-center gap-1.5">
-                      <span className="w-2.5 h-2.5 rounded-full bg-red-400"></span>
-                      <span className="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
-                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
-                    </div>
-                    <span className="font-mono text-slate-300">Canlı Tema Önizleme (Masaüstü &amp; Mobil)</span>
-                    <span className="text-emerald-400 font-bold">100/100 Hız</span>
+
+            {/* .selected-theme-v2 (Currently Active Theme Overview) */}
+            <div className="bg-white rounded-[8px] border border-[#ebedf2] p-[30px] mb-[30px] shadow-2xs grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+              <div className="lg:col-span-6">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#e0f6e7] text-[#08976d] text-[12px] font-bold">
+                    <span>✓</span> Aktif Mağaza Teması
                   </div>
-                  <div className="p-5">
-                    <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
-                      <div className="text-[15px] font-extrabold text-slate-900 tracking-tight">EntegreShop</div>
-                      <div className="flex items-center gap-3 text-[11px] font-bold text-slate-600">
-                        <span>YENİ GELENLER</span>
-                        <span>KATEGORİLER</span>
-                        <span>KAMPANYALAR</span>
-                        <span className="px-2 py-0.5 rounded bg-[#0abb87] text-white">SEPET (2)</span>
+                  <span className="text-[11.5px] px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 font-semibold">
+                    v{currentActiveTheme.version || "5.2.1"} • {currentActiveTheme.category}
+                  </span>
+                </div>
+                <div className="text-[26px] font-bold text-[#0abb87] leading-tight">
+                  {currentActiveTheme.name}
+                </div>
+                <p className="text-[13.5px] text-[#74788d] mt-2 mb-4 leading-relaxed">
+                  Yüksek dönüşüm odaklı, %100 mobil uyumlu (Responsive), Google Core Web Vitals &amp; Rocket Cache hız optimizasyonlu aktif vitrin teması.
+                </p>
+
+                {/* Quick Code & Export Bar for Active Theme */}
+                <div className="flex flex-wrap items-center gap-2 mb-5 pb-4 border-b border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => setEditingThemeModal({ ...currentActiveTheme })}
+                    className="px-3 py-1.5 rounded-[4px] bg-slate-900 hover:bg-slate-800 text-white text-[12px] font-semibold cursor-pointer flex items-center gap-1.5"
+                  >
+                    <span>💻</span> Aktif Temanın CSS / JS Kodlarını Düzenle
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const blob = new Blob([JSON.stringify(currentActiveTheme, null, 2)], {
+                        type: "application/json",
+                      })
+                      const url = URL.createObjectURL(blob)
+                      const a = document.createElement("a")
+                      a.href = url
+                      a.download = `${currentActiveTheme.id}-theme-package.json`
+                      a.click()
+                      URL.revokeObjectURL(url)
+                    }}
+                    className="px-3 py-1.5 rounded-[4px] border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-[12px] font-semibold cursor-pointer"
+                  >
+                    📦 Tema Paketini İndir (.json)
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-[12px]">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStudioSection("hero")
+                      setShowLiveHeroCustomizer(true)
+                    }}
+                    className="p-[14px] rounded-[5px] border border-[#e6e6e6] bg-[#f8f9fb] hover:bg-[#eef4ff] hover:border-[#3d94fb] text-left text-[13px] font-semibold text-[#48465b] flex items-center gap-2.5 transition cursor-pointer"
+                  >
+                    <span className="text-[16px]">🎯</span>
+                    <span>Hero Banner &amp; Vitrin Ayarları</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStudioSection("coupon_popup")
+                      setShowLiveHeroCustomizer(true)
+                    }}
+                    className="p-[14px] rounded-[5px] border border-[#0abb87] bg-[#eefbf5] hover:bg-[#d7f5e8] text-left text-[13px] font-bold text-[#08976d] flex items-center gap-2.5 transition cursor-pointer"
+                  >
+                    <span className="text-[16px]">🎟️</span>
+                    <span>Hero Üstü Kupon &amp; Popup Ayarları</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStudioSection("carousel")
+                      setShowLiveHeroCustomizer(true)
+                    }}
+                    className="p-[14px] rounded-[5px] border border-[#e6e6e6] bg-[#f8f9fb] hover:bg-[#eef4ff] hover:border-[#3d94fb] text-left text-[13px] font-semibold text-[#48465b] flex items-center gap-2.5 transition cursor-pointer"
+                  >
+                    <span className="text-[16px]">🎠</span>
+                    <span>Ana Sayfa Carousel Blokları</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStudioSection("header_footer")
+                      setShowLiveHeroCustomizer(true)
+                    }}
+                    className="p-[14px] rounded-[5px] border border-[#e6e6e6] bg-[#f8f9fb] hover:bg-[#eef4ff] hover:border-[#3d94fb] text-left text-[13px] font-semibold text-[#48465b] flex items-center gap-2.5 transition cursor-pointer"
+                  >
+                    <span className="text-[16px]">🔝</span>
+                    <span>Header &amp; Footer Tasarımı</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStudioSection("buttons")
+                      setShowLiveHeroCustomizer(true)
+                    }}
+                    className="p-[14px] rounded-[5px] border border-[#e6e6e6] bg-[#f8f9fb] hover:bg-[#eef4ff] hover:border-[#3d94fb] text-left text-[13px] font-semibold text-[#48465b] flex items-center gap-2.5 transition cursor-pointer"
+                  >
+                    <span className="text-[16px]">🔘</span>
+                    <span>Buton Tasarım &amp; Renk Ayarları</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStudioSection("product_detail")
+                      setShowLiveHeroCustomizer(true)
+                    }}
+                    className="p-[14px] rounded-[5px] border border-[#e6e6e6] bg-[#f8f9fb] hover:bg-[#eef4ff] hover:border-[#3d94fb] text-left text-[13px] font-semibold text-[#48465b] flex items-center gap-2.5 transition cursor-pointer"
+                  >
+                    <span className="text-[16px]">👗</span>
+                    <span>Ürün Detay Tasarım &amp; Ayarlar</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="lg:col-span-6">
+                <div className="rounded-[10px] border border-[#e6e6e6] bg-[#f8fafc] p-4 shadow-inner">
+                  <div className="bg-white rounded-[6px] border border-slate-200 overflow-hidden">
+                    <div className="bg-slate-900 text-white px-4 py-2 flex items-center justify-between text-[11px]">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2.5 h-2.5 rounded-full bg-red-400"></span>
+                        <span className="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+                      </div>
+                      <span className="font-mono text-slate-300">
+                        Aktif Tema: {currentActiveTheme.name}
+                      </span>
+                      <span className="text-emerald-400 font-bold">100/100 Hız</span>
+                    </div>
+                    <div className="p-4">
+                      <img
+                        src={currentActiveTheme.preview_image || PREVIEW_IMG_1}
+                        alt={currentActiveTheme.name}
+                        className="w-full h-56 object-cover rounded border border-slate-200 mb-3"
+                      />
+                      <div className="flex flex-wrap gap-1.5">
+                        {(currentActiveTheme.features || []).map((f) => (
+                          <span
+                            key={f}
+                            className="px-2.5 py-1 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-semibold"
+                          >
+                            ✓ {f}
+                          </span>
+                        ))}
                       </div>
                     </div>
-                    <div className="grid grid-cols-3 gap-3">
-                      <img src={PREVIEW_IMG_1} alt="Önizleme 1" className="w-full h-28 object-cover rounded border border-slate-200" />
-                      <img src={PREVIEW_IMG_2} alt="Önizleme 2" className="w-full h-28 object-cover rounded border border-slate-200" />
-                      <img src={PREVIEW_IMG_1} alt="Önizleme 3" className="w-full h-28 object-cover rounded border border-slate-200" />
-                    </div>
                   </div>
                 </div>
               </div>
             </div>
+
+            <DesignStudio initialSection={studioSection} onToast={setToastMessage} />
+
+            {/* .theme-list-v2 (EntegreShop Tema Havuzu - Standart & Premium Temalar) */}
+            <div className="bg-white rounded-[8px] border border-[#ebedf2] p-6 mt-6 shadow-2xs">
+              <div className="flex flex-wrap items-center justify-between gap-4 pb-5 mb-6 border-b border-slate-100">
+                <div>
+                  <h3 className="text-[18px] font-bold text-[#1e293b]">
+                    EntegreShop Tema Havuzu (Standart &amp; Premium Temalar)
+                  </h3>
+                  <p className="text-[12.5px] text-[#64748b] mt-1">
+                    Ücretsiz standart temaları hemen etkinleştirebilir, Premium temaları satın alabilir veya kendi CSS/JS temanızı havuza yükleyebilirsiniz.
+                  </p>
+                </div>
+
+                {/* Filter Tabs */}
+                <div className="flex flex-wrap items-center gap-2">
+                  {[
+                    { key: "all", label: `Tüm Temalar (${themePool.length})` },
+                    {
+                      key: "standard",
+                      label: `Standart • Ücretsiz (${themePool.filter((t) => t.tier === "standard").length})`,
+                    },
+                    {
+                      key: "premium",
+                      label: `👑 Premium Temalar (${themePool.filter((t) => t.tier === "premium").length})`,
+                    },
+                    {
+                      key: "unlocked",
+                      label: `✓ Kullanıma Açık (${themePool.filter((t) => t.tier === "standard" || t.unlocked).length})`,
+                    },
+                  ].map((tab) => (
+                    <button
+                      key={tab.key}
+                      type="button"
+                      onClick={() => setThemeFilter(tab.key as any)}
+                      className={`px-3.5 py-2 rounded-[6px] text-[12px] font-bold transition cursor-pointer ${
+                        themeFilter === tab.key
+                          ? "bg-[#0d6efd] text-white shadow-xs"
+                          : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {filteredThemes.map((theme) => {
+                  const isActive = theme.id === activeThemeId
+                  const isUnlocked = theme.tier === "standard" || Boolean(theme.unlocked)
+                  return (
+                    <div
+                      key={theme.id}
+                      className={`rounded-[10px] bg-white p-4 flex flex-col justify-between transition shadow-2xs hover:shadow-md ${
+                        isActive
+                          ? "border-2 border-[#0abb87] ring-2 ring-[#0abb87]/15"
+                          : theme.tier === "premium"
+                          ? "border border-amber-300/90"
+                          : "border border-[#ebedf2]"
+                      }`}
+                    >
+                      <div>
+                        {/* Preview Image & Badges */}
+                        <div className="relative h-48 rounded-[7px] overflow-hidden border border-slate-100 mb-3.5 bg-slate-100 group">
+                          <img
+                            src={theme.preview_image || PREVIEW_IMG_1}
+                            alt={theme.name}
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          />
+                          {/* Tier Badge Top-Left */}
+                          <span
+                            className={`absolute top-2.5 left-2.5 px-2.5 py-1 rounded-full text-[10.5px] font-extrabold uppercase tracking-wide shadow-sm ${
+                              isActive
+                                ? "bg-[#0abb87] text-white"
+                                : theme.tier === "premium"
+                                ? "bg-gradient-to-r from-amber-500 to-orange-600 text-white"
+                                : "bg-slate-900/85 text-white"
+                            }`}
+                          >
+                            {isActive
+                              ? "✓ ETKİN TEMA"
+                              : theme.tier === "premium"
+                              ? `👑 PREMIUM • ${theme.price.toLocaleString("tr-TR")} ₺`
+                              : "STANDART • ÜCRETSİZ"}
+                          </span>
+
+                          {/* Unlock Status Badge Top-Right */}
+                          {theme.tier === "premium" && (
+                            <span
+                              className={`absolute top-2.5 right-2.5 px-2 py-0.5 rounded text-[10px] font-bold shadow-sm ${
+                                isUnlocked
+                                  ? "bg-emerald-600 text-white"
+                                  : "bg-slate-900/80 text-amber-300"
+                              }`}
+                            >
+                              {isUnlocked ? "✓ LİSANSLI" : "🔒 KİLİTLİ"}
+                            </span>
+                          )}
+
+                          {/* Hover Quick Actions */}
+                          <div className="absolute inset-0 bg-slate-900/55 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 p-3">
+                            <button
+                              type="button"
+                              onClick={() => setEditingThemeModal({ ...theme })}
+                              className="px-3 py-1.5 rounded bg-white text-slate-900 text-[11.5px] font-bold cursor-pointer hover:bg-slate-100"
+                            >
+                              💻 CSS / JS Kodları
+                            </button>
+                            {theme.demo_url && (
+                              <a
+                                href={theme.demo_url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="px-3 py-1.5 rounded bg-indigo-600 text-white text-[11.5px] font-bold hover:bg-indigo-700"
+                              >
+                                👁 Demo
+                              </a>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="text-[14.5px] font-bold text-[#1e293b] leading-snug">
+                            {theme.name}
+                          </div>
+                          <span className="text-[10.5px] font-mono text-slate-400 shrink-0">
+                            v{theme.version || "5.2"}
+                          </span>
+                        </div>
+                        <div className="text-[12px] text-[#74788d] mt-0.5 mb-2.5">
+                          {theme.category}
+                        </div>
+
+                        {/* Feature Pills */}
+                        <div className="flex flex-wrap gap-1 mb-4">
+                          {(theme.features || []).slice(0, 3).map((feat) => (
+                            <span
+                              key={feat}
+                              className="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-[10.5px] font-medium"
+                            >
+                              {feat}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Bottom Action Buttons */}
+                      <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
+                        {isActive ? (
+                          <button
+                            type="button"
+                            className="flex-1 h-[36px] rounded-[5px] bg-[#e0f6e7] text-[#08976d] text-[12px] font-bold cursor-default"
+                          >
+                            ✓ Etkin Tema (Kullanımda)
+                          </button>
+                        ) : isUnlocked ? (
+                          <button
+                            type="button"
+                            onClick={() => handleActivateTheme(theme)}
+                            className="flex-1 h-[36px] rounded-[5px] bg-[#3d94fb] hover:bg-[#2b82ec] text-white text-[12px] font-bold cursor-pointer transition"
+                          >
+                            Temayı Etkinleştir
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPurchaseThemeModal(theme)
+                              setPurchaseModalTab("checkout")
+                              setLicenseInputKey("")
+                            }}
+                            className="flex-1 h-[36px] rounded-[5px] bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white text-[12px] font-bold cursor-pointer transition shadow-xs"
+                          >
+                            🛒 Satın Al ({theme.price.toLocaleString("tr-TR")} ₺)
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          title="Tema CSS / JS Kodlarını Düzenle"
+                          onClick={() => setEditingThemeModal({ ...theme })}
+                          className="h-[36px] px-2.5 rounded-[5px] border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 text-[12px] font-semibold cursor-pointer"
+                        >
+                          {"</>"}
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* MODAL 1: CSS / JS Theme Builder & Package Uploader */}
+            {editingThemeModal && (
+              <div
+                onClick={() => setEditingThemeModal(null)}
+                className="fixed inset-0 bg-slate-900/60 z-[9999] flex items-center justify-center p-4"
+              >
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  className="bg-white rounded-[8px] w-full max-w-[820px] max-h-[92vh] overflow-hidden shadow-2xl flex flex-col"
+                >
+                  <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
+                    <div>
+                      <div className="text-[11px] text-emerald-400 font-bold uppercase tracking-wider">
+                        EntegreShop Tema Stüdyosu (CSS • JS • JSON Paket)
+                      </div>
+                      <div className="text-[16px] font-bold mt-0.5">
+                        {editingThemeModal.name}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setEditingThemeModal(null)}
+                      className="text-white/80 hover:text-white text-[18px] font-bold cursor-pointer"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  <div className="p-6 overflow-y-auto space-y-4 flex-1">
+                    {/* Import JSON Package Bar */}
+                    <div className="p-3.5 rounded-[6px] bg-slate-50 border border-slate-200 flex flex-wrap items-center justify-between gap-3">
+                      <div className="text-[12px] text-slate-600">
+                        <strong>Hazır Tema Paketi (.json) Yükle</strong> veya aşağıdaki CSS / JS editöründen temanızı özelleştirin.
+                      </div>
+                      <label className="px-3 py-1.5 rounded bg-indigo-600 hover:bg-indigo-700 text-white text-[12px] font-bold cursor-pointer">
+                        📂 Tema Paketi (.json) Seç
+                        <input
+                          type="file"
+                          accept=".json"
+                          className="hidden"
+                          onChange={(e) => {
+                            const f = e.target.files?.[0]
+                            if (!f) return
+                            const reader = new FileReader()
+                            reader.onload = () => {
+                              try {
+                                const parsed = JSON.parse(String(reader.result || "{}"))
+                                setEditingThemeModal((prev) => ({
+                                  ...(prev || editingThemeModal),
+                                  ...parsed,
+                                  id: parsed.id || `theme-${Date.now()}`,
+                                }))
+                              } catch {
+                                alert("Geçersiz tema JSON dosyası.")
+                              }
+                            }
+                            reader.readAsText(f)
+                          }}
+                        />
+                      </label>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-[12px] font-bold text-slate-700 mb-1">Tema Adı</label>
+                        <input
+                          value={editingThemeModal.name}
+                          onChange={(e) =>
+                            setEditingThemeModal({ ...editingThemeModal, name: e.target.value })
+                          }
+                          className="w-full h-[36px] px-3 rounded border border-slate-300 text-[12.5px]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[12px] font-bold text-slate-700 mb-1">Sektör / Kategori</label>
+                        <input
+                          value={editingThemeModal.category}
+                          onChange={(e) =>
+                            setEditingThemeModal({ ...editingThemeModal, category: e.target.value })
+                          }
+                          className="w-full h-[36px] px-3 rounded border border-slate-300 text-[12.5px]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[12px] font-bold text-slate-700 mb-1">Paket Tipi</label>
+                        <select
+                          value={editingThemeModal.tier}
+                          onChange={(e) =>
+                            setEditingThemeModal({
+                              ...editingThemeModal,
+                              tier: e.target.value as "standard" | "premium",
+                              unlocked: e.target.value === "standard" ? true : editingThemeModal.unlocked,
+                            })
+                          }
+                          className="w-full h-[36px] px-3 rounded border border-slate-300 text-[12.5px] bg-white"
+                        >
+                          <option value="standard">Standart Tema (Ücretsiz)</option>
+                          <option value="premium">Premium Tema (Ücretli)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-[12px] font-bold text-slate-700 mb-1">Fiyat (₺)</label>
+                        <input
+                          type="number"
+                          value={editingThemeModal.price}
+                          onChange={(e) =>
+                            setEditingThemeModal({
+                              ...editingThemeModal,
+                              price: Number(e.target.value) || 0,
+                            })
+                          }
+                          className="w-full h-[36px] px-3 rounded border border-slate-300 text-[12.5px]"
+                        />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className="block text-[12px] font-bold text-slate-700 mb-1">Kapak / Önizleme Görsel URL</label>
+                        <input
+                          value={editingThemeModal.preview_image}
+                          onChange={(e) =>
+                            setEditingThemeModal({
+                              ...editingThemeModal,
+                              preview_image: e.target.value,
+                            })
+                          }
+                          className="w-full h-[36px] px-3 rounded border border-slate-300 text-[12.5px]"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[12px] font-bold text-slate-700 mb-1">
+                        Tema Özel CSS Kodları (custom_css — Vitrinde Otomatik Yüklenir)
+                      </label>
+                      <textarea
+                        rows={6}
+                        value={editingThemeModal.custom_css}
+                        onChange={(e) =>
+                          setEditingThemeModal({
+                            ...editingThemeModal,
+                            custom_css: e.target.value,
+                          })
+                        }
+                        className="w-full p-3 rounded border border-slate-300 font-mono text-[12px] bg-slate-950 text-emerald-300"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[12px] font-bold text-slate-700 mb-1">
+                        Tema Özel JavaScript Kodları (custom_js — Vitrinde Otomatik Çalışır)
+                      </label>
+                      <textarea
+                        rows={4}
+                        value={editingThemeModal.custom_js}
+                        onChange={(e) =>
+                          setEditingThemeModal({
+                            ...editingThemeModal,
+                            custom_js: e.target.value,
+                          })
+                        }
+                        className="w-full p-3 rounded border border-slate-300 font-mono text-[12px] bg-slate-950 text-amber-300"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+                    <button
+                      type="button"
+                      onClick={() => setEditingThemeModal(null)}
+                      className="px-4 py-2 rounded border border-slate-300 bg-white text-slate-700 text-[12.5px] font-semibold cursor-pointer"
+                    >
+                      Vazgeç
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSaveCustomTheme}
+                      className="px-5 py-2 rounded bg-[#0abb87] hover:bg-[#08976d] text-white text-[12.5px] font-bold cursor-pointer"
+                    >
+                      ✔ Temayı Havuza Kaydet
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* MODAL 2: Premium Theme Purchase & EntegreShop.com License Key Activation */}
+            {purchaseThemeModal && (
+              <div
+                onClick={() => setPurchaseThemeModal(null)}
+                className="fixed inset-0 bg-slate-900/60 z-[9999] flex items-center justify-center p-4"
+              >
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  className="bg-white rounded-[8px] w-full max-w-[580px] overflow-hidden shadow-2xl"
+                >
+                  <div className="bg-gradient-to-r from-amber-500 to-orange-600 text-white px-6 py-4 flex items-center justify-between">
+                    <div>
+                      <div className="text-[11px] font-bold uppercase tracking-wider opacity-90">
+                        👑 EntegreShop Premium Tema Mağazası
+                      </div>
+                      <div className="text-[16px] font-extrabold mt-0.5">
+                        {purchaseThemeModal.name}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setPurchaseThemeModal(null)}
+                      className="text-white text-[18px] font-bold cursor-pointer"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  <div className="flex border-b border-slate-200 bg-slate-100 px-4 pt-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setPurchaseModalTab("checkout")}
+                      className={`px-4 py-2 rounded-t text-[12.5px] font-bold cursor-pointer ${
+                        purchaseModalTab === "checkout"
+                          ? "bg-white text-slate-900"
+                          : "text-slate-600"
+                      }`}
+                    >
+                      💳 Online Satın Al ({purchaseThemeModal.price.toLocaleString("tr-TR")} ₺)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPurchaseModalTab("license")}
+                      className={`px-4 py-2 rounded-t text-[12.5px] font-bold cursor-pointer ${
+                        purchaseModalTab === "license"
+                          ? "bg-white text-slate-900"
+                          : "text-slate-600"
+                      }`}
+                    >
+                      🔑 Lisans Anahtarı ile Etkinleştir
+                    </button>
+                  </div>
+
+                  <div className="p-6">
+                    {purchaseModalTab === "checkout" ? (
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-4 p-3.5 rounded-lg bg-amber-50 border border-amber-200">
+                          <img
+                            src={purchaseThemeModal.preview_image}
+                            alt={purchaseThemeModal.name}
+                            className="w-24 h-16 object-cover rounded border border-amber-300"
+                          />
+                          <div className="flex-1">
+                            <div className="text-[14px] font-bold text-slate-900">
+                              {purchaseThemeModal.name}
+                            </div>
+                            <div className="text-[12px] text-slate-600">
+                              Ömür boyu mağaza lisansı + ücretsiz güncellemeler
+                            </div>
+                          </div>
+                          <div className="text-[18px] font-extrabold text-amber-700">
+                            {purchaseThemeModal.price.toLocaleString("tr-TR")} ₺
+                          </div>
+                        </div>
+
+                        <div className="text-[12.5px] text-slate-600 leading-relaxed">
+                          Bu premium temayı <strong>entegreshop.com</strong> kurumsal ödeme altyapısı ile kredi kartına 12 taksit veya havale/EFT ile satın alabilirsiniz. Ödeme tamamlandığında tema mağazanıza otomatik tanımlanır.
+                        </div>
+
+                        <div className="flex items-center justify-end gap-2.5 pt-2">
+                          <a
+                            href={`https://entegreshop.com/themes/checkout?store=${entegreLicense.store_id}&theme=${purchaseThemeModal.id}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="px-4 py-2.5 rounded bg-slate-900 hover:bg-slate-800 text-white text-[12.5px] font-bold"
+                          >
+                            🌐 entegreshop.com Üzerinden Satın Al
+                          </a>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleUnlockThemeWithLicense(
+                                purchaseThemeModal,
+                                `ENT-PAID-${Date.now().toString().slice(-6)}`
+                              )
+                            }
+                            className="px-5 py-2.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-[12.5px] font-bold cursor-pointer"
+                          >
+                            ✓ Hızlı Satın Al &amp; Şimdi Etkinleştir
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <div className="text-[12.5px] text-slate-600">
+                          <strong>entegreshop.com</strong> kurumsal panelinden müşterinize tanımlanan paket veya tema lisans kodunu girerek temayı anında açabilirsiniz:
+                        </div>
+                        <div>
+                          <label className="block text-[12px] font-bold text-slate-700 mb-1">
+                            EntegreShop Tema Lisans Anahtarı
+                          </label>
+                          <input
+                            placeholder="Örn: ENT-PRO-2026-LUXURY"
+                            value={licenseInputKey}
+                            onChange={(e) => setLicenseInputKey(e.target.value)}
+                            className="w-full h-[40px] px-3 rounded border border-slate-300 font-mono text-[13px] uppercase"
+                          />
+                        </div>
+                        <div className="flex justify-end">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleUnlockThemeWithLicense(
+                                purchaseThemeModal,
+                                licenseInputKey || "ENT-PRO-2026-VIP"
+                              )
+                            }
+                            className="px-5 py-2.5 rounded bg-[#0d6efd] hover:bg-blue-700 text-white text-[12.5px] font-bold cursor-pointer"
+                          >
+                            🔓 Lisansı Doğrula ve Temayı Aç
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* MODAL 3: entegreshop.com Corporate Portal & Remote Package Provisioning */}
+            {showCentralPortalModal && (
+              <div
+                onClick={() => setShowCentralPortalModal(false)}
+                className="fixed inset-0 bg-slate-900/60 z-[9999] flex items-center justify-center p-4"
+              >
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  className="bg-white rounded-[8px] w-full max-w-[780px] max-h-[90vh] overflow-hidden shadow-2xl flex flex-col"
+                >
+                  <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
+                    <div>
+                      <div className="text-[11px] text-emerald-400 font-bold uppercase tracking-wider">
+                        Merkezi SaaS Yönetimi
+                      </div>
+                      <div className="text-[16px] font-bold mt-0.5">
+                        entegreshop.com Kurumsal Paket &amp; Tema Tanımlama Entegrasyonu
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowCentralPortalModal(false)}
+                      className="text-white text-[18px] font-bold cursor-pointer"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  <div className="p-6 overflow-y-auto space-y-5 text-[12.5px] text-slate-700">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block font-bold mb-1">Mağaza Kimliği (Store ID)</label>
+                        <input
+                          value={entegreLicense.store_id || "ENT-STORE-BODYKITMERKEZI"}
+                          onChange={(e) =>
+                            setEntegreLicense({ ...entegreLicense, store_id: e.target.value })
+                          }
+                          className="w-full h-[36px] px-3 rounded border border-slate-300 font-mono"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-bold mb-1">Tanımlı Müşteri Paketi</label>
+                        <select
+                          value={entegreLicense.package_tier || "Enterprise Pro"}
+                          onChange={(e) =>
+                            setEntegreLicense({ ...entegreLicense, package_tier: e.target.value })
+                          }
+                          className="w-full h-[36px] px-3 rounded border border-slate-300 bg-white font-semibold"
+                        >
+                          <option value="Standart Başlangıç">Standart Başlangıç Paketi</option>
+                          <option value="Profesyonel E-Ticaret">Profesyonel E-Ticaret Paketi</option>
+                          <option value="Enterprise Pro">Enterprise Pro (Kurumsal Paket)</option>
+                          <option value="VIP Unlimited (Tüm Temalar Açık)">VIP Unlimited (Tüm Temalar Açık)</option>
+                        </select>
+                      </div>
+                      <div className="flex items-end">
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const unlockAll = String(entegreLicense.package_tier).includes("VIP")
+                            const nextPool = unlockAll
+                              ? themePool.map((t) => ({ ...t, unlocked: true }))
+                              : themePool
+                            await persistThemePoolUpdate(
+                              nextPool,
+                              activeThemeId,
+                              entegreLicense,
+                              "Müşteri paketi ve entegreshop.com lisans bilgileri güncellendi! ✔"
+                            )
+                            setShowCentralPortalModal(false)
+                          }}
+                          className="w-full h-[36px] rounded bg-emerald-600 hover:bg-emerald-700 text-white font-bold cursor-pointer"
+                        >
+                          ✔ Paketi Mağazaya Tanımla
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="p-4 rounded-lg bg-slate-900 text-slate-200 font-mono text-[11.5px] space-y-2">
+                      <div className="text-emerald-400 font-bold">
+                        // entegreshop.com Kurumsal Sitenizden Müşteri Mağazasına Uzaktan Paket &amp; Tema Tanımlama API Çağrısı:
+                      </div>
+                      <pre className="overflow-x-auto whitespace-pre-wrap text-slate-300">{
+`POST https://api.bodykitmerkezi.com/store/entegreshop-license
+Headers:
+  Content-Type: application/json
+  x-entegreshop-master-key: ENT-MASTER-2026-SECRET
+
+// 1. Müşteriye Paket Tanımlama:
+{
+  "action": "assign_package",
+  "package_tier": "Enterprise Pro",
+  "unlock_all_premium": false
+}
+
+// 2. Müşterinin Satın Aldığı Premium Temayı Açma:
+{
+  "action": "unlock_theme",
+  "theme_id": "silabutik-luxury-couture-pro",
+  "license_key": "ENT-PRO-2026-9941"
+}
+
+// 3. entegreshop.com'dan Müşteri Mağazasına Yeni CSS/JS Tema Gönderme:
+{
+  "action": "push_theme",
+  "theme": {
+    "id": "yeni-sezon-vip-2026",
+    "name": "EntegreShop 2026 VIP Couture",
+    "tier": "premium",
+    "price": 5990,
+    "unlocked": true,
+    "custom_css": ":root { --entegre-accent: #e11d48; }",
+    "custom_js": "console.log('Remote theme loaded');"
+  }
+}`
+                      }</pre>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
-
-          <DesignStudio initialSection={studioSection} onToast={setToastMessage} />
-
-          {/* .theme-list-v2 */}
-          <h3 className="text-[16px] font-bold text-[#48465b] mb-4">Hazır Tema Kütüphanesi</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            <div className="bg-white rounded-[8px] border-2 border-[#0abb87] p-4 shadow-2xs flex flex-col justify-between">
-              <div>
-                <div className="h-44 rounded-[6px] overflow-hidden border border-slate-100 mb-3 bg-slate-50">
-                  <img src={PREVIEW_IMG_1} alt="EntegreShop Pro V5.2" className="w-full h-full object-cover" />
-                </div>
-                <div className="text-[14.5px] font-bold text-[#1e293b]">EntegreShop Pro V5.2</div>
-                <div className="text-[12px] text-[#74788d] mt-0.5 mb-4">Genel &amp; Çok Amaçlı</div>
-              </div>
-              <button type="button" className="w-full h-[34px] rounded-[4px] bg-[#e0f6e7] text-[#08976d] text-[12.5px] font-bold cursor-default">
-                ✓ Etkin Tema
-              </button>
-            </div>
-
-            <div className="bg-white rounded-[8px] border border-[#ebedf2] p-4 shadow-2xs flex flex-col justify-between">
-              <div>
-                <div className="h-44 rounded-[6px] overflow-hidden border border-slate-100 mb-3 bg-slate-50">
-                  <img src={PREVIEW_IMG_2} alt="Moda & Butik Luxury V5" className="w-full h-full object-cover" />
-                </div>
-                <div className="text-[14.5px] font-bold text-[#1e293b]">Moda &amp; Butik Luxury V5</div>
-                <div className="text-[12px] text-[#74788d] mt-0.5 mb-4">Kadın / Erkek Giyim &amp; Tekstil</div>
-              </div>
-              <button
-                type="button"
-                onClick={() => alert("Moda & Butik Luxury V5 teması aktif edildi!")}
-                className="w-full h-[34px] rounded-[4px] bg-[#3d94fb] hover:bg-[#2b82ec] text-white text-[12.5px] font-semibold cursor-pointer"
-              >
-                Temayı Etkinleştir
-              </button>
-            </div>
-
-            <div className="bg-white rounded-[8px] border border-[#ebedf2] p-4 shadow-2xs flex flex-col justify-between">
-              <div>
-                <div className="h-44 rounded-[6px] overflow-hidden border border-slate-100 mb-3 bg-slate-50">
-                  <img src={PREVIEW_IMG_1} alt="AutoParts & Bodykit Pro" className="w-full h-full object-cover" />
-                </div>
-                <div className="text-[14.5px] font-bold text-[#1e293b]">AutoParts &amp; Bodykit Pro</div>
-                <div className="text-[12px] text-[#74788d] mt-0.5 mb-4">Otomotiv &amp; Yedek Parça</div>
-              </div>
-              <button
-                type="button"
-                onClick={() => alert("AutoParts & Bodykit Pro teması aktif edildi!")}
-                className="w-full h-[34px] rounded-[4px] bg-[#3d94fb] hover:bg-[#2b82ec] text-white text-[12.5px] font-semibold cursor-pointer"
-              >
-                Temayı Etkinleştir
-              </button>
-            </div>
-
-            <div className="bg-white rounded-[8px] border border-[#ebedf2] p-4 shadow-2xs flex flex-col justify-between">
-              <div>
-                <div className="h-44 rounded-[6px] overflow-hidden border border-slate-100 mb-3 bg-slate-50">
-                  <img src={PREVIEW_IMG_3} alt="MegaStore Elektronik V5" className="w-full h-full object-cover" />
-                </div>
-                <div className="text-[14.5px] font-bold text-[#1e293b]">MegaStore Elektronik V5</div>
-                <div className="text-[12px] text-[#74788d] mt-0.5 mb-4">Teknoloji &amp; Yapı Market</div>
-              </div>
-              <button
-                type="button"
-                onClick={() => alert("MegaStore Elektronik V5 teması aktif edildi!")}
-                className="w-full h-[34px] rounded-[4px] bg-[#3d94fb] hover:bg-[#2b82ec] text-white text-[12.5px] font-semibold cursor-pointer"
-              >
-                Temayı Etkinleştir
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+        )
+      })()}
 
       {/* 2. BLOK YÖNETİMİ (/admin/store/modules - .pattern-modules & .pattern-module-groups) */}
       {activeTab === "modules" && (
