@@ -125,11 +125,13 @@ export async function addToCart({
   quantity,
   countryCode,
   metadata,
+  unitPrice,
 }: {
   variantId: string
   quantity: number
   countryCode: string
   metadata?: Record<string, unknown>
+  unitPrice?: number
 }) {
   if (!variantId) {
     throw new Error("Missing variant ID when adding to cart")
@@ -145,7 +147,37 @@ export async function addToCart({
     ...(await getAuthHeaders()),
   }
 
+  const backendUrl =
+    process.env.MEDUSA_BACKEND_URL ||
+    process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL ||
+    "http://localhost:9000"
+  const pubKey =
+    process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY ||
+    "pk_2c282ff4870aa9a458b774fc276908462c41f9626349330ff535a7bce4852274"
+
   const createItem = async () => {
+    if (typeof unitPrice === "number" && unitPrice > 0) {
+      const customRes = await fetch(`${backendUrl}/store/custom/add-with-services`, {
+        method: "POST",
+        headers: {
+          ...headers,
+          "Content-Type": "application/json",
+          ...(pubKey ? { "x-publishable-api-key": pubKey } : {}),
+        },
+        body: JSON.stringify({
+          cart_id: cart.id,
+          variant_id: variantId,
+          quantity,
+          unit_price: unitPrice,
+          metadata: metadata || {},
+        }),
+        cache: "no-store",
+      })
+      if (customRes.ok) {
+        return
+      }
+    }
+
     await sdk.store.cart.createLineItem(
       cart.id,
       {
@@ -163,11 +195,6 @@ export async function addToCart({
   } catch (firstErr: any) {
     // Auto-heal variants that have manage_inventory=true with 0 stock
     try {
-      const backendUrl =
-        process.env.MEDUSA_BACKEND_URL ||
-        process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL ||
-        "http://localhost:9000"
-      const pubKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
       await fetch(`${backendUrl}/store/custom/ensure-stock`, {
         method: "POST",
         headers: {

@@ -72,6 +72,20 @@ const Item = ({ item, type = "full", currencyCode }: ItemProps) => {
           </Text>
         </div>
         <LineItemOptions variant={item.variant} data-testid="product-variant" />
+        {Boolean(item.metadata?.boya_selected || item.metadata?.montaj_selected) && (
+          <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+            {Boolean(item.metadata?.boya_selected) && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-red-50 border border-red-200 text-[#E50000] text-[11px] font-semibold">
+                + Boya Hizmeti (₺{Number(item.metadata?.boya_price_tl || 1800).toLocaleString("tr-TR")})
+              </span>
+            )}
+            {Boolean(item.metadata?.montaj_selected) && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-zinc-100 border border-zinc-300 text-zinc-800 text-[11px] font-semibold">
+                + Montaj Hizmeti (₺{Number(item.metadata?.montaj_price_tl || 1200).toLocaleString("tr-TR")})
+              </span>
+            )}
+          </div>
+        )}
       </Table.Cell>
 
       {type === "full" && (
