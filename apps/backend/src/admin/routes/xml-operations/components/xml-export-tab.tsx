@@ -236,8 +236,14 @@ const XmlExportPage = () => {
   }
 
   const getFeedUrl = (id: string) => {
-    const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://bodykitmerkezi.com"
-    return `${baseUrl}/export/${id}`
+    if (typeof window !== "undefined") {
+      const host = window.location.hostname.replace(/^api\./i, "")
+      if (host && host !== "localhost" && host !== "127.0.0.1") {
+        const wwwHost = host.startsWith("www.") ? host : `www.${host}`
+        return `https://${wwwHost}/export/${id}`
+      }
+    }
+    return `https://www.bodykitmerkezi.com/export/${id}`
   }
 
   const copyUrl = (url: string) => {
