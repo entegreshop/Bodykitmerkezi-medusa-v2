@@ -70,10 +70,7 @@ export function selectCleanProductImage(product: HttpTypes.StoreProduct): string
       candidates.push(img.url)
     }
   }
-  const directClean = candidates.find(
-    (u) => !isRedCoverTemplateUrl(u) && !u.includes("/plus/") && !u.includes("-showroom.")
-  )
-  const clean = directClean || candidates.find((u) => !isRedCoverTemplateUrl(u))
+  const clean = candidates.find((u) => !isRedCoverTemplateUrl(u))
   return normalizeCleanImageUrl(clean || candidates[0] || "/placeholder.png")
 }
 

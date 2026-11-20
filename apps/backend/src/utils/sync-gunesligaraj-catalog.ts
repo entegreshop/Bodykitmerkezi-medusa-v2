@@ -335,13 +335,14 @@ export async function syncGunesliGarajCatalog(container: MedusaContainer) {
           }
         }
         if (
+          (item.images && item.images.length > 0) ||
           (item.thumbnail && existing.thumbnail !== item.thumbnail) ||
           (item.description && existing.description !== itemDesc)
         ) {
           thumbnailUpdates.push({
             productId: existing.id,
-            thumbnail: item.thumbnail || existing.thumbnail,
-            images: item.images || [item.thumbnail],
+            thumbnail: item.thumbnail || item.images?.[0] || existing.thumbnail,
+            images: item.images && item.images.length > 0 ? item.images : [item.thumbnail],
             description: itemDesc,
           })
         }
@@ -476,22 +477,23 @@ export async function syncGunesliGarajCatalog(container: MedusaContainer) {
             .catch(() => {})
         }
 
-        // Ensure clean gallery images exist in `image` table for this product
-        const existingImgsRes = await client
-          .query(`SELECT url FROM image WHERE product_id = $1 AND deleted_at IS NULL`, [tu.productId])
-          .catch(() => ({ rows: [] }))
-        const existingUrlSet = new Set((existingImgsRes?.rows || []).map((r: any) => r.url))
+        // Replace product gallery images with the exact ordered catalog images (all images of the product)
+        if (Array.isArray(tu.images) && tu.images.length > 0) {
+          await client
+            .query(`DELETE FROM image WHERE product_id = $1`, [tu.productId])
+            .catch(() => {})
 
-        for (let rIdx = 0; rIdx < (tu.images || []).length; rIdx++) {
-          const imgUrl = tu.images[rIdx]
-          if (imgUrl && !existingUrlSet.has(imgUrl)) {
-            const imgId = `img_clean_${tu.productId.slice(-10)}_${rIdx}_${Math.floor(1000 + Math.random() * 8999)}`
-            await client
-              .query(
-                `INSERT INTO image (id, url, rank, product_id, created_at, updated_at) VALUES ($1, $2, $3, $4, NOW(), NOW()) ON CONFLICT DO NOTHING`,
-                [imgId, imgUrl, rIdx, tu.productId]
-              )
-              .catch(() => {})
+          for (let rIdx = 0; rIdx < tu.images.length; rIdx++) {
+            const imgUrl = tu.images[rIdx]
+            if (imgUrl) {
+              const imgId = `img_clean_${tu.productId.slice(-10)}_${rIdx}_${Math.floor(1000 + Math.random() * 8999)}`
+              await client
+                .query(
+                  `INSERT INTO image (id, url, rank, product_id, created_at, updated_at) VALUES ($1, $2, $3, $4, NOW(), NOW()) ON CONFLICT DO NOTHING`,
+                  [imgId, imgUrl, rIdx, tu.productId]
+                )
+                .catch(() => {})
+            }
           }
         }
       }

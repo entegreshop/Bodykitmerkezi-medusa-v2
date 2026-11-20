@@ -46,13 +46,9 @@ const Thumbnail: React.FC<ThumbnailProps> = ({
   className,
   "data-testid": dataTestid,
 }) => {
-  const directCleanFromGallery = (images || [])
-    .map((i: any) => i?.url)
-    .find((u: string) => u && !isRedCoverTemplateUrl(u) && !u.includes("/plus/") && !u.includes("-showroom."))
-  const cleanFromGallery =
-    directCleanFromGallery || (images || []).map((i: any) => i?.url).find((u: string) => u && !isRedCoverTemplateUrl(u))
+  const cleanFromGallery = (images || []).map((i: any) => i?.url).find((u: string) => u && !isRedCoverTemplateUrl(u))
   const rawInitialImage =
-    thumbnail && !isRedCoverTemplateUrl(thumbnail) && !thumbnail.includes("/plus/") && !thumbnail.includes("-showroom.")
+    thumbnail && !isRedCoverTemplateUrl(thumbnail)
       ? thumbnail
       : cleanFromGallery || thumbnail || images?.[0]?.url
   const initialImage = normalizeCleanImageUrl(rawInitialImage)
