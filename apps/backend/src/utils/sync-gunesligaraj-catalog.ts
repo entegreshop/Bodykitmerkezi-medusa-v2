@@ -174,7 +174,26 @@ function loadJsonByName(fileName: string): GunesliGarajProductItem[] {
 }
 
 function loadCatalogJson(): GunesliGarajProductItem[] {
-  return loadJsonByName("gunesligaraj-catalog.json")
+  const gunesligaraj = loadJsonByName("gunesligaraj-catalog.json")
+  const kitgarajMissing = loadJsonByName("kitgaraj-missing-catalog.json")
+
+  const seenHandles = new Set<string>()
+  const seenTitles = new Set<string>()
+  const merged: GunesliGarajProductItem[] = []
+
+  // Priority 1: All 842 GunesliGaraj products with their full multi-image galleries
+  // Priority 2: Only the 169 missing products from KitGaraj (Egzoz Uclari, Tampon, Body Kit sets, etc.)
+  for (const item of [...gunesligaraj, ...kitgarajMissing]) {
+    if (!item || !item.handle || !item.title) continue
+    const hKey = item.handle.toLowerCase()
+    const tKey = item.title.trim().toLowerCase()
+    if (seenHandles.has(hKey) || seenTitles.has(tKey)) continue
+    seenHandles.add(hKey)
+    seenTitles.add(tKey)
+    merged.push(item)
+  }
+
+  return merged
 }
 
 let isSyncRunning = false
@@ -421,15 +440,16 @@ export async function syncGunesliGarajCatalog(container: MedusaContainer) {
       const client = new Client({ connectionString: process.env.DATABASE_URL })
       await client.connect()
 
-      // Remove any kitgaraj-only products and media.kitgaraj.com images so only GunesliGaraj products remain
-      await client
-        .query(`DELETE FROM image WHERE url LIKE '%media.kitgaraj.com%'`)
-        .catch(() => {})
-      await client
-        .query(
-          `UPDATE product SET deleted_at = NOW(), status = 'draft' WHERE (metadata->>'source' = 'kitgaraj' OR thumbnail LIKE '%media.kitgaraj.com%') AND deleted_at IS NULL`
-        )
-        .catch(() => {})
+      // Remove any duplicate kitgaraj products whose handle is NOT in our valid catalog
+      const validHandles = catalog.map((c) => c.handle.toLowerCase())
+      if (validHandles.length > 0) {
+        await client
+          .query(
+            `UPDATE product SET deleted_at = NOW(), status = 'draft' WHERE metadata->>'source' = 'kitgaraj' AND LOWER(handle) != ALL($1::text[]) AND deleted_at IS NULL`,
+            [validHandles]
+          )
+          .catch(() => {})
+      }
 
       // Remove only 1web/web cover templates from product image gallery (keep numbered gg-*-2.jpg and revision=178199 real car photos!)
       await client
