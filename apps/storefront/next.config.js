@@ -69,6 +69,14 @@ const nextConfig = {
       },
       {
         protocol: "https",
+        hostname: "media.kitgaraj.com",
+      },
+      {
+        protocol: "https",
+        hostname: "kitgaraj.com",
+      },
+      {
+        protocol: "https",
         hostname: "**",
       },
       {

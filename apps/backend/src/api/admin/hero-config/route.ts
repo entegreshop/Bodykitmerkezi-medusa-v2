@@ -7,16 +7,21 @@ const CONFIG_PATH = path.join(process.cwd(), "uploads", "hero-config-bodykit.jso
 
 const defaultCategories = [
   { id: "yeni-gelenler", handle: "yeni-gelenler", name: "Yeni Gelenler", icon: "sparkles", link: "/store", image_url: "", badge_text: "YENİ", active: true },
-  { id: "bodykit", handle: "bodykit", name: "Bodykit Setleri", icon: "car", link: "/categories/bodykit", image_url: "", badge_text: "POPÜLER", active: true },
-  { id: "on-tampon-eki", handle: "on-tampon-eki", name: "Ön Tampon Eki", icon: "bumper", link: "/categories/on-tampon-eki", image_url: "", badge_text: "", active: true },
-  { id: "on-lip", handle: "on-lip", name: "Ön Lip", icon: "bumper", link: "/categories/on-lip", image_url: "", badge_text: "", active: true },
-  { id: "difuzor", handle: "difuzor", name: "Arka Difüzör", icon: "exhaust", link: "/categories/difuzor", image_url: "", badge_text: "", active: true },
-  { id: "arka-ek", handle: "arka-ek", name: "Arka Ek", icon: "bumper", link: "/categories/arka-ek", image_url: "", badge_text: "", active: true },
+  { id: "arac-body-kit", handle: "arac-body-kit", name: "Araç Body Kit", icon: "car", link: "/categories/arac-body-kit", image_url: "", badge_text: "POPÜLER", active: true },
+  { id: "tampon", handle: "tampon", name: "Tampon", icon: "bumper", link: "/categories/tampon", image_url: "", badge_text: "", active: true },
   { id: "marspiyel", handle: "marspiyel", name: "Marşpiyel", icon: "sideskirt", link: "/categories/marspiyel", image_url: "", badge_text: "", active: true },
+  { id: "on-ek", handle: "on-ek", name: "Ön Ek", icon: "bumper", link: "/categories/on-ek", image_url: "", badge_text: "", active: true },
+  { id: "difuzor", handle: "difuzor", name: "Difüzör", icon: "exhaust", link: "/categories/difuzor", image_url: "", badge_text: "", active: true },
+  { id: "on-lip", handle: "on-lip", name: "Ön Lip", icon: "bumper", link: "/categories/on-lip", image_url: "", badge_text: "", active: true },
+  { id: "arka-ek", handle: "arka-ek", name: "Arka Ek", icon: "bumper", link: "/categories/arka-ek", image_url: "", badge_text: "", active: true },
   { id: "spoiler", handle: "spoiler", name: "Spoiler", icon: "wing", link: "/categories/spoiler", image_url: "", badge_text: "", active: true },
+  { id: "egzoz-uclari", handle: "egzoz-uclari", name: "Egzoz Uçları", icon: "exhaust", link: "/categories/egzoz-uclari", image_url: "", badge_text: "", active: true },
+  { id: "flap", handle: "flap", name: "Flap", icon: "wing", link: "/categories/flap", image_url: "", badge_text: "", active: true },
   { id: "bagaj-havuzu", handle: "bagaj-havuzu", name: "Bagaj Havuzu", icon: "gear", link: "/categories/bagaj-havuzu", image_url: "", badge_text: "", active: true },
-  { id: "panjur", handle: "panjur", name: "Ön Panjur", icon: "grille", link: "/categories/panjur", image_url: "", badge_text: "", active: true },
-  { id: "aksesuar", handle: "aksesuar", name: "Oto Aksesuar", icon: "gear", link: "/categories/aksesuar", image_url: "", badge_text: "", active: true }
+  { id: "cam-vizor", handle: "cam-vizor", name: "Cam Vizör", icon: "car", link: "/categories/cam-vizor", image_url: "", badge_text: "", active: true },
+  { id: "sis-cercevesi", handle: "sis-cercevesi", name: "Sis Çerçevesi", icon: "grille", link: "/categories/sis-cercevesi", image_url: "", badge_text: "", active: true },
+  { id: "dodik", handle: "dodik", name: "Dodik", icon: "sideskirt", link: "/categories/dodik", image_url: "", badge_text: "", active: true },
+  { id: "moonvisor", handle: "moonvisor", name: "Moonvisor", icon: "wing", link: "/categories/moonvisor", image_url: "", badge_text: "", active: true }
 ]
 
 const defaultBanners = [
@@ -700,10 +705,23 @@ function mergeHeroConfig(parsed: Record<string, any>) {
   if (parsed.media_url === "/uploads/hero-1774921088469-819611420.jpg") {
     parsed.media_url = ""
   }
+  const mergedCategories = (() => {
+    if (!Array.isArray(parsed.categories) || parsed.categories.length === 0) {
+      return defaultCategories
+    }
+    const existingHandles = new Set(
+      parsed.categories.map((c: any) => (c?.handle || c?.id || "").toLowerCase())
+    )
+    const missingFromDefaults = defaultCategories.filter(
+      (dc) => !existingHandles.has((dc.handle || dc.id).toLowerCase())
+    )
+    return [...parsed.categories, ...missingFromDefaults]
+  })()
+
   return {
     ...defaultData,
     ...parsed,
-    categories: parsed.categories && parsed.categories.length > 0 ? parsed.categories : defaultCategories,
+    categories: mergedCategories,
     banners: parsed.banners && parsed.banners.length > 0 ? parsed.banners : defaultBanners,
     carousel_blocks: parsed.carousel_blocks && parsed.carousel_blocks.length > 0 ? parsed.carousel_blocks : defaultCarouselBlocks,
     banner_carousels: parsed.banner_carousels && parsed.banner_carousels.length > 0 ? parsed.banner_carousels : defaultBannerCarousels,

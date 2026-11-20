@@ -6,36 +6,48 @@ import * as path from "path"
 export interface GunesliGarajProductItem {
   handle: string
   title: string
+  sku?: string
   brand: string
   price_tl: number
   primary_category: string
+  category_name?: string
   categories: string[]
+  description?: string
   images: string[]
   thumbnail: string
 }
 
 export const REQUIRED_CATEGORIES: { handle: string; name: string; description: string }[] = [
+  { handle: "arac-body-kit", name: "Araç Body Kit", description: "Aracınıza birebir uyumlu komple araç body kit setleri" },
   { handle: "bodykit", name: "Bodykit Setleri", description: "Aracınıza birebir uyumlu komple bodykit setleri" },
   { handle: "body-kit", name: "BODY KİT", description: "Aracınıza birebir uyumlu komple body kit setleri" },
   { handle: "body-kit-seti", name: "Body Kit Seti", description: "Komple plastik ve PP body kit setleri" },
+  { handle: "tampon", name: "Tampon", description: "Ön ve arka spor tampon modelleri" },
+  { handle: "marspiyel", name: "Marşpiyel", description: "Sağ-sol takım yan marşpiyel ve marşpiyel altı lip modelleri" },
+  { handle: "on-ek", name: "Ön Ek", description: "Aracınıza özel ön ek ve ön tampon eki modelleri" },
   { handle: "on-tampon-eki", name: "Ön Tampon Eki", description: "Aracınıza özel ön tampon eki ve ön ek modelleri" },
   { handle: "tampon-ek", name: "Tampon Ekleri", description: "Ön lip, ön ek ve arka tampon ekleri" },
   { handle: "on-tampon", name: "ÖN TAMPON", description: "Ön tampon, ön ek ve ön lip modelleri" },
+  { handle: "difuzor", name: "Difüzör", description: "Çift çıkışlı ve sportif arka tampon difüzörleri" },
+  { handle: "arka-tampon-difuzoru", name: "Arka Tampon Difüzörü", description: "Aracınıza özel arka tampon difüzör modelleri" },
   { handle: "on-lip", name: "Ön Lip", description: "Sportif ön lip ve tampon altı splitter modelleri" },
   { handle: "arka-ek", name: "Arka Ek", description: "Arka tampon eki modelleri" },
   { handle: "arka-tampon", name: "ARKA TAMPON", description: "Arka tampon, arka ek ve difüzör modelleri" },
-  { handle: "arka-tampon-difuzoru", name: "Arka Tampon Difüzörü", description: "Aracınıza özel arka tampon difüzör modelleri" },
-  { handle: "difuzor", name: "Difüzör", description: "Çift çıkışlı ve sportif arka tampon difüzörleri" },
-  { handle: "marspiyel", name: "Marşpiyel", description: "Sağ-sol takım yan marşpiyel ve marşpiyel altı lip modelleri" },
   { handle: "spoiler", name: "Spoiler", description: "Bagaj üstü ve tavan spoiler (spoyler) modelleri" },
   { handle: "spoiler-citasi", name: "Spoiler Çıtası", description: "Spoiler çıtası ve bagaj üstü çıta modelleri" },
+  { handle: "egzoz-uclari", name: "Egzoz Uçları", description: "Paslanmaz çelik, karbon ve siyah titanyum egzoz uçları" },
+  { handle: "flap", name: "Flap", description: "Ön ve arka tampon sağ-sol aerodinamik flap takımları" },
+  { handle: "bagaj-havuzu", name: "Bagaj Havuzu", description: "3D havuzlu, koku yapmayan aracınıza özel bagaj havuzu" },
+  { handle: "cam-vizor", name: "Cam Vizör", description: "Arka cam ve kelebek cam vizörü modelleri" },
+  { handle: "sis-cercevesi", name: "Sis Çerçevesi", description: "Aracınıza özel ön tampon sis farı çerçevesi modelleri" },
+  { handle: "dodik", name: "Dodik", description: "Çamurluk ağzı dodik setleri" },
+  { handle: "moonvisor", name: "Moonvisor", description: "Tavan üstü LED aydınlatmalı moonvisor kep modelleri" },
+  { handle: "set", name: "Set", description: "Çok parçalı body kit ve dış tasarım setleri" },
   { handle: "panjur", name: "Ön Panjur", description: "Spor ön panjur ve böbrek ızgara modelleri" },
   { handle: "on-panjur", name: "Ön Panjur Modelleri", description: "Aracınıza özel spor ön panjur modelleri" },
-  { handle: "bagaj-havuzu", name: "Bagaj Havuzu", description: "3D havuzlu, koku yapmayan aracınıza özel bagaj havuzu" },
   { handle: "aksesuar", name: "Aksesuar", description: "İç ve dış oto modifiye aksesuarları" },
   { handle: "oto-aksesuar", name: "OTO AKSESUAR", description: "Oto modifiye ve dış aksesuar ürünleri" },
   { handle: "oto-aksesuarlari", name: "Oto Aksesuarları", description: "Aracınıza özel modifiye ve dış aksesuar çeşitleri" },
-  { handle: "tampon", name: "Tampon", description: "Ön ve arka spor tampon modelleri" },
   { handle: "aydinlatma", name: "Aydınlatma", description: "LED far, stop ve sis aydınlatma ürünleri" },
 ]
 
@@ -143,20 +155,44 @@ function buildDescription(title: string): string {
   return `${title}, aracınıza özel sportif ve estetik bir görünüm kazandıran birinci sınıf oto modifiye ürünüdür. Yüksek kaliteli esnek ABS/plastik malzemeden üretilmiş olup darbelere karşı dayanıklı ve uzun ömürlüdür.\n\n• Aracınızın orijinal şasi ve tampon ölçüleriyle birebir uyumludur.\n• Kolay montaj imkanı sunar, aracınızın aerodinamik yapısını güçlendirir.\n• Koku yapmaz, leke tutmaz ve dış hava koşullarına karşı yüksek direnç gösterir.\n• Paket İçeriği: ${title}\n• 2 Yıl Üretici Garantisi ve Türkiye'nin her yerine güvenli kargo imkanı.`
 }
 
-function loadCatalogJson(): GunesliGarajProductItem[] {
+function loadJsonByName(fileName: string): GunesliGarajProductItem[] {
   const candidates = [
-    path.join(process.cwd(), "src", "data", "gunesligaraj-catalog.json"),
-    path.join(process.cwd(), "..", "..", "src", "data", "gunesligaraj-catalog.json"),
-    path.join(process.cwd(), ".medusa", "server", "src", "data", "gunesligaraj-catalog.json"),
-    path.join(__dirname, "..", "data", "gunesligaraj-catalog.json"),
-    path.join(__dirname, "..", "..", "..", "src", "data", "gunesligaraj-catalog.json"),
+    path.join(process.cwd(), "src", "data", fileName),
+    path.join(process.cwd(), "..", "..", "src", "data", fileName),
+    path.join(process.cwd(), ".medusa", "server", "src", "data", fileName),
+    path.join(__dirname, "..", "data", fileName),
+    path.join(__dirname, "..", "..", "..", "src", "data", fileName),
   ]
   for (const p of candidates) {
     if (fs.existsSync(p)) {
-      return JSON.parse(fs.readFileSync(p, "utf-8"))
+      try {
+        return JSON.parse(fs.readFileSync(p, "utf-8"))
+      } catch {}
     }
   }
   return []
+}
+
+function loadCatalogJson(): GunesliGarajProductItem[] {
+  const kitgaraj = loadJsonByName("kitgaraj-catalog.json")
+  const gunesligaraj = loadJsonByName("gunesligaraj-catalog.json")
+
+  const seenHandles = new Set<string>()
+  const seenTitles = new Set<string>()
+  const merged: GunesliGarajProductItem[] = []
+
+  // Prioritize kitgaraj-catalog.json (954 items with rich descriptions, SKUs, 16 categories, and clean images)
+  for (const item of [...kitgaraj, ...gunesligaraj]) {
+    if (!item || !item.handle || !item.title) continue
+    const hKey = item.handle.toLowerCase()
+    const tKey = item.title.trim().toLowerCase()
+    if (seenHandles.has(hKey) || seenTitles.has(tKey)) continue
+    seenHandles.add(hKey)
+    seenTitles.add(tKey)
+    merged.push(item)
+  }
+
+  return merged
 }
 
 let isSyncRunning = false
@@ -269,7 +305,12 @@ export async function syncGunesliGarajCatalog(container: MedusaContainer) {
     // Separate catalog into new products vs existing products
     const toCreate: any[] = []
     const categoryLinksToInsert: { productId: string; categoryId: string }[] = []
-    const thumbnailUpdates: { productId: string; thumbnail: string; images: string[] }[] = []
+    const thumbnailUpdates: {
+      productId: string
+      thumbnail: string
+      images: string[]
+      description?: string
+    }[] = []
 
     for (const item of catalog) {
       const targetCatIds = Array.from(
@@ -284,6 +325,8 @@ export async function syncGunesliGarajCatalog(container: MedusaContainer) {
         existingByHandle.get(item.handle.toLowerCase()) ||
         existingByTitle.get(item.title.trim().toLowerCase())
 
+      const itemDesc = item.description || buildDescription(item.title)
+
       if (existing) {
         const currentCatIds = new Set((existing.categories || []).map((c: any) => c.id))
         for (const cid of targetCatIds) {
@@ -291,23 +334,27 @@ export async function syncGunesliGarajCatalog(container: MedusaContainer) {
             categoryLinksToInsert.push({ productId: existing.id, categoryId: cid })
           }
         }
-        if (item.thumbnail && existing.thumbnail !== item.thumbnail) {
+        if (
+          (item.thumbnail && existing.thumbnail !== item.thumbnail) ||
+          (item.description && existing.description !== itemDesc)
+        ) {
           thumbnailUpdates.push({
             productId: existing.id,
-            thumbnail: item.thumbnail,
+            thumbnail: item.thumbnail || existing.thumbnail,
             images: item.images || [item.thumbnail],
+            description: itemDesc,
           })
         }
       } else {
-        const skuClean = item.handle
-          .replace(/[^a-zA-Z0-9]/g, "")
-          .slice(0, 24)
+        const skuClean = (item.sku || item.handle)
+          .replace(/[^a-zA-Z0-9_-]/g, "")
+          .slice(0, 28)
           .toUpperCase()
 
         toCreate.push({
           title: item.title,
           handle: item.handle,
-          description: buildDescription(item.title),
+          description: itemDesc,
           status: "published" as any,
           shipping_profile_id: defaultProfileId,
           thumbnail: item.thumbnail || item.images?.[0] || "",
@@ -316,14 +363,15 @@ export async function syncGunesliGarajCatalog(container: MedusaContainer) {
           sales_channels: channelId ? [{ id: channelId }] : [],
           metadata: {
             brand: item.brand || "",
-            source: "gunesligaraj",
+            sku: item.sku || "",
+            source: item.description ? "kitgaraj" : "gunesligaraj",
             primary_category: item.primary_category || "",
           },
           options: [{ title: "Title", values: ["Default Title"] }],
           variants: [
             {
               title: "Standart",
-              sku: `GG-${skuClean}-${Math.floor(100 + Math.random() * 899)}`,
+              sku: item.sku ? `${skuClean}-${Math.floor(100 + Math.random() * 899)}` : `GG-${skuClean}-${Math.floor(100 + Math.random() * 899)}`,
               manage_inventory: false,
               allow_backorder: true,
               options: { Title: "Default Title" },
@@ -408,12 +456,25 @@ export async function syncGunesliGarajCatalog(container: MedusaContainer) {
       }
 
       for (const tu of thumbnailUpdates) {
-        await client
-          .query(`UPDATE product SET thumbnail = $1 WHERE id = $2`, [tu.thumbnail, tu.productId])
-          .then(() => {
-            cleanedImagesCount++
-          })
-          .catch(() => {})
+        if (tu.description) {
+          await client
+            .query(`UPDATE product SET thumbnail = $1, description = $2 WHERE id = $3`, [
+              tu.thumbnail,
+              tu.description,
+              tu.productId,
+            ])
+            .then(() => {
+              cleanedImagesCount++
+            })
+            .catch(() => {})
+        } else {
+          await client
+            .query(`UPDATE product SET thumbnail = $1 WHERE id = $2`, [tu.thumbnail, tu.productId])
+            .then(() => {
+              cleanedImagesCount++
+            })
+            .catch(() => {})
+        }
 
         // Ensure clean gallery images exist in `image` table for this product
         const existingImgsRes = await client

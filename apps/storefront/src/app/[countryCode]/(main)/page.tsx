@@ -109,8 +109,8 @@ function matchProductsFromPool(
       if (catHandles.includes(hLower)) return true
       const t = (p.title || "").toLocaleLowerCase("tr-TR")
       const ph = (p.handle || "").toLocaleLowerCase("tr-TR")
-      if (hLower === "bodykit" || hLower === "body-kit-seti") {
-        return t.includes("body kit") || t.includes("bodykit") || ph.includes("body-kit") || ph.includes("bodykit")
+      if (hLower === "bodykit" || hLower === "body-kit-seti" || hLower === "arac-body-kit" || hLower === "set") {
+        return t.includes("body kit") || t.includes("bodykit") || t.includes("boykit") || ph.includes("body-kit") || ph.includes("bodykit") || ph.includes("boykit")
       }
       if (hLower === "difuzor" || hLower === "arka-tampon-difuzoru") {
         return t.includes("difüzör") || t.includes("difuzor") || ph.includes("difuzor")
@@ -118,14 +118,38 @@ function matchProductsFromPool(
       if (hLower === "spoiler") {
         return t.includes("spoiler") || t.includes("spoyler") || ph.includes("spoiler")
       }
-      if (hLower === "tampon-ek" || hLower === "on-tampon-eki" || hLower === "on-lip") {
-        return t.includes("ön ek") || t.includes("ön lip") || t.includes("tampon") || ph.includes("on-ek") || ph.includes("on-lip")
+      if (hLower === "tampon") {
+        return t.includes("tampon") || ph.includes("tampon")
+      }
+      if (hLower === "tampon-ek" || hLower === "on-tampon-eki" || hLower === "on-ek") {
+        return t.includes("ön ek") || t.includes("ön tampon") || ph.includes("on-ek") || ph.includes("on-tampon")
+      }
+      if (hLower === "on-lip") {
+        return t.includes("ön lip") || ph.includes("on-lip")
       }
       if (hLower === "arka-ek") {
         return t.includes("arka ek") || ph.includes("arka-ek")
       }
       if (hLower === "marspiyel") {
-        return t.includes("marşpiyel") || t.includes("marspiyel") || ph.includes("marspiyel") || ph.includes("marsbiyel")
+        return t.includes("marşpiyel") || t.includes("marspiyel") || t.includes("marşiyel") || ph.includes("marspiyel") || ph.includes("marsbiyel")
+      }
+      if (hLower === "egzoz-uclari") {
+        return t.includes("egzoz") || ph.includes("egzoz")
+      }
+      if (hLower === "flap") {
+        return t.includes("flap") || ph.includes("flap")
+      }
+      if (hLower === "cam-vizor") {
+        return t.includes("vizör") || t.includes("vizor") || ph.includes("vizor")
+      }
+      if (hLower === "sis-cercevesi") {
+        return t.includes("sis") || ph.includes("sis-cercevesi")
+      }
+      if (hLower === "dodik") {
+        return t.includes("dodik") || ph.includes("dodik")
+      }
+      if (hLower === "moonvisor") {
+        return t.includes("moonvisor") || ph.includes("moonvisor")
       }
       if (hLower === "panjur" || hLower === "on-panjur") {
         return t.includes("panjur") || ph.includes("panjur")

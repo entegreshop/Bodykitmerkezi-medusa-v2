@@ -27,6 +27,17 @@ function isRedCoverTemplateUrl(url?: string | null): boolean {
   )
 }
 
+function normalizeCleanImageUrl(url?: string | null): string | undefined {
+  if (!url) return undefined
+  if (
+    url.includes("media.kitgaraj.com") &&
+    (url.includes("/plus/") || url.includes("-showroom."))
+  ) {
+    return `/api/clean-image?url=${encodeURIComponent(url)}`
+  }
+  return url
+}
+
 const Thumbnail: React.FC<ThumbnailProps> = ({
   thumbnail,
   images,
@@ -35,11 +46,16 @@ const Thumbnail: React.FC<ThumbnailProps> = ({
   className,
   "data-testid": dataTestid,
 }) => {
-  const cleanFromGallery = (images || []).map((i: any) => i?.url).find((u: string) => u && !isRedCoverTemplateUrl(u))
-  const initialImage =
-    thumbnail && !isRedCoverTemplateUrl(thumbnail)
+  const directCleanFromGallery = (images || [])
+    .map((i: any) => i?.url)
+    .find((u: string) => u && !isRedCoverTemplateUrl(u) && !u.includes("/plus/") && !u.includes("-showroom."))
+  const cleanFromGallery =
+    directCleanFromGallery || (images || []).map((i: any) => i?.url).find((u: string) => u && !isRedCoverTemplateUrl(u))
+  const rawInitialImage =
+    thumbnail && !isRedCoverTemplateUrl(thumbnail) && !thumbnail.includes("/plus/") && !thumbnail.includes("-showroom.")
       ? thumbnail
       : cleanFromGallery || thumbnail || images?.[0]?.url
+  const initialImage = normalizeCleanImageUrl(rawInitialImage)
 
   return (
     <Container

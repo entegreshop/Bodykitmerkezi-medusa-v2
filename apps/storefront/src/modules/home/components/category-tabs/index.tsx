@@ -51,6 +51,17 @@ function isRedCoverTemplateUrl(url?: string | null): boolean {
   )
 }
 
+export function normalizeCleanImageUrl(url?: string | null): string {
+  if (!url) return "/placeholder.png"
+  if (
+    url.includes("media.kitgaraj.com") &&
+    (url.includes("/plus/") || url.includes("-showroom."))
+  ) {
+    return `/api/clean-image?url=${encodeURIComponent(url)}`
+  }
+  return url
+}
+
 export function selectCleanProductImage(product: HttpTypes.StoreProduct): string {
   const candidates: string[] = []
   if (product.thumbnail) candidates.push(product.thumbnail)
@@ -59,8 +70,11 @@ export function selectCleanProductImage(product: HttpTypes.StoreProduct): string
       candidates.push(img.url)
     }
   }
-  const clean = candidates.find((u) => !isRedCoverTemplateUrl(u))
-  return clean || candidates[0] || "/placeholder.png"
+  const directClean = candidates.find(
+    (u) => !isRedCoverTemplateUrl(u) && !u.includes("/plus/") && !u.includes("-showroom.")
+  )
+  const clean = directClean || candidates.find((u) => !isRedCoverTemplateUrl(u))
+  return normalizeCleanImageUrl(clean || candidates[0] || "/placeholder.png")
 }
 
 export function N11ProductCard({
@@ -270,13 +284,22 @@ export default function CategoryTabs({
     ]
 
     const defaultStoreCategories = [
-      { name: "Bodykit Setleri", handle: "bodykit" },
-      { name: "Difüzör", handle: "difuzor" },
-      { name: "Spoiler", handle: "spoiler" },
-      { name: "Tampon Ekleri", handle: "tampon-ek" },
+      { name: "Araç Body Kit", handle: "arac-body-kit" },
+      { name: "Tampon", handle: "tampon" },
       { name: "Marşpiyel", handle: "marspiyel" },
+      { name: "Ön Ek", handle: "on-ek" },
+      { name: "Difüzör", handle: "difuzor" },
+      { name: "Ön Lip", handle: "on-lip" },
+      { name: "Arka Ek", handle: "arka-ek" },
+      { name: "Spoiler", handle: "spoiler" },
+      { name: "Egzoz Uçları", handle: "egzoz-uclari" },
+      { name: "Flap", handle: "flap" },
+      { name: "Bagaj Havuzu", handle: "bagaj-havuzu" },
+      { name: "Cam Vizör", handle: "cam-vizor" },
+      { name: "Sis Çerçevesi", handle: "sis-cercevesi" },
+      { name: "Dodik", handle: "dodik" },
+      { name: "Moonvisor", handle: "moonvisor" },
       { name: "Ön Panjur", handle: "panjur" },
-      { name: "Aydınlatma", handle: "aydinlatma" },
       { name: "Aksesuar", handle: "aksesuar" },
     ]
 
@@ -362,14 +385,17 @@ export default function CategoryTabs({
 
       const t = (p.title || "").toLocaleLowerCase("tr-TR")
       const h = (p.handle || "").toLocaleLowerCase("tr-TR")
-      if (selectedTab === "bodykit" || selectedTab === "body-kit-seti") {
-        return t.includes("body kit") || t.includes("bodykit") || h.includes("body-kit") || h.includes("bodykit")
+      if (selectedTab === "bodykit" || selectedTab === "body-kit-seti" || selectedTab === "arac-body-kit" || selectedTab === "set") {
+        return t.includes("body kit") || t.includes("bodykit") || t.includes("boykit") || h.includes("body-kit") || h.includes("bodykit") || h.includes("boykit")
       }
       if (selectedTab === "difuzor" || selectedTab === "arka-tampon-difuzoru") {
         return t.includes("difüzör") || t.includes("difuzor") || h.includes("difuzor")
       }
-      if (selectedTab === "tampon-ek" || selectedTab === "on-tampon-eki") {
-        return t.includes("ön ek") || h.includes("on-ek") || t.includes("ön lip") || h.includes("on-lip") || t.includes("tampon")
+      if (selectedTab === "tampon") {
+        return t.includes("tampon") || h.includes("tampon")
+      }
+      if (selectedTab === "tampon-ek" || selectedTab === "on-tampon-eki" || selectedTab === "on-ek") {
+        return t.includes("ön ek") || h.includes("on-ek") || t.includes("ön tampon ek")
       }
       if (selectedTab === "on-lip") {
         return t.includes("ön lip") || h.includes("on-lip") || t.includes("lip")
@@ -378,13 +404,31 @@ export default function CategoryTabs({
         return t.includes("arka ek") || h.includes("arka-ek") || t.includes("arka tampon eki")
       }
       if (selectedTab === "marspiyel") {
-        return t.includes("marşpiyel") || t.includes("marspiyel") || h.includes("marspiyel") || h.includes("marsbiyel")
+        return t.includes("marşpiyel") || t.includes("marspiyel") || t.includes("marşiyel") || h.includes("marspiyel") || h.includes("marsbiyel")
       }
       if (selectedTab === "spoiler") {
         return t.includes("spoiler") || t.includes("spoyler") || h.includes("spoiler")
       }
+      if (selectedTab === "egzoz-uclari") {
+        return t.includes("egzoz") || h.includes("egzoz")
+      }
+      if (selectedTab === "flap") {
+        return t.includes("flap") || h.includes("flap")
+      }
       if (selectedTab === "bagaj-havuzu") {
         return t.includes("bagaj havuzu") || h.includes("bagaj-havuzu")
+      }
+      if (selectedTab === "cam-vizor") {
+        return t.includes("vizör") || t.includes("vizor") || h.includes("vizor")
+      }
+      if (selectedTab === "sis-cercevesi") {
+        return t.includes("sis") || h.includes("sis-cercevesi")
+      }
+      if (selectedTab === "dodik") {
+        return t.includes("dodik") || h.includes("dodik")
+      }
+      if (selectedTab === "moonvisor") {
+        return t.includes("moonvisor") || h.includes("moonvisor")
       }
       if (selectedTab === "panjur" || selectedTab === "on-panjur") {
         return t.includes("panjur") || h.includes("panjur")

@@ -21,12 +21,26 @@ function isRedCoverTemplateUrl(url?: string | null): boolean {
   )
 }
 
+function normalizeCleanImageUrl(url?: string | null): string {
+  if (!url) return ""
+  if (
+    url.includes("media.kitgaraj.com") &&
+    (url.includes("/plus/") || url.includes("-showroom."))
+  ) {
+    return `/api/clean-image?url=${encodeURIComponent(url)}`
+  }
+  return url
+}
+
 const ImageGallery = ({ images: rawImages }: ImageGalleryProps) => {
   const [activeIndex, setActiveIndex] = useState(0)
   const carouselRef = useRef<HTMLDivElement>(null)
 
   const cleanFiltered = (rawImages || []).filter((img) => img?.url && !isRedCoverTemplateUrl(img.url))
-  const images = cleanFiltered.length > 0 ? cleanFiltered : (rawImages || [])
+  const images = (cleanFiltered.length > 0 ? cleanFiltered : (rawImages || [])).map((img) => ({
+    ...img,
+    url: normalizeCleanImageUrl(img.url),
+  }))
 
   if (!images || images.length === 0) {
     return (
