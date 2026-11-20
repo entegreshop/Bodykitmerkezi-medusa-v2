@@ -41,14 +41,20 @@ function toTitleCaseTr(str: string) {
 function isRedCoverTemplateUrl(url?: string | null): boolean {
   if (!url) return true
   const fname = (url.split("/").pop() || "").split("?")[0].toLowerCase()
-  return (
-    fname.startsWith("gg-") ||
-    fname.startsWith("gg_") ||
+  if (
     fname.includes("1web") ||
     fname === "web.jpg" ||
     fname === "1-web.jpg" ||
     fname.includes("kapak")
-  )
+  ) {
+    return true
+  }
+  if (fname.startsWith("gg-") || fname.startsWith("gg_")) {
+    if (/^gg[-_][a-z0-9]+-\d+\./.test(fname)) return false
+    if (url.includes("revision=178199")) return false
+    return true
+  }
+  return false
 }
 
 export function normalizeCleanImageUrl(url?: string | null): string {

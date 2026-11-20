@@ -174,25 +174,7 @@ function loadJsonByName(fileName: string): GunesliGarajProductItem[] {
 }
 
 function loadCatalogJson(): GunesliGarajProductItem[] {
-  const kitgaraj = loadJsonByName("kitgaraj-catalog.json")
-  const gunesligaraj = loadJsonByName("gunesligaraj-catalog.json")
-
-  const seenHandles = new Set<string>()
-  const seenTitles = new Set<string>()
-  const merged: GunesliGarajProductItem[] = []
-
-  // Prioritize kitgaraj-catalog.json (954 items with rich descriptions, SKUs, 16 categories, and clean images)
-  for (const item of [...kitgaraj, ...gunesligaraj]) {
-    if (!item || !item.handle || !item.title) continue
-    const hKey = item.handle.toLowerCase()
-    const tKey = item.title.trim().toLowerCase()
-    if (seenHandles.has(hKey) || seenTitles.has(tKey)) continue
-    seenHandles.add(hKey)
-    seenTitles.add(tKey)
-    merged.push(item)
-  }
-
-  return merged
+  return loadJsonByName("gunesligaraj-catalog.json")
 }
 
 let isSyncRunning = false
@@ -439,9 +421,19 @@ export async function syncGunesliGarajCatalog(container: MedusaContainer) {
       const client = new Client({ connectionString: process.env.DATABASE_URL })
       await client.connect()
 
-      // Remove all red-triangle GG cover images (gg-*, 1web.jpg, etc.) from product image gallery
+      // Remove any kitgaraj-only products and media.kitgaraj.com images so only GunesliGaraj products remain
       await client
-        .query(`DELETE FROM image WHERE url ~* '/(gg[-_][a-z0-9_-]+|1web|1-web|web)\\.(jpg|jpeg|png|webp)'`)
+        .query(`DELETE FROM image WHERE url LIKE '%media.kitgaraj.com%'`)
+        .catch(() => {})
+      await client
+        .query(
+          `UPDATE product SET deleted_at = NOW(), status = 'draft' WHERE (metadata->>'source' = 'kitgaraj' OR thumbnail LIKE '%media.kitgaraj.com%') AND deleted_at IS NULL`
+        )
+        .catch(() => {})
+
+      // Remove only 1web/web cover templates from product image gallery (keep numbered gg-*-2.jpg and revision=178199 real car photos!)
+      await client
+        .query(`DELETE FROM image WHERE url ~* '/(1web|1-web|web)\\.(jpg|jpeg|png|webp)'`)
         .catch(() => {})
 
       for (const link of categoryLinksToInsert) {
