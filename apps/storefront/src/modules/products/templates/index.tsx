@@ -1,6 +1,7 @@
 import React, { Suspense } from "react"
 import ImageGallery from "@modules/products/components/image-gallery"
 import ProductActions from "@modules/products/components/product-actions"
+import ProductBelowGallery from "@modules/products/components/product-below-gallery"
 import RelatedProducts from "@modules/products/components/related-products"
 import SkeletonRelatedProducts from "@modules/skeletons/templates/skeleton-related-products"
 import { notFound } from "next/navigation"
@@ -32,9 +33,10 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({
         className="content-container flex flex-col small:flex-row small:items-start py-8 relative gap-8 lg:gap-12"
         data-testid="product-container"
       >
-        {/* Left Column (60%): Gallery */}
-        <div className="w-full small:w-[60%]">
+        {/* Left Column (60%): Gallery + Vehicle Compatibility & Service Add-ons */}
+        <div className="w-full small:w-[60%] flex flex-col">
           <ImageGallery images={images} />
+          <ProductBelowGallery product={product} />
         </div>
 
         {/* Right Column (40%): Sidebar */}

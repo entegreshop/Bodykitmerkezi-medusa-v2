@@ -451,9 +451,26 @@ export async function syncGunesliGarajCatalog(container: MedusaContainer) {
           .catch(() => {})
       }
 
-      // Remove only 1web/web cover templates from product image gallery (keep numbered gg-*-2.jpg and revision=178199 real car photos!)
+      // Remove only 1web/web cover templates and watermarked panel images from product image gallery
       await client
         .query(`DELETE FROM image WHERE url ~* '/(1web|1-web|web)\\.(jpg|jpeg|png|webp)'`)
+        .catch(() => {})
+      await client
+        .query(
+          `DELETE FROM image WHERE url ~* 'media\\.kitgaraj\\.com/(KIT-VW_1J0807217H|KIT-VW_0062102|KIT-VW_1062101|KIT-VW_0082101|KIT-GG-L136|KIT-GG-D155|KIT-GG-D156|GG-CF-KIT|GG-CF03)/panel/'`
+        )
+        .catch(() => {})
+
+      // Clean any KIT- / GG- SKU prefix in product descriptions and variant SKUs
+      await client
+        .query(
+          `UPDATE product SET description = REGEXP_REPLACE(REGEXP_REPLACE(description, 'Ürün Kodu:\\s*(KIT-GG-|KIT-|GG-)', 'Ürün Kodu: BKM-', 'gi'), 'kit\\s*garaj', 'BodyKit Merkezi', 'gi') WHERE description ~* '(Ürün Kodu:\\s*(KIT-|GG-)|kit\\s*garaj)'`
+        )
+        .catch(() => {})
+      await client
+        .query(
+          `UPDATE product_variant SET sku = REGEXP_REPLACE(sku, '^(KIT-GG-|KIT-|GG-)', 'BKM-', 'i') WHERE sku ~* '^(KIT-GG-|KIT-|GG-)'`
+        )
         .catch(() => {})
 
       for (const link of categoryLinksToInsert) {

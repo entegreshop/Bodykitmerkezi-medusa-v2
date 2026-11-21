@@ -16,6 +16,14 @@ type ThumbnailProps = {
 
 function isRedCoverTemplateUrl(url?: string | null): boolean {
   if (!url) return true
+  if (
+    url.includes("KIT-VW_1J0807217H/panel/") ||
+    url.includes("KIT-VW_0062102/panel/") ||
+    url.includes("KIT-VW_1062101/panel/") ||
+    url.includes("KIT-VW_0082101/panel/")
+  ) {
+    return true
+  }
   const fname = (url.split("/").pop() || "").split("?")[0].toLowerCase()
   if (
     fname.includes("1web") ||
@@ -37,7 +45,7 @@ function normalizeCleanImageUrl(url?: string | null): string | undefined {
   if (!url) return undefined
   if (
     url.includes("media.kitgaraj.com") &&
-    (url.includes("/plus/") || url.includes("-showroom."))
+    (url.includes("/plus/") || url.includes("/temiz/") || url.includes("-showroom."))
   ) {
     return `/api/clean-image?url=${encodeURIComponent(url)}`
   }

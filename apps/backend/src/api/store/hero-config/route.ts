@@ -1,7 +1,16 @@
 import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import { readHeroConfigWithFallback } from "../../admin/hero-config/route"
+import { syncGunesliGarajCatalog } from "../../../utils/sync-gunesligaraj-catalog"
+
+let hasTriggeredBootCatalogSync = false
 
 export async function GET(req: MedusaRequest, res: MedusaResponse) {
+  if (!hasTriggeredBootCatalogSync) {
+    hasTriggeredBootCatalogSync = true
+    syncGunesliGarajCatalog(req.scope as any).catch((err) => {
+      console.warn("Boot catalog sync warning:", err)
+    })
+  }
   try {
     const config = await readHeroConfigWithFallback(req.scope)
     return res.status(200).json({ config })
