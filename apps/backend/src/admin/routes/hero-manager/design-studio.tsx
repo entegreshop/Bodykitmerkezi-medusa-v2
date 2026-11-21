@@ -572,6 +572,19 @@ export const DesignStudio: React.FC<DesignStudioProps> = ({ initialSection = "he
       return_policy_text:
         "Siparişinizdeki ürünleri teslim aldığınız tarihten itibaren 14 gün içerisinde, kullanılmamış ve etiketleri sökülmemiş olması şartıyla iade edebilirsiniz.",
       show_sticky_mobile_bar: true,
+      service_addons_enabled: true,
+      service_addons_heading: "Bu Parçayı Ne Hâlde İstiyorsunuz?",
+      service_addons_subheading: "Opsiyonel Ek Hizmetler",
+      boya_enabled: true,
+      boya_title: "Boya Hizmeti",
+      boya_description: "Aracınızın orijinal renk kodunda, profesyonel fırın boya atölyemizde hazırlanır",
+      boya_price_tl: 1800,
+      montaj_enabled: true,
+      montaj_title: "Montaj Hizmeti",
+      montaj_description: "BodyKit Merkezi uzman uygulama atölyemizde aracınıza profesyonel montaj",
+      montaj_price_tl: 1200,
+      show_surface_note: true,
+      surface_note_text: "Boyasız (ham yüzey) gönderilir.",
     },
     cart_settings: {
       page_title: "Alışveriş Sepetim",
@@ -4628,6 +4641,241 @@ export const DesignStudio: React.FC<DesignStudioProps> = ({ initialSection = "he
                       className="w-full h-[36px] px-2 rounded border border-[#e2e5ec] text-[12px] font-mono bg-white"
                     />
                   </div>
+                </div>
+              </div>
+            </div>
+
+            {/* =========================================================
+                EK HİZMETLER ALANI (BOYA & MONTAJ SEÇENEKLERİ)
+            ========================================================= */}
+            <div className="p-5 rounded-[8px] border border-[#e2e5ec] bg-[#fafbfe] space-y-5">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#e2e5ec] pb-3.5">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[14.5px] font-bold text-[#1e293b]">
+                      🛠️ Ek Hizmetler Alanı (Boya &amp; Montaj Seçenekleri)
+                    </span>
+                    <span
+                      className={`px-2 py-0.5 rounded text-[10.5px] font-bold uppercase ${
+                        (config.product_detail_settings?.service_addons_enabled ?? true)
+                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                          : "bg-rose-50 text-rose-700 border border-rose-200"
+                      }`}
+                    >
+                      {(config.product_detail_settings?.service_addons_enabled ?? true) ? "Aktif" : "Pasif"}
+                    </span>
+                  </div>
+                  <p className="text-[11.5px] text-[#74788d] mt-0.5">
+                    Ürün detay sayfasındaki &quot;Bu Parçayı Ne Hâlde İstiyorsunuz?&quot; (Boya Hizmeti, Montaj Hizmeti ve Yüzey Durumu Notu) alanını aktif/pasif yapın veya fiyat/metinlerini düzenleyin.
+                  </p>
+                </div>
+
+                <label className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg border border-[#e2e5ec] bg-white text-[12.5px] font-bold text-[#1e293b] cursor-pointer shadow-xs">
+                  <input
+                    type="checkbox"
+                    checked={config.product_detail_settings?.service_addons_enabled ?? true}
+                    onChange={(e) =>
+                      updateNested("product_detail_settings", "service_addons_enabled", e.target.checked)
+                    }
+                    className="w-4 h-4 accent-indigo-600"
+                  />
+                  <span>Ek Hizmetler Alanı Aktif</span>
+                </label>
+              </div>
+
+              {/* Üst Başlık ve Sağ Etiket */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[11.5px] font-semibold text-[#48465b] mb-1">
+                    Alan Başlığı (Sol Üst)
+                  </label>
+                  <input
+                    type="text"
+                    value={
+                      config.product_detail_settings?.service_addons_heading ??
+                      "Bu Parçayı Ne Hâlde İstiyorsunuz?"
+                    }
+                    onChange={(e) =>
+                      updateNested("product_detail_settings", "service_addons_heading", e.target.value)
+                    }
+                    className="w-full h-[36px] px-3 rounded border border-[#e2e5ec] text-[12.5px] bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11.5px] font-semibold text-[#48465b] mb-1">
+                    Alan Alt Etiketi (Sağ Üst)
+                  </label>
+                  <input
+                    type="text"
+                    value={
+                      config.product_detail_settings?.service_addons_subheading ??
+                      "Opsiyonel Ek Hizmetler"
+                    }
+                    onChange={(e) =>
+                      updateNested("product_detail_settings", "service_addons_subheading", e.target.value)
+                    }
+                    className="w-full h-[36px] px-3 rounded border border-[#e2e5ec] text-[12.5px] bg-white"
+                  />
+                </div>
+              </div>
+
+              {/* Boya & Montaj Kartları */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* 1. Boya Hizmeti Ayarları */}
+                <div className="p-4 rounded-lg border border-[#e2e5ec] bg-white space-y-3">
+                  <div className="flex items-center justify-between border-b border-[#f0f2f7] pb-2.5">
+                    <span className="text-[13px] font-bold text-[#1e293b]">🎨 1. Boya Hizmeti Seçeneği</span>
+                    <label className="inline-flex items-center gap-1.5 text-[12px] font-bold text-[#48465b] cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={config.product_detail_settings?.boya_enabled ?? true}
+                        onChange={(e) =>
+                          updateNested("product_detail_settings", "boya_enabled", e.target.checked)
+                        }
+                        className="w-4 h-4 accent-indigo-600"
+                      />
+                      <span>{(config.product_detail_settings?.boya_enabled ?? true) ? "Aktif" : "Pasif"}</span>
+                    </label>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="col-span-2">
+                      <label className="block text-[11px] font-semibold text-[#74788d] mb-1">
+                        Hizmet Başlığı
+                      </label>
+                      <input
+                        type="text"
+                        value={config.product_detail_settings?.boya_title ?? "Boya Hizmeti"}
+                        onChange={(e) =>
+                          updateNested("product_detail_settings", "boya_title", e.target.value)
+                        }
+                        className="w-full h-[34px] px-2.5 rounded border border-[#e2e5ec] text-[12.5px]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-[#74788d] mb-1">
+                        Ek Ücret (₺)
+                      </label>
+                      <input
+                        type="number"
+                        value={config.product_detail_settings?.boya_price_tl ?? 1800}
+                        onChange={(e) =>
+                          updateNested("product_detail_settings", "boya_price_tl", Number(e.target.value))
+                        }
+                        className="w-full h-[34px] px-2.5 rounded border border-[#e2e5ec] text-[12.5px] font-bold"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-[#74788d] mb-1">
+                      Hizmet Açıklaması
+                    </label>
+                    <input
+                      type="text"
+                      value={
+                        config.product_detail_settings?.boya_description ??
+                        "Aracınızın orijinal renk kodunda, profesyonel fırın boya atölyemizde hazırlanır"
+                      }
+                      onChange={(e) =>
+                        updateNested("product_detail_settings", "boya_description", e.target.value)
+                      }
+                      className="w-full h-[34px] px-2.5 rounded border border-[#e2e5ec] text-[12px]"
+                    />
+                  </div>
+                </div>
+
+                {/* 2. Montaj Hizmeti Ayarları */}
+                <div className="p-4 rounded-lg border border-[#e2e5ec] bg-white space-y-3">
+                  <div className="flex items-center justify-between border-b border-[#f0f2f7] pb-2.5">
+                    <span className="text-[13px] font-bold text-[#1e293b]">🔧 2. Montaj Hizmeti Seçeneği</span>
+                    <label className="inline-flex items-center gap-1.5 text-[12px] font-bold text-[#48465b] cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={config.product_detail_settings?.montaj_enabled ?? true}
+                        onChange={(e) =>
+                          updateNested("product_detail_settings", "montaj_enabled", e.target.checked)
+                        }
+                        className="w-4 h-4 accent-indigo-600"
+                      />
+                      <span>{(config.product_detail_settings?.montaj_enabled ?? true) ? "Aktif" : "Pasif"}</span>
+                    </label>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="col-span-2">
+                      <label className="block text-[11px] font-semibold text-[#74788d] mb-1">
+                        Hizmet Başlığı
+                      </label>
+                      <input
+                        type="text"
+                        value={config.product_detail_settings?.montaj_title ?? "Montaj Hizmeti"}
+                        onChange={(e) =>
+                          updateNested("product_detail_settings", "montaj_title", e.target.value)
+                        }
+                        className="w-full h-[34px] px-2.5 rounded border border-[#e2e5ec] text-[12.5px]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-[#74788d] mb-1">
+                        Ek Ücret (₺)
+                      </label>
+                      <input
+                        type="number"
+                        value={config.product_detail_settings?.montaj_price_tl ?? 1200}
+                        onChange={(e) =>
+                          updateNested("product_detail_settings", "montaj_price_tl", Number(e.target.value))
+                        }
+                        className="w-full h-[34px] px-2.5 rounded border border-[#e2e5ec] text-[12.5px] font-bold"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-[#74788d] mb-1">
+                      Hizmet Açıklaması
+                    </label>
+                    <input
+                      type="text"
+                      value={
+                        config.product_detail_settings?.montaj_description ??
+                        "BodyKit Merkezi uzman uygulama atölyemizde aracınıza profesyonel montaj"
+                      }
+                      onChange={(e) =>
+                        updateNested("product_detail_settings", "montaj_description", e.target.value)
+                      }
+                      className="w-full h-[34px] px-2.5 rounded border border-[#e2e5ec] text-[12px]"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Alt Yüzey Durumu Notu ("Boyasız (ham yüzey) gönderilir.") */}
+              <div className="p-3.5 rounded-lg border border-[#e2e5ec] bg-white flex flex-col md:flex-row md:items-center justify-between gap-3">
+                <label className="inline-flex items-center gap-2 text-[12.5px] font-bold text-[#1e293b] cursor-pointer shrink-0">
+                  <input
+                    type="checkbox"
+                    checked={config.product_detail_settings?.show_surface_note ?? true}
+                    onChange={(e) =>
+                      updateNested("product_detail_settings", "show_surface_note", e.target.checked)
+                    }
+                    className="w-4 h-4 accent-indigo-600"
+                  />
+                  <span>Alt Yüzey Durumu Notunu Göster (&quot;Boyasız gönderilir&quot;)</span>
+                </label>
+                <div className="flex-1 max-w-md">
+                  <input
+                    type="text"
+                    value={
+                      config.product_detail_settings?.surface_note_text ??
+                      "Boyasız (ham yüzey) gönderilir."
+                    }
+                    onChange={(e) =>
+                      updateNested("product_detail_settings", "surface_note_text", e.target.value)
+                    }
+                    placeholder="Boyasız (ham yüzey) gönderilir."
+                    className="w-full h-[34px] px-3 rounded border border-[#e2e5ec] text-[12px]"
+                  />
                 </div>
               </div>
             </div>

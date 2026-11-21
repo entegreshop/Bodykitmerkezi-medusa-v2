@@ -49,6 +49,7 @@ function normalizeCleanImageUrl(url?: string | null): string {
 const ImageGallery = ({ images: rawImages }: ImageGalleryProps) => {
   const [activeIndex, setActiveIndex] = useState(0)
   const carouselRef = useRef<HTMLDivElement>(null)
+  const thumbListRef = useRef<HTMLDivElement>(null)
 
   const cleanFiltered = (rawImages || []).filter((img) => img?.url && !isRedCoverTemplateUrl(img.url))
   const images = (cleanFiltered.length > 0 ? cleanFiltered : (rawImages || [])).map((img) => ({
@@ -64,12 +65,26 @@ const ImageGallery = ({ images: rawImages }: ImageGalleryProps) => {
     )
   }
 
+  const scrollThumbnailIntoView = (index: number) => {
+    if (!thumbListRef.current) return
+    const thumbButtons = thumbListRef.current.querySelectorAll("button[data-thumb-idx]")
+    const targetBtn = thumbButtons[index] as HTMLElement | undefined
+    if (targetBtn) {
+      targetBtn.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+        inline: "nearest",
+      })
+    }
+  }
+
   const scrollTo = (index: number) => {
     setActiveIndex(index)
     if (carouselRef.current) {
       const scrollLeft = carouselRef.current.clientWidth * index
       carouselRef.current.scrollTo({ left: scrollLeft, behavior: "smooth" })
     }
+    scrollThumbnailIntoView(index)
   }
 
   const handlePrev = () => {
@@ -82,55 +97,125 @@ const ImageGallery = ({ images: rawImages }: ImageGalleryProps) => {
     scrollTo(nextIndex)
   }
 
+  const handleThumbScrollUp = () => {
+    const nextIndex = activeIndex === 0 ? images.length - 1 : activeIndex - 1
+    scrollTo(nextIndex)
+    if (thumbListRef.current) {
+      thumbListRef.current.scrollBy({ top: -110, behavior: "smooth" })
+    }
+  }
+
+  const handleThumbScrollDown = () => {
+    const nextIndex = activeIndex === images.length - 1 ? 0 : activeIndex + 1
+    scrollTo(nextIndex)
+    if (thumbListRef.current) {
+      thumbListRef.current.scrollBy({ top: 110, behavior: "smooth" })
+    }
+  }
+
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const container = e.currentTarget
     const index = Math.round(container.scrollLeft / container.clientWidth)
     if (index !== activeIndex) {
       setActiveIndex(index)
+      scrollThumbnailIntoView(index)
     }
   }
 
   return (
-    <div className="flex flex-col-reverse medium:flex-row items-start gap-4 h-full">
-      {/* Thumbnail List */}
+    <div
+      className={`relative flex flex-col-reverse gap-3 ${
+        images.length > 1 ? "medium:block medium:pl-[104px]" : ""
+      }`}
+    >
+      {/* Thumbnail Column (Desktop: constrained strictly to Main Image height with Up/Down arrows; Mobile: horizontal strip below Main Image) */}
       {images.length > 1 && (
-        <div className="flex flex-row medium:flex-col gap-3 overflow-x-auto medium:overflow-y-auto medium:max-h-[850px] no-scrollbar w-full medium:w-[90px] flex-shrink-0">
-          {images.map((image, index) => (
-            <button
-              key={image.id}
-              onClick={() => scrollTo(index)}
-              className={`relative aspect-[3/4] w-20 medium:w-full overflow-hidden flex-shrink-0 border transition-all ${
-                activeIndex === index
-                  ? "border-black shadow-sm"
-                  : "border-transparent hover:border-gray-300"
-              }`}
+        <div className="w-full medium:w-[90px] medium:absolute medium:left-0 medium:top-0 medium:bottom-0 medium:h-full flex flex-row medium:flex-col items-center gap-1.5 flex-shrink-0">
+          {/* Desktop Up Arrow */}
+          <button
+            type="button"
+            onClick={handleThumbScrollUp}
+            aria-label="Yukarı Kaydır"
+            className="hidden medium:flex w-full h-7 flex-shrink-0 items-center justify-center rounded-md border border-gray-200 bg-white hover:bg-gray-100 text-zinc-700 shadow-sm transition-colors"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             >
-              {image.url && (
-                image.url.match(/\.(mp4|webm|mov)$/i) ? (
-                  <video
-                    src={image.url}
-                    className="absolute inset-0 w-full h-full object-cover"
-                    muted
-                    playsInline
-                  />
-                ) : (
-                  <Image
-                    alt={`Thumbnail ${index + 1}`}
-                    src={image.url}
-                    fill
-                    unoptimized
-                    className="object-contain bg-white p-1"
-                    sizes="80px"
-                  />
-                )
-              )}
-            </button>
-          ))}
+              <path d="M18 15l-6-6-6 6" />
+            </svg>
+          </button>
+
+          {/* Scrollable Thumbnails Container */}
+          <div
+            ref={thumbListRef}
+            className="flex flex-row medium:flex-col gap-2.5 overflow-x-auto medium:overflow-y-auto medium:overflow-x-hidden no-scrollbar w-full medium:flex-1 medium:min-h-0"
+          >
+            {images.map((image, index) => (
+              <button
+                key={image.id}
+                type="button"
+                data-thumb-idx={index}
+                onClick={() => scrollTo(index)}
+                className={`relative aspect-square w-16 sm:w-20 medium:w-full rounded-md overflow-hidden flex-shrink-0 border transition-all ${
+                  activeIndex === index
+                    ? "border-black ring-1 ring-black/20 shadow-sm"
+                    : "border-gray-200 hover:border-gray-400"
+                }`}
+              >
+                {image.url &&
+                  (image.url.match(/\.(mp4|webm|mov)$/i) ? (
+                    <video
+                      src={image.url}
+                      className="absolute inset-0 w-full h-full object-cover"
+                      muted
+                      playsInline
+                    />
+                  ) : (
+                    <Image
+                      alt={`Thumbnail ${index + 1}`}
+                      src={image.url}
+                      fill
+                      unoptimized
+                      className="object-contain bg-white p-1"
+                      sizes="80px"
+                    />
+                  ))}
+              </button>
+            ))}
+          </div>
+
+          {/* Desktop Down Arrow */}
+          <button
+            type="button"
+            onClick={handleThumbScrollDown}
+            aria-label="Aşağı Kaydır"
+            className="hidden medium:flex w-full h-7 flex-shrink-0 items-center justify-center rounded-md border border-gray-200 bg-white hover:bg-gray-100 text-zinc-700 shadow-sm transition-colors"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M6 9l6 6 6-6" />
+            </svg>
+          </button>
         </div>
       )}
 
       {/* Main Image */}
-      <div className="relative aspect-square w-full flex-grow overflow-hidden bg-white border border-gray-200 rounded-lg group">
+      <div className="relative aspect-square w-full overflow-hidden bg-white border border-gray-200 rounded-lg group">
         {/* Scrollable Carousel Container */}
         <div
           ref={carouselRef}

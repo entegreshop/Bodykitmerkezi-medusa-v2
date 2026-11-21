@@ -353,7 +353,20 @@ const defaultData = {
     trust_badge_2_text: "Aynı Gün Kargo",
     shipping_info_text: "Saat 15:00'a kadar verilen tüm siparişleriniz aynı gün kargoya teslim edilmektedir. Teslimat süresi ortalama 1-3 iş günüdür.",
     return_policy_text: "Siparişinizdeki ürünleri teslim aldığınız tarihten itibaren 14 gün içerisinde, kullanılmamış ve boyanmamış/monte edilmemiş olması şartıyla iade edebilirsiniz.",
-    show_sticky_mobile_bar: true
+    show_sticky_mobile_bar: true,
+    service_addons_enabled: true,
+    service_addons_heading: "Bu Parçayı Ne Hâlde İstiyorsunuz?",
+    service_addons_subheading: "Opsiyonel Ek Hizmetler",
+    boya_enabled: true,
+    boya_title: "Boya Hizmeti",
+    boya_description: "Aracınızın orijinal renk kodunda, profesyonel fırın boya atölyemizde hazırlanır",
+    boya_price_tl: 1800,
+    montaj_enabled: true,
+    montaj_title: "Montaj Hizmeti",
+    montaj_description: "BodyKit Merkezi uzman uygulama atölyemizde aracınıza profesyonel montaj",
+    montaj_price_tl: 1200,
+    show_surface_note: true,
+    surface_note_text: "Boyasız (ham yüzey) gönderilir."
   },
   cart_settings: {
     page_title: "Alışveriş Sepetim",

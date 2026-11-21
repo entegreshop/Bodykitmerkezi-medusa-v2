@@ -166,7 +166,7 @@ const KNOWN_VEHICLE_RULES: KnownVehicleRule[] = [
   { pattern: /fiesta\b/i, brandModel: "FORD FIESTA", startYear: 2008, endYear: 2017 },
   { pattern: /courier\b/i, brandModel: "FORD TOURNEO COURIER", startYear: 2014, endYear: 2023 },
   { pattern: /connect\b/i, brandModel: "FORD TOURNEO CONNECT", startYear: 2009, endYear: 2018 },
-  { pattern: /custom\b/i, brandModel: "FORD TRANSIT CUSTOM", startYear: 2012, endYear: 2023 },
+  { pattern: /transit\s*custom\b|tourneo\s*custom\b|ford\s*custom\b/i, brandModel: "FORD TRANSIT CUSTOM", startYear: 2012, endYear: 2023 },
   { pattern: /mondeo\b/i, brandModel: "FORD MONDEO", startYear: 2010, endYear: 2019 },
   { pattern: /kuga\b/i, brandModel: "FORD KUGA", startYear: 2013, endYear: 2023 },
   { pattern: /puma\b/i, brandModel: "FORD PUMA", startYear: 2020, endYear: 2025 },
@@ -174,8 +174,11 @@ const KNOWN_VEHICLE_RULES: KnownVehicleRule[] = [
   // HYUNDAI
   { pattern: /i20\b/i, brandModel: "HYUNDAI i20", startYear: 2014, endYear: 2023 },
   { pattern: /i30\b/i, brandModel: "HYUNDAI i30", startYear: 2012, endYear: 2020 },
+  { pattern: /accent\s*admire\b/i, brandModel: "HYUNDAI ACCENT ADMIRE", startYear: 2000, endYear: 2006 },
+  { pattern: /accent\s*milenyum\b/i, brandModel: "HYUNDAI ACCENT MİLENYUM", startYear: 1999, endYear: 2003 },
   { pattern: /accent\s*blue\b/i, brandModel: "HYUNDAI ACCENT BLUE", startYear: 2011, endYear: 2018 },
   { pattern: /accent\s*era\b/i, brandModel: "HYUNDAI ACCENT ERA", startYear: 2006, endYear: 2012 },
+  { pattern: /accent\b/i, brandModel: "HYUNDAI ACCENT", startYear: 2000, endYear: 2018 },
   { pattern: /elantra\b/i, brandModel: "HYUNDAI ELANTRA", startYear: 2016, endYear: 2023 },
   { pattern: /tucson\b/i, brandModel: "HYUNDAI TUCSON", startYear: 2015, endYear: 2024 },
   { pattern: /bayon\b/i, brandModel: "HYUNDAI BAYON", startYear: 2021, endYear: 2025 },
@@ -283,8 +286,8 @@ export function extractVehicleCompatibility(
   let endYear = matchedRule?.endYear || 0
 
   const rangeMatch =
-    rawTitle.match(/\b(199\d|20[0-2]\d)\s*[-–/]\s*(199\d|20[0-2]\d)\b/) ||
-    rawDesc.match(/\b(199\d|20[0-2]\d)\s*[-–/]\s*(199\d|20[0-2]\d)\b/)
+    rawTitle.match(/\b(199\d|20[0-2]\d)(?:\s*[-–/]\s*|\s+)(199\d|20[0-2]\d)\b/) ||
+    rawDesc.match(/\b(199\d|20[0-2]\d)(?:\s*[-–/]\s*|\s+)(199\d|20[0-2]\d)\b/)
 
   const openEndedMatch =
     rawTitle.match(/\b(20[0-2]\d)\s*(?:\+|ve\s*sonras[ıi]|y[ıi]l[ıi]\s*ve\s*sonras[ıi]|üzeri|uzeri)/i) ||

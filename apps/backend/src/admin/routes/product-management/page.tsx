@@ -952,6 +952,23 @@ const IkasProductsPage = () => {
     return null
   }
 
+  const [editingProductMetadata, setEditingProductMetadata] = useState<Record<string, any>>({})
+  const [serviceAddonsForm, setServiceAddonsForm] = useState({
+    enabled: true,
+    heading: "Bu Parçayı Ne Hâlde İstiyorsunuz?",
+    subheading: "Opsiyonel Ek Hizmetler",
+    boya_enabled: true,
+    boya_title: "Boya Hizmeti",
+    boya_description: "Aracınızın orijinal renk kodunda, profesyonel fırın boya atölyemizde hazırlanır",
+    boya_price_tl: 1800,
+    montaj_enabled: true,
+    montaj_title: "Montaj Hizmeti",
+    montaj_description: "BodyKit Merkezi uzman uygulama atölyemizde aracınıza profesyonel montaj",
+    montaj_price_tl: 1200,
+    show_surface_note: true,
+    surface_note_text: "Boyasız (ham yüzey) gönderilir.",
+  })
+
   // --- Reset Form for Create ---
   const initCreateMode = () => {
     setProductName("")
@@ -972,6 +989,22 @@ const IkasProductsPage = () => {
     setCheckedIndices([])
     setIsVariantProduct(false)
     setEditingProductId(null)
+    setEditingProductMetadata({})
+    setServiceAddonsForm({
+      enabled: true,
+      heading: "Bu Parçayı Ne Hâlde İstiyorsunuz?",
+      subheading: "Opsiyonel Ek Hizmetler",
+      boya_enabled: true,
+      boya_title: "Boya Hizmeti",
+      boya_description: "Aracınızın orijinal renk kodunda, profesyonel fırın boya atölyemizde hazırlanır",
+      boya_price_tl: 1800,
+      montaj_enabled: true,
+      montaj_title: "Montaj Hizmeti",
+      montaj_description: "BodyKit Merkezi uzman uygulama atölyemizde aracınıza profesyonel montaj",
+      montaj_price_tl: 1200,
+      show_surface_note: true,
+      surface_note_text: "Boyasız (ham yüzey) gönderilir.",
+    })
     setView("create")
   }
 
@@ -983,6 +1016,27 @@ const IkasProductsPage = () => {
     setDescription(prod.description || "")
     setCategory(prod.categories?.[0]?.id || "")
     setBrand(prod.collection_id || "")
+    setEditingProductMetadata(prod.metadata || {})
+    const savedAddons = (prod.metadata?.service_addons || {}) as Record<string, any>
+    setServiceAddonsForm({
+      enabled: savedAddons.enabled ?? true,
+      heading: savedAddons.heading || "Bu Parçayı Ne Hâlde İstiyorsunuz?",
+      subheading: savedAddons.subheading || "Opsiyonel Ek Hizmetler",
+      boya_enabled: savedAddons.boya_enabled ?? true,
+      boya_title: savedAddons.boya_title || "Boya Hizmeti",
+      boya_description:
+        savedAddons.boya_description ||
+        "Aracınızın orijinal renk kodunda, profesyonel fırın boya atölyemizde hazırlanır",
+      boya_price_tl: Number(savedAddons.boya_price_tl ?? 1800),
+      montaj_enabled: savedAddons.montaj_enabled ?? true,
+      montaj_title: savedAddons.montaj_title || "Montaj Hizmeti",
+      montaj_description:
+        savedAddons.montaj_description ||
+        "BodyKit Merkezi uzman uygulama atölyemizde aracınıza profesyonel montaj",
+      montaj_price_tl: Number(savedAddons.montaj_price_tl ?? 1200),
+      show_surface_note: savedAddons.show_surface_note ?? true,
+      surface_note_text: savedAddons.surface_note_text || "Boyasız (ham yüzey) gönderilir.",
+    })
     
     // Detach options
     const colorOpt = prod.options?.find((o: any) => o.title.toLowerCase() === "renk")
@@ -1103,7 +1157,11 @@ const IkasProductsPage = () => {
         thumbnail: uniqueImageUrls[0] || "",
         images: uniqueImageUrls.map(url => ({ url })),
         collection_id: brand || undefined,
-        categories: category ? [{ id: category }] : []
+        categories: category ? [{ id: category }] : [],
+        metadata: {
+          ...(editingProductMetadata || {}),
+          service_addons: serviceAddonsForm,
+        },
       }
 
       if (isVariantProduct) {
@@ -6800,6 +6858,130 @@ const IkasProductsPage = () => {
                     placeholder="Örn: jean, tayt, yeni-sezon"
                     className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2.5 text-xs font-medium focus:outline-none focus:border-indigo-500 text-slate-800 transition-colors"
                   />
+                </div>
+
+                {/* Ek Hizmetler (Boya & Montaj) Alanı */}
+                <div className="pt-3 border-t border-slate-100 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-xs font-extrabold text-slate-900 block">
+                        🛠️ Ek Hizmetler (Boya &amp; Montaj)
+                      </span>
+                      <span className="text-[10.5px] text-slate-400">
+                        Ürün detay sayfasındaki opsiyonel ek hizmetler alanı
+                      </span>
+                    </div>
+                    <label className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={serviceAddonsForm.enabled}
+                        onChange={(e) =>
+                          setServiceAddonsForm((prev) => ({ ...prev, enabled: e.target.checked }))
+                        }
+                        className="w-4 h-4 accent-indigo-600"
+                      />
+                      <span>{serviceAddonsForm.enabled ? "Aktif" : "Pasif"}</span>
+                    </label>
+                  </div>
+
+                  {serviceAddonsForm.enabled && (
+                    <div className="space-y-2.5 bg-slate-50/70 border border-slate-200/80 rounded-lg p-3">
+                      {/* Boya Hizmeti */}
+                      <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-200/60">
+                        <label className="inline-flex items-center gap-2 text-xs font-bold text-slate-800 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={serviceAddonsForm.boya_enabled}
+                            onChange={(e) =>
+                              setServiceAddonsForm((prev) => ({
+                                ...prev,
+                                boya_enabled: e.target.checked,
+                              }))
+                            }
+                            className="w-4 h-4 accent-indigo-600"
+                          />
+                          <span>Boya Hizmeti</span>
+                        </label>
+                        <div className="flex items-center gap-1">
+                          <span className="text-[11px] font-bold text-slate-400">+₺</span>
+                          <input
+                            type="number"
+                            value={serviceAddonsForm.boya_price_tl}
+                            onChange={(e) =>
+                              setServiceAddonsForm((prev) => ({
+                                ...prev,
+                                boya_price_tl: Number(e.target.value) || 0,
+                              }))
+                            }
+                            className="w-20 bg-white border border-slate-200 rounded px-2 py-1 text-xs font-bold text-slate-800 text-right"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Montaj Hizmeti */}
+                      <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-200/60">
+                        <label className="inline-flex items-center gap-2 text-xs font-bold text-slate-800 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={serviceAddonsForm.montaj_enabled}
+                            onChange={(e) =>
+                              setServiceAddonsForm((prev) => ({
+                                ...prev,
+                                montaj_enabled: e.target.checked,
+                              }))
+                            }
+                            className="w-4 h-4 accent-indigo-600"
+                          />
+                          <span>Montaj Hizmeti</span>
+                        </label>
+                        <div className="flex items-center gap-1">
+                          <span className="text-[11px] font-bold text-slate-400">+₺</span>
+                          <input
+                            type="number"
+                            value={serviceAddonsForm.montaj_price_tl}
+                            onChange={(e) =>
+                              setServiceAddonsForm((prev) => ({
+                                ...prev,
+                                montaj_price_tl: Number(e.target.value) || 0,
+                              }))
+                            }
+                            className="w-20 bg-white border border-slate-200 rounded px-2 py-1 text-xs font-bold text-slate-800 text-right"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Yüzey Durumu Notu */}
+                      <div className="space-y-1.5">
+                        <label className="inline-flex items-center gap-2 text-[11px] font-bold text-slate-700 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={serviceAddonsForm.show_surface_note}
+                            onChange={(e) =>
+                              setServiceAddonsForm((prev) => ({
+                                ...prev,
+                                show_surface_note: e.target.checked,
+                              }))
+                            }
+                            className="w-3.5 h-3.5 accent-indigo-600"
+                          />
+                          <span>Yüzey Notunu Göster (&quot;Boyasız gönderilir&quot;)</span>
+                        </label>
+                        {serviceAddonsForm.show_surface_note && (
+                          <input
+                            type="text"
+                            value={serviceAddonsForm.surface_note_text}
+                            onChange={(e) =>
+                              setServiceAddonsForm((prev) => ({
+                                ...prev,
+                                surface_note_text: e.target.value,
+                              }))
+                            }
+                            className="w-full bg-white border border-slate-200 rounded px-2.5 py-1.5 text-[11px] text-slate-700"
+                          />
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 

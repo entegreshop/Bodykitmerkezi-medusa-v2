@@ -30,17 +30,16 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({
   return (
     <>
       <div
-        className="content-container flex flex-col small:flex-row small:items-start py-8 relative gap-8 lg:gap-12"
+        className="content-container flex flex-col gap-6 small:grid small:grid-cols-12 small:grid-rows-[auto_1fr] small:items-start small:gap-x-8 small:gap-y-0 lg:gap-x-12 py-8 relative"
         data-testid="product-container"
       >
-        {/* Left Column (60%): Gallery + Vehicle Compatibility & Service Add-ons */}
-        <div className="w-full small:w-[60%] flex flex-col">
+        {/* 1. Ürün Görseli (Masaüstünde Sol Üst 60%, Mobilde 1. Sırada) */}
+        <div className="order-1 w-full small:col-span-7 small:col-start-1 small:row-start-1">
           <ImageGallery images={images} />
-          <ProductBelowGallery product={product} />
         </div>
 
-        {/* Right Column (40%): Sidebar */}
-        <div className="flex flex-col small:sticky small:top-24 w-full small:w-[40%] gap-y-8">
+        {/* 2. Başlık, Fiyat, Sepete Ekle, Ödeme Seçenekleri ve Açıklama/Özellikler (Masaüstünde Sağ 40% Sticky, Mobilde Görselin Hemen Altında 2. Sırada) */}
+        <div className="order-2 flex flex-col w-full small:col-span-5 small:col-start-8 small:row-start-1 small:row-span-2 small:sticky small:top-24 gap-y-8">
           <Suspense
             fallback={
               <ProductActions
@@ -56,6 +55,11 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({
               </Suspense>
             </ProductActionsWrapper>
           </Suspense>
+        </div>
+
+        {/* 3. Araç Uyumluluk Tablosu, Boya/Montaj Seçenekleri ve Güvence/WhatsApp (Masaüstünde Ürün Görselinin Hemen Altında Sol Sütunda, Mobilde Açıklamaların Altında 3. Sırada) */}
+        <div className="order-3 w-full small:col-span-7 small:col-start-1 small:row-start-2 small:self-start">
+          <ProductBelowGallery product={product} />
         </div>
       </div>
 

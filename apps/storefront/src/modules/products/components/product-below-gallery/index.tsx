@@ -7,6 +7,40 @@ import { extractVehicleCompatibility } from "@modules/products/components/produc
 export const BOYA_SERVICE_PRICE_TL = 1800
 export const MONTAJ_SERVICE_PRICE_TL = 1200
 
+type ServiceAddonsSettings = {
+  service_addons_enabled: boolean
+  service_addons_heading: string
+  service_addons_subheading: string
+  boya_enabled: boolean
+  boya_title: string
+  boya_description: string
+  boya_price_tl: number
+  montaj_enabled: boolean
+  montaj_title: string
+  montaj_description: string
+  montaj_price_tl: number
+  show_surface_note: boolean
+  surface_note_text: string
+}
+
+const DEFAULT_SERVICE_ADDONS_SETTINGS: ServiceAddonsSettings = {
+  service_addons_enabled: true,
+  service_addons_heading: "Bu Parçayı Ne Hâlde İstiyorsunuz?",
+  service_addons_subheading: "Opsiyonel Ek Hizmetler",
+  boya_enabled: true,
+  boya_title: "Boya Hizmeti",
+  boya_description:
+    "Aracınızın orijinal renk kodunda, profesyonel fırın boya atölyemizde hazırlanır",
+  boya_price_tl: BOYA_SERVICE_PRICE_TL,
+  montaj_enabled: true,
+  montaj_title: "Montaj Hizmeti",
+  montaj_description:
+    "BodyKit Merkezi uzman uygulama atölyemizde aracınıza profesyonel montaj",
+  montaj_price_tl: MONTAJ_SERVICE_PRICE_TL,
+  show_surface_note: true,
+  surface_note_text: "Boyasız (ham yüzey) gönderilir.",
+}
+
 type ProductBelowGalleryProps = {
   product: HttpTypes.StoreProduct
 }
@@ -15,15 +49,69 @@ export default function ProductBelowGallery({ product }: ProductBelowGalleryProp
   const [boyaSelected, setBoyaSelected] = useState(false)
   const [montajSelected, setMontajSelected] = useState(false)
   const [whatsappNumber, setWhatsappNumber] = useState("905323370081")
+  const [globalSettings, setGlobalSettings] = useState<ServiceAddonsSettings>(
+    DEFAULT_SERVICE_ADDONS_SETTINGS
+  )
+
+  const addonsConfig = useMemo<ServiceAddonsSettings>(() => {
+    const prodMeta = (product.metadata as Record<string, any> | undefined)?.service_addons
+    if (!prodMeta || typeof prodMeta !== "object") {
+      return globalSettings
+    }
+    return {
+      service_addons_enabled:
+        typeof prodMeta.enabled === "boolean"
+          ? prodMeta.enabled
+          : globalSettings.service_addons_enabled,
+      service_addons_heading:
+        prodMeta.heading || globalSettings.service_addons_heading,
+      service_addons_subheading:
+        prodMeta.subheading || globalSettings.service_addons_subheading,
+      boya_enabled:
+        typeof prodMeta.boya_enabled === "boolean"
+          ? prodMeta.boya_enabled
+          : globalSettings.boya_enabled,
+      boya_title: prodMeta.boya_title || globalSettings.boya_title,
+      boya_description:
+        prodMeta.boya_description || globalSettings.boya_description,
+      boya_price_tl:
+        prodMeta.boya_price_tl !== undefined && prodMeta.boya_price_tl !== ""
+          ? Number(prodMeta.boya_price_tl)
+          : globalSettings.boya_price_tl,
+      montaj_enabled:
+        typeof prodMeta.montaj_enabled === "boolean"
+          ? prodMeta.montaj_enabled
+          : globalSettings.montaj_enabled,
+      montaj_title: prodMeta.montaj_title || globalSettings.montaj_title,
+      montaj_description:
+        prodMeta.montaj_description || globalSettings.montaj_description,
+      montaj_price_tl:
+        prodMeta.montaj_price_tl !== undefined && prodMeta.montaj_price_tl !== ""
+          ? Number(prodMeta.montaj_price_tl)
+          : globalSettings.montaj_price_tl,
+      show_surface_note:
+        typeof prodMeta.show_surface_note === "boolean"
+          ? prodMeta.show_surface_note
+          : globalSettings.show_surface_note,
+      surface_note_text:
+        prodMeta.surface_note_text || globalSettings.surface_note_text,
+    }
+  }, [globalSettings, product.metadata])
 
   useEffect(() => {
     setBoyaSelected(false)
     setMontajSelected(false)
     if (typeof window !== "undefined") {
-      ;(window as any).__bkmServiceAddons = { boyaSelected: false, montajSelected: false }
+      const payload = {
+        boyaSelected: false,
+        montajSelected: false,
+        boyaPriceTl: addonsConfig.boya_price_tl,
+        montajPriceTl: addonsConfig.montaj_price_tl,
+      }
+      ;(window as any).__bkmServiceAddons = payload
       window.dispatchEvent(
         new CustomEvent("bkmServiceAddonsChanged", {
-          detail: { boyaSelected: false, montajSelected: false },
+          detail: payload,
         })
       )
     }
@@ -44,6 +132,32 @@ export default function ProductBelowGallery({ product }: ProductBelowGalleryProp
         if (data?.config?.whatsapp_number) {
           setWhatsappNumber(data.config.whatsapp_number)
         }
+        const pds = data?.config?.product_detail_settings
+        if (pds && typeof pds === "object") {
+          setGlobalSettings((prev) => ({
+            ...prev,
+            service_addons_enabled: pds.service_addons_enabled ?? prev.service_addons_enabled,
+            service_addons_heading: pds.service_addons_heading || prev.service_addons_heading,
+            service_addons_subheading:
+              pds.service_addons_subheading || prev.service_addons_subheading,
+            boya_enabled: pds.boya_enabled ?? prev.boya_enabled,
+            boya_title: pds.boya_title || prev.boya_title,
+            boya_description: pds.boya_description || prev.boya_description,
+            boya_price_tl:
+              pds.boya_price_tl !== undefined
+                ? Number(pds.boya_price_tl)
+                : prev.boya_price_tl,
+            montaj_enabled: pds.montaj_enabled ?? prev.montaj_enabled,
+            montaj_title: pds.montaj_title || prev.montaj_title,
+            montaj_description: pds.montaj_description || prev.montaj_description,
+            montaj_price_tl:
+              pds.montaj_price_tl !== undefined
+                ? Number(pds.montaj_price_tl)
+                : prev.montaj_price_tl,
+            show_surface_note: pds.show_surface_note ?? prev.show_surface_note,
+            surface_note_text: pds.surface_note_text || prev.surface_note_text,
+          }))
+        }
       } catch {}
     }
     fetchWhatsappConfig()
@@ -59,20 +173,38 @@ export default function ProductBelowGallery({ product }: ProductBelowGalleryProp
 
   const notifyAddonsChange = (nextBoya: boolean, nextMontaj: boolean) => {
     if (typeof window !== "undefined") {
-      ;(window as any).__bkmServiceAddons = {
+      const payload = {
         boyaSelected: nextBoya,
         montajSelected: nextMontaj,
+        boyaPriceTl: addonsConfig.boya_price_tl,
+        montajPriceTl: addonsConfig.montaj_price_tl,
       }
+      ;(window as any).__bkmServiceAddons = payload
       window.dispatchEvent(
         new CustomEvent("bkmServiceAddonsChanged", {
-          detail: {
-            boyaSelected: nextBoya,
-            montajSelected: nextMontaj,
-          },
+          detail: payload,
         })
       )
     }
   }
+
+  useEffect(() => {
+    const effectiveBoya =
+      addonsConfig.service_addons_enabled && addonsConfig.boya_enabled ? boyaSelected : false
+    const effectiveMontaj =
+      addonsConfig.service_addons_enabled && addonsConfig.montaj_enabled
+        ? montajSelected
+        : false
+    if (effectiveBoya !== boyaSelected) setBoyaSelected(effectiveBoya)
+    if (effectiveMontaj !== montajSelected) setMontajSelected(effectiveMontaj)
+    notifyAddonsChange(effectiveBoya, effectiveMontaj)
+  }, [
+    addonsConfig.service_addons_enabled,
+    addonsConfig.boya_enabled,
+    addonsConfig.montaj_enabled,
+    addonsConfig.boya_price_tl,
+    addonsConfig.montaj_price_tl,
+  ])
 
   const handleToggleBoya = () => {
     const next = !boyaSelected
@@ -94,11 +226,24 @@ export default function ProductBelowGallery({ product }: ProductBelowGalleryProp
   }
 
   const whatsappServiceNotes: string[] = []
-  if (boyaSelected && !vehicleCompat.isPrePaintedPianoBlack && !vehicleCompat.isTrunkMat) {
-    whatsappServiceNotes.push(`+Boya Hizmeti (₺${BOYA_SERVICE_PRICE_TL})`)
+  if (
+    addonsConfig.service_addons_enabled &&
+    addonsConfig.boya_enabled &&
+    boyaSelected &&
+    !vehicleCompat.isPrePaintedPianoBlack &&
+    !vehicleCompat.isTrunkMat
+  ) {
+    whatsappServiceNotes.push(`+${addonsConfig.boya_title} (₺${addonsConfig.boya_price_tl})`)
   }
-  if (montajSelected && !vehicleCompat.isTrunkMat) {
-    whatsappServiceNotes.push(`+Montaj Hizmeti (₺${MONTAJ_SERVICE_PRICE_TL})`)
+  if (
+    addonsConfig.service_addons_enabled &&
+    addonsConfig.montaj_enabled &&
+    montajSelected &&
+    !vehicleCompat.isTrunkMat
+  ) {
+    whatsappServiceNotes.push(
+      `+${addonsConfig.montaj_title} (₺${addonsConfig.montaj_price_tl})`
+    )
   }
   const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
     `Merhaba, ${product.title}${
@@ -216,180 +361,188 @@ export default function ProductBelowGallery({ product }: ProductBelowGalleryProp
       </div>
 
       {/* 2. BOYA & MONTAJ ÖZELLEŞTİRME SEÇENEKLERİ */}
-      {!vehicleCompat.isTrunkMat && (
-        <div
-          className="rounded-xl border border-zinc-200 bg-white p-4 sm:p-5 shadow-sm flex flex-col gap-y-3"
-          data-testid="service-addons-card"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-extrabold uppercase tracking-wider text-zinc-800">
-              Bu Parçayı Ne Hâlde İstiyorsunuz?
-            </span>
-            <span className="text-[11px] font-medium text-zinc-500">
-              Opsiyonel Ek Hizmetler
-            </span>
-          </div>
+      {!vehicleCompat.isTrunkMat &&
+        addonsConfig.service_addons_enabled &&
+        (addonsConfig.boya_enabled || addonsConfig.montaj_enabled) && (
+          <div
+            className="rounded-xl border border-zinc-200 bg-white p-4 sm:p-5 shadow-sm flex flex-col gap-y-3"
+            data-testid="service-addons-card"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-extrabold uppercase tracking-wider text-zinc-800">
+                {addonsConfig.service_addons_heading}
+              </span>
+              <span className="text-[11px] font-medium text-zinc-500">
+                {addonsConfig.service_addons_subheading}
+              </span>
+            </div>
 
-          {/* Boya Seçeneği */}
-          {!vehicleCompat.isPrePaintedPianoBlack ? (
-            <button
-              type="button"
-              onClick={handleToggleBoya}
-              className={`w-full text-left rounded-lg border p-3.5 transition-all flex items-center justify-between gap-3 ${
-                boyaSelected
-                  ? "border-[#E50000] bg-red-50/40 ring-1 ring-[#E50000]/30"
-                  : "border-zinc-200 hover:border-zinc-300 bg-zinc-50/40"
-              }`}
-              data-testid="addon-boya-toggle"
-            >
-              <div className="flex items-center gap-3">
-                <div
-                  className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors shrink-0 ${
-                    boyaSelected
-                      ? "bg-[#E50000] border-[#E50000] text-white"
-                      : "bg-white border-zinc-300"
-                  }`}
-                >
-                  {boyaSelected && (
+            {/* Boya Seçeneği */}
+            {addonsConfig.boya_enabled && (
+              <>
+                {!vehicleCompat.isPrePaintedPianoBlack ? (
+                  <button
+                    type="button"
+                    onClick={handleToggleBoya}
+                    className={`w-full text-left rounded-lg border p-3.5 transition-all flex items-center justify-between gap-3 ${
+                      boyaSelected
+                        ? "border-[#E50000] bg-red-50/40 ring-1 ring-[#E50000]/30"
+                        : "border-zinc-200 hover:border-zinc-300 bg-zinc-50/40"
+                    }`}
+                    data-testid="addon-boya-toggle"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors shrink-0 ${
+                          boyaSelected
+                            ? "bg-[#E50000] border-[#E50000] text-white"
+                            : "bg-white border-zinc-300"
+                        }`}
+                      >
+                        {boyaSelected && (
+                          <svg
+                            width="13"
+                            height="13"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="3"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        )}
+                      </div>
+
+                      <div className="w-9 h-9 rounded-lg bg-white border border-zinc-200 flex items-center justify-center text-zinc-700 shrink-0">
+                        <svg
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M19 11H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2Z" />
+                          <path d="M12 11V3" />
+                          <path d="m8 6 4-3 4 3" />
+                        </svg>
+                      </div>
+
+                      <div className="flex flex-col">
+                        <span className="text-sm font-bold text-zinc-900">
+                          {addonsConfig.boya_title}
+                        </span>
+                        <span className="text-xs text-zinc-500">
+                          {addonsConfig.boya_description}
+                        </span>
+                      </div>
+                    </div>
+
+                    <span
+                      className={`text-sm font-extrabold whitespace-nowrap ${
+                        boyaSelected ? "text-[#E50000]" : "text-zinc-900"
+                      }`}
+                    >
+                      +₺{formatTlAmount(addonsConfig.boya_price_tl)}
+                    </span>
+                  </button>
+                ) : (
+                  <div className="w-full rounded-lg border border-emerald-200 bg-emerald-50/50 p-3 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 shrink-0" />
+                      <div className="flex flex-col">
+                        <span className="text-xs font-bold text-emerald-950">
+                          Kendinden Boyalı (Piano Black / Parlak Siyah) Ürün
+                        </span>
+                        <span className="text-[11px] text-emerald-800">
+                          Bu ürün ek boya gerektirmeden parlak siyah yüzeyli olarak gönderilir.
+                        </span>
+                      </div>
+                    </div>
+                    <span className="text-xs font-bold text-emerald-700 whitespace-nowrap">
+                      Boyalı
+                    </span>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Montaj Seçeneği */}
+            {addonsConfig.montaj_enabled && (
+              <button
+                type="button"
+                onClick={handleToggleMontaj}
+                className={`w-full text-left rounded-lg border p-3.5 transition-all flex items-center justify-between gap-3 ${
+                  montajSelected
+                    ? "border-[#E50000] bg-red-50/40 ring-1 ring-[#E50000]/30"
+                    : "border-zinc-200 hover:border-zinc-300 bg-zinc-50/40"
+                }`}
+                data-testid="addon-montaj-toggle"
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors shrink-0 ${
+                      montajSelected
+                        ? "bg-[#E50000] border-[#E50000] text-white"
+                        : "bg-white border-zinc-300"
+                    }`}
+                  >
+                    {montajSelected && (
+                      <svg
+                        width="13"
+                        height="13"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    )}
+                  </div>
+
+                  <div className="w-9 h-9 rounded-lg bg-white border border-zinc-200 flex items-center justify-center text-zinc-700 shrink-0">
                     <svg
-                      width="13"
-                      height="13"
+                      width="18"
+                      height="18"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
-                      strokeWidth="3"
+                      strokeWidth="1.8"
                       strokeLinecap="round"
                       strokeLinejoin="round"
                     >
-                      <polyline points="20 6 9 17 4 12" />
+                      <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
                     </svg>
-                  )}
+                  </div>
+
+                  <div className="flex flex-col">
+                    <span className="text-sm font-bold text-zinc-900">
+                      {addonsConfig.montaj_title}
+                    </span>
+                    <span className="text-xs text-zinc-500">
+                      {addonsConfig.montaj_description}
+                    </span>
+                  </div>
                 </div>
 
-                <div className="w-9 h-9 rounded-lg bg-white border border-zinc-200 flex items-center justify-center text-zinc-700 shrink-0">
-                  <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M19 11H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2Z" />
-                    <path d="M12 11V3" />
-                    <path d="m8 6 4-3 4 3" />
-                  </svg>
-                </div>
-
-                <div className="flex flex-col">
-                  <span className="text-sm font-bold text-zinc-900">
-                    Boya Hizmeti
-                  </span>
-                  <span className="text-xs text-zinc-500">
-                    Aracınızın orijinal renk kodunda, profesyonel fırın boya atölyemizde hazırlanır
-                  </span>
-                </div>
-              </div>
-
-              <span
-                className={`text-sm font-extrabold whitespace-nowrap ${
-                  boyaSelected ? "text-[#E50000]" : "text-zinc-900"
-                }`}
-              >
-                +₺{formatTlAmount(BOYA_SERVICE_PRICE_TL)}
-              </span>
-            </button>
-          ) : (
-            <div className="w-full rounded-lg border border-emerald-200 bg-emerald-50/50 p-3 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 shrink-0" />
-                <div className="flex flex-col">
-                  <span className="text-xs font-bold text-emerald-950">
-                    Kendinden Boyalı (Piano Black / Parlak Siyah) Ürün
-                  </span>
-                  <span className="text-[11px] text-emerald-800">
-                    Bu ürün ek boya gerektirmeden parlak siyah yüzeyli olarak gönderilir.
-                  </span>
-                </div>
-              </div>
-              <span className="text-xs font-bold text-emerald-700 whitespace-nowrap">
-                Boyalı
-              </span>
-            </div>
-          )}
-
-          {/* Montaj Seçeneği */}
-          <button
-            type="button"
-            onClick={handleToggleMontaj}
-            className={`w-full text-left rounded-lg border p-3.5 transition-all flex items-center justify-between gap-3 ${
-              montajSelected
-                ? "border-[#E50000] bg-red-50/40 ring-1 ring-[#E50000]/30"
-                : "border-zinc-200 hover:border-zinc-300 bg-zinc-50/40"
-            }`}
-            data-testid="addon-montaj-toggle"
-          >
-            <div className="flex items-center gap-3">
-              <div
-                className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors shrink-0 ${
-                  montajSelected
-                    ? "bg-[#E50000] border-[#E50000] text-white"
-                    : "bg-white border-zinc-300"
-                }`}
-              >
-                {montajSelected && (
-                  <svg
-                    width="13"
-                    height="13"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                )}
-              </div>
-
-              <div className="w-9 h-9 rounded-lg bg-white border border-zinc-200 flex items-center justify-center text-zinc-700 shrink-0">
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+                <span
+                  className={`text-sm font-extrabold whitespace-nowrap ${
+                    montajSelected ? "text-[#E50000]" : "text-zinc-900"
+                  }`}
                 >
-                  <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
-                </svg>
-              </div>
-
-              <div className="flex flex-col">
-                <span className="text-sm font-bold text-zinc-900">
-                  Montaj Hizmeti
+                  +₺{formatTlAmount(addonsConfig.montaj_price_tl)}
                 </span>
-                <span className="text-xs text-zinc-500">
-                  BodyKit Merkezi uzman uygulama atölyemizde aracınıza profesyonel montaj
-                </span>
-              </div>
-            </div>
-
-            <span
-              className={`text-sm font-extrabold whitespace-nowrap ${
-                montajSelected ? "text-[#E50000]" : "text-zinc-900"
-              }`}
-            >
-              +₺{formatTlAmount(MONTAJ_SERVICE_PRICE_TL)}
-            </span>
-          </button>
-        </div>
-      )}
+              </button>
+            )}
+          </div>
+        )}
 
       {/* 3. DEĞİŞİM GÜVENCESİ, WHATSAPP UYUM TEYİDİ & KARGO / İADE BİLGİLERİ */}
       <div
@@ -397,18 +550,20 @@ export default function ProductBelowGallery({ product }: ProductBelowGalleryProp
         data-testid="guarantees-and-whatsapp-section"
       >
         {/* Yüzey durumu bilgi satırı */}
-        <div className="flex items-center gap-2 text-xs font-semibold text-zinc-600 px-1">
-          <span className="w-2 h-2 rounded-full bg-zinc-400 shrink-0" />
-          <span>
-            {vehicleCompat.isPrePaintedPianoBlack
-              ? "Parlak Siyah (Piano Black) boyalı yüzey olarak gönderilir."
-              : vehicleCompat.isTrunkMat
-              ? "Araca özel birebir kalıp olarak gönderilir."
-              : boyaSelected
-              ? "Seçiminiz doğrultusunda aracınızın orijinal renk kodunda boyalı gönderilir."
-              : "Boyasız (ham yüzey) gönderilir."}
-          </span>
-        </div>
+        {addonsConfig.show_surface_note && (
+          <div className="flex items-center gap-2 text-xs font-semibold text-zinc-600 px-1">
+            <span className="w-2 h-2 rounded-full bg-zinc-400 shrink-0" />
+            <span>
+              {vehicleCompat.isPrePaintedPianoBlack
+                ? "Parlak Siyah (Piano Black) boyalı yüzey olarak gönderilir."
+                : vehicleCompat.isTrunkMat
+                ? "Araca özel birebir kalıp olarak gönderilir."
+                : boyaSelected
+                ? "Seçiminiz doğrultusunda aracınızın orijinal renk kodunda boyalı gönderilir."
+                : addonsConfig.surface_note_text}
+            </span>
+          </div>
+        )}
 
         {/* 2'li Güvence Kartları */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

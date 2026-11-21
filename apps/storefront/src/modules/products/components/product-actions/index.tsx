@@ -401,18 +401,42 @@ export default function ProductActions({
   // Boya, Montaj & Quantity states (synced with ProductBelowGallery under the product image)
   const [boyaSelected, setBoyaSelected] = useState(false)
   const [montajSelected, setMontajSelected] = useState(false)
+  const [boyaPriceTl, setBoyaPriceTl] = useState(BOYA_SERVICE_PRICE_TL)
+  const [montajPriceTl, setMontajPriceTl] = useState(MONTAJ_SERVICE_PRICE_TL)
   const quantity = 1
 
   useEffect(() => {
     setBoyaSelected(false)
     setMontajSelected(false)
-  }, [product.id])
+    const prodAddons = (product.metadata as Record<string, any> | undefined)?.service_addons
+    if (prodAddons?.boya_price_tl !== undefined && prodAddons?.boya_price_tl !== "") {
+      setBoyaPriceTl(Number(prodAddons.boya_price_tl))
+    } else if ((detailConfig as any)?.boya_price_tl !== undefined) {
+      setBoyaPriceTl(Number((detailConfig as any).boya_price_tl))
+    } else {
+      setBoyaPriceTl(BOYA_SERVICE_PRICE_TL)
+    }
+
+    if (prodAddons?.montaj_price_tl !== undefined && prodAddons?.montaj_price_tl !== "") {
+      setMontajPriceTl(Number(prodAddons.montaj_price_tl))
+    } else if ((detailConfig as any)?.montaj_price_tl !== undefined) {
+      setMontajPriceTl(Number((detailConfig as any).montaj_price_tl))
+    } else {
+      setMontajPriceTl(MONTAJ_SERVICE_PRICE_TL)
+    }
+  }, [product.id, product.metadata, detailConfig])
 
   useEffect(() => {
     const handleAddonsChanged = (e: any) => {
       if (e?.detail) {
         setBoyaSelected(Boolean(e.detail.boyaSelected))
         setMontajSelected(Boolean(e.detail.montajSelected))
+        if (typeof e.detail.boyaPriceTl === "number") {
+          setBoyaPriceTl(e.detail.boyaPriceTl)
+        }
+        if (typeof e.detail.montajPriceTl === "number") {
+          setMontajPriceTl(e.detail.montajPriceTl)
+        }
       }
     }
     if (typeof window !== "undefined") {
@@ -420,6 +444,12 @@ export default function ProductActions({
       if (existing) {
         setBoyaSelected(Boolean(existing.boyaSelected))
         setMontajSelected(Boolean(existing.montajSelected))
+        if (typeof existing.boyaPriceTl === "number") {
+          setBoyaPriceTl(existing.boyaPriceTl)
+        }
+        if (typeof existing.montajPriceTl === "number") {
+          setMontajPriceTl(existing.montajPriceTl)
+        }
       }
       window.addEventListener("bkmServiceAddonsChanged", handleAddonsChanged)
       return () => window.removeEventListener("bkmServiceAddonsChanged", handleAddonsChanged)
@@ -459,9 +489,9 @@ export default function ProductActions({
 
   const addonUnitTl =
     (boyaSelected && !vehicleCompat.isPrePaintedPianoBlack && !vehicleCompat.isTrunkMat
-      ? BOYA_SERVICE_PRICE_TL
+      ? boyaPriceTl
       : 0) +
-    (montajSelected && !vehicleCompat.isTrunkMat ? MONTAJ_SERVICE_PRICE_TL : 0)
+    (montajSelected && !vehicleCompat.isTrunkMat ? montajPriceTl : 0)
 
   const addonUnitPriceNumber = addonUnitTl * 100
   const effectiveUnitPriceNumber = baseUnitPriceNumber + addonUnitPriceNumber
@@ -488,13 +518,13 @@ export default function ProductActions({
       return undefined
     }
     const parts: string[] = []
-    if (activeBoya) parts.push(`Boya (+₺${BOYA_SERVICE_PRICE_TL.toLocaleString("tr-TR")})`)
-    if (activeMontaj) parts.push(`Montaj (+₺${MONTAJ_SERVICE_PRICE_TL.toLocaleString("tr-TR")})`)
+    if (activeBoya) parts.push(`Boya (+₺${boyaPriceTl.toLocaleString("tr-TR")})`)
+    if (activeMontaj) parts.push(`Montaj (+₺${montajPriceTl.toLocaleString("tr-TR")})`)
     return {
       boya_selected: activeBoya,
       montaj_selected: activeMontaj,
-      boya_price_tl: activeBoya ? BOYA_SERVICE_PRICE_TL : 0,
-      montaj_price_tl: activeMontaj ? MONTAJ_SERVICE_PRICE_TL : 0,
+      boya_price_tl: activeBoya ? boyaPriceTl : 0,
+      montaj_price_tl: activeMontaj ? montajPriceTl : 0,
       service_summary: parts.join(" • "),
     }
   }
@@ -644,10 +674,10 @@ export default function ProductActions({
   const whatsappServiceNotes: string[] = []
   if (quantity > 1) whatsappServiceNotes.push(`${quantity} adet`)
   if (boyaSelected && !vehicleCompat.isPrePaintedPianoBlack && !vehicleCompat.isTrunkMat) {
-    whatsappServiceNotes.push(`+Boya Hizmeti (₺${BOYA_SERVICE_PRICE_TL})`)
+    whatsappServiceNotes.push(`+Boya Hizmeti (₺${boyaPriceTl})`)
   }
   if (montajSelected && !vehicleCompat.isTrunkMat) {
-    whatsappServiceNotes.push(`+Montaj Hizmeti (₺${MONTAJ_SERVICE_PRICE_TL})`)
+    whatsappServiceNotes.push(`+Montaj Hizmeti (₺${montajPriceTl})`)
   }
   const whatsappUrl = `https://wa.me/${btnConfig.whatsapp_number}?text=${encodeURIComponent(
     `Merhaba, ${product.title}${whatsappServiceNotes.length ? ` (${whatsappServiceNotes.join(", ")})` : ""} ürününü satın almak istiyorum.`
@@ -751,12 +781,12 @@ export default function ProductActions({
                   </span>
                   {boyaSelected && !vehicleCompat.isPrePaintedPianoBlack && !vehicleCompat.isTrunkMat && (
                     <span className="text-[#E50000] font-semibold">
-                      + Boya (₺{formatTlAmount(BOYA_SERVICE_PRICE_TL)})
+                      + Boya (₺{formatTlAmount(boyaPriceTl)})
                     </span>
                   )}
                   {montajSelected && !vehicleCompat.isTrunkMat && (
                     <span className="text-zinc-900 font-semibold">
-                      + Montaj (₺{formatTlAmount(MONTAJ_SERVICE_PRICE_TL)})
+                      + Montaj (₺{formatTlAmount(montajPriceTl)})
                     </span>
                   )}
                   {quantity > 1 && (
