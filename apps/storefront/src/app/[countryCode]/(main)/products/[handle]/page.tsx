@@ -3,6 +3,8 @@ import { redirect } from "next/navigation"
 import { listProducts } from "@lib/data/products"
 import { getRegion, listRegions } from "@lib/data/regions"
 import ProductTemplate from "@modules/products/templates"
+import ProductJsonLd from "@modules/products/components/product-json-ld"
+import { extractVehicleCompatibility } from "@modules/products/components/product-actions/vehicle-compatibility"
 import { HttpTypes } from "@medusajs/types"
 
 type Props = {
@@ -257,6 +259,17 @@ async function resolveProductByHandle(countryCode: string, handle: string) {
   )
 }
 
+function normalizeCleanImageUrl(url?: string | null): string {
+  if (!url) return ""
+  if (
+    url.includes("media.kitgaraj.com") &&
+    (url.includes("/plus/") || url.includes("/temiz/") || url.includes("-showroom."))
+  ) {
+    return `https://bodykitmerkezi.com/api/clean-image?url=${encodeURIComponent(url)}`
+  }
+  return url
+}
+
 export async function generateMetadata(props: Props): Promise<Metadata> {
   const params = await props.params
   const { handle } = params
@@ -273,13 +286,72 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
     return { title: "BodyKit Merkezi" }
   }
 
+  const compat = extractVehicleCompatibility(
+    product.title || "",
+    product.description,
+    product.metadata as Record<string, any>
+  )
+
+  const canonicalUrl = `https://bodykitmerkezi.com/${countryCode}/products/${handle}`
+  const pageTitle = `${product.title} (${compat.startYear}-${compat.endYear}) Fiyatı | BodyKit Merkezi`
+  const pageDesc = `${compat.brandAndModel} (${compat.startYear}-${compat.endYear}) ${compat.chassisLabel} uyumlu ${product.title}. Birebir kalıp, 1. sınıf esnek ABS plastik malzeme, boya/montaj opsiyonu, aynı gün kargo ve 14 gün iade güvencesiyle BodyKit Merkezi'nde! Hemen inceleyin.`
+
+  const cleanImage = normalizeCleanImageUrl(product.thumbnail || product.images?.[0]?.url)
+
   return {
-    title: `${product.title} | BodyKit Merkezi`,
-    description: `${product.title}`,
+    title: pageTitle,
+    description: pageDesc,
+    keywords: [
+      compat.brandAndModel,
+      `${compat.brandAndModel} body kit`,
+      `${compat.brandAndModel} modifiye`,
+      `${compat.brandAndModel} ön ek`,
+      `${compat.brandAndModel} difüzör`,
+      `${compat.brandAndModel} marşpiyel`,
+      `${compat.brandAndModel} spoiler`,
+      product.title || "Body Kit",
+      "bodykit merkezi",
+      "oto tuning",
+      "araç dış modifiye",
+      "araca özel body kit",
+    ],
+    alternates: {
+      canonical: canonicalUrl,
+    },
     openGraph: {
-      title: `${product.title} | BodyKit Merkezi`,
-      description: `${product.title}`,
-      images: product.thumbnail ? [product.thumbnail] : [],
+      title: pageTitle,
+      description: pageDesc,
+      url: canonicalUrl,
+      siteName: "BodyKit Merkezi",
+      locale: "tr_TR",
+      type: "website",
+      images: cleanImage
+        ? [
+            {
+              url: cleanImage,
+              width: 800,
+              height: 800,
+              alt: `${product.title} - ${compat.brandAndModel} Uyumlu Parça`,
+            },
+          ]
+        : [],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: pageTitle,
+      description: pageDesc,
+      images: cleanImage ? [cleanImage] : [],
+    },
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-video-preview": -1,
+        "max-image-preview": "large",
+        "max-snippet": -1,
+      },
     },
   }
 }
@@ -309,11 +381,18 @@ export default async function ProductPage(props: Props) {
   const images = getImagesForVariant(pricedProduct, selectedVariantId) || []
 
   return (
-    <ProductTemplate
-      product={pricedProduct}
-      region={region}
-      countryCode={effectiveCountry}
-      images={images}
-    />
+    <>
+      <ProductJsonLd
+        product={pricedProduct}
+        region={region}
+        countryCode={effectiveCountry}
+      />
+      <ProductTemplate
+        product={pricedProduct}
+        region={region}
+        countryCode={effectiveCountry}
+        images={images}
+      />
+    </>
   )
 }

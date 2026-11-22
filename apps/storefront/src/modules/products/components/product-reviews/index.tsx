@@ -1,7 +1,8 @@
 "use client"
 
-import React, { useState, useEffect, useRef } from "react"
+import React, { useState, useEffect, useRef, useMemo } from "react"
 import { HttpTypes } from "@medusajs/types"
+import { generateUniqueProductReviews } from "./generate-product-reviews"
 
 export type ReviewItem = {
   id: string
@@ -32,48 +33,38 @@ const isVideoMedia = (url?: string, type?: string) => {
   return /\.(mp4|webm|mov|ogg|avi)($|\?)/i.test(url) || url.startsWith("data:video/")
 }
 
+const LEGACY_GENERIC_REVIEW_IDS = new Set([
+  "rev_1",
+  "rev_2",
+  "rev_3",
+  "rev_default_1",
+  "rev_default_2",
+  "rev_default_3",
+])
+
+function isLegacyGenericDuplicateReview(r: ReviewItem): boolean {
+  if (!r) return true
+  if (LEGACY_GENERIC_REVIEW_IDS.has(String(r.id))) return true
+  if (r.product_id === "all") return true
+  const name = (r.customer_name || "").trim()
+  const comment = (r.comment || "").trim()
+  if (
+    (name === "Mehmet A." && comment.startsWith("Malzeme kalitesi harika, birebir uyumlu geldi")) ||
+    (name === "Seda K." && comment.startsWith("Rengi, dokusu ve duruşu muazzam")) ||
+    (name === "Emre T." && comment.startsWith("Gerçekten fiyat performans olarak çok başarılı"))
+  ) {
+    return true
+  }
+  return false
+}
+
 const ProductReviews: React.FC<ProductReviewsProps> = ({ product }) => {
-  const [reviews, setReviews] = useState<ReviewItem[]>([
-    {
-      id: "rev_default_1",
-      customer_name: "Mehmet A.",
-      color: "STANDART",
-      rating: 5,
-      comment:
-        "Malzeme kalitesi harika, birebir uyumlu geldi. Paketleme çok özenliydi ve hızlı kargolandı. Kesinlikle tavsiye ederim!",
-      media_url: product.thumbnail || product.images?.[0]?.url || "",
-      media_type: "image",
-      verified_purchase: true,
-      helpful_count: 14,
-      created_at: "10.11.2026",
-    },
-    {
-      id: "rev_default_2",
-      customer_name: "Seda K.",
-      color: "PARLAK SİYAH",
-      rating: 5,
-      comment:
-        "Rengi, dokusu ve duruşu muazzam. Montajı çok kolay oldu, araca tam oturdu. Çok memnun kaldık :)",
-      media_url: product.images?.[1]?.url || product.thumbnail || "",
-      media_type: "image",
-      verified_purchase: true,
-      helpful_count: 9,
-      created_at: "09.11.2026",
-    },
-    {
-      id: "rev_default_3",
-      customer_name: "Emre T.",
-      color: "STANDART",
-      rating: 5,
-      comment:
-        "Gerçekten fiyat performans olarak çok başarılı. Müşteri temsilcisi de çok ilgiliydi, teşekkürler.",
-      media_url: product.images?.[2]?.url || product.thumbnail || "",
-      media_type: "image",
-      verified_purchase: true,
-      helpful_count: 6,
-      created_at: "08.11.2026",
-    },
-  ])
+  const generatedReviews = useMemo(() => generateUniqueProductReviews(product), [product])
+  const [reviews, setReviews] = useState<ReviewItem[]>(generatedReviews)
+
+  useEffect(() => {
+    setReviews(generatedReviews)
+  }, [generatedReviews])
 
   const [showWriteModal, setShowWriteModal] = useState(false)
   const [lightboxMedia, setLightboxMedia] = useState<{ url: string; type: "image" | "video"; author: string; comment: string; rating: number } | null>(null)
@@ -112,7 +103,7 @@ const ProductReviews: React.FC<ProductReviewsProps> = ({ product }) => {
 
   const fetchReviews = async () => {
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000"
+      const backendUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "https://api.bodykitmerkezi.com"
       const publishableKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
       const headers: Record<string, string> = {}
       if (publishableKey) {
@@ -125,32 +116,44 @@ const ProductReviews: React.FC<ProductReviewsProps> = ({ product }) => {
       )
       if (res.ok) {
         const data = await res.json()
-        if (data?.success && Array.isArray(data.reviews) && data.reviews.length > 0) {
-          // Enrich reviews without media with product images if they are default showcase reviews
-          const enriched = data.reviews.map((r: ReviewItem, idx: number) => ({
-            ...r,
-            media_url:
-              r.media_url ||
-              product.images?.[idx % Math.max(1, product.images?.length || 1)]?.url ||
-              product.thumbnail ||
-              "",
-          }))
-          setReviews(enriched)
+        if (data?.success && Array.isArray(data.reviews)) {
+          const customProductReviews = data.reviews.filter(
+            (r: ReviewItem) =>
+              !isLegacyGenericDuplicateReview(r) &&
+              r.product_id &&
+              r.product_id === product.id
+          )
+          if (customProductReviews.length > 0) {
+            const combined = [...customProductReviews, ...generatedReviews]
+            const seenIds = new Set<string>()
+            const deduped = combined.filter((item) => {
+              if (seenIds.has(item.id)) return false
+              seenIds.add(item.id)
+              return true
+            })
+            setReviews(deduped)
+            return
+          }
         }
       }
+      setReviews(generatedReviews)
     } catch (e) {
-      // Fallback to localStorage if offline
       if (typeof window !== "undefined") {
         const saved = localStorage.getItem(`reviews-${product.id}`)
         if (saved) {
           try {
             const parsed = JSON.parse(saved)
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              setReviews(parsed)
+            if (Array.isArray(parsed)) {
+              const cleanLocal = parsed.filter((r: ReviewItem) => !isLegacyGenericDuplicateReview(r))
+              if (cleanLocal.length > 0) {
+                setReviews(cleanLocal)
+                return
+              }
             }
           } catch (err) {}
         }
       }
+      setReviews(generatedReviews)
     }
   }
 
@@ -290,12 +293,19 @@ const ProductReviews: React.FC<ProductReviewsProps> = ({ product }) => {
 
           {/* Star Summary Row */}
           <div className="flex items-center gap-2.5 mt-4">
-            <div className="flex items-center gap-1 text-[#ff8a00]">
-              {[1, 2, 3, 4, 5].map((s) => (
-                <svg key={s} className="w-5 h-5 fill-current" viewBox="0 0 20 20">
-                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                </svg>
-              ))}
+            <div className="flex items-center gap-1">
+              {[1, 2, 3, 4, 5].map((s) => {
+                const filled = s <= Math.round(Number(averageRating) || 5)
+                return (
+                  <svg
+                    key={s}
+                    className={`w-5 h-5 ${filled ? "text-[#ff8a00] fill-current" : "text-zinc-300 fill-current"}`}
+                    viewBox="0 0 20 20"
+                  >
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                  </svg>
+                )
+              })}
             </div>
             <span className="text-lg font-black text-zinc-900">{averageRating} / 5</span>
           </div>
@@ -354,7 +364,9 @@ const ProductReviews: React.FC<ProductReviewsProps> = ({ product }) => {
             const idx = Math.round(el.scrollLeft / 340)
             setActiveSlideIndex(idx)
           }}
-          className="flex gap-5 overflow-x-auto pb-4 pt-1 snap-x snap-mandatory no-scrollbar"
+          className={`flex gap-5 overflow-x-auto pb-4 pt-1 snap-x snap-mandatory no-scrollbar ${
+            displayedReviews.length <= 2 ? "sm:justify-center" : ""
+          }`}
           style={{ scrollbarWidth: "none" }}
         >
           {displayedReviews.map((rev, idx) => {

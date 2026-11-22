@@ -17,7 +17,21 @@ import { getCategoryByHandle } from "@lib/data/categories"
 import { listProducts } from "@lib/data/products"
 
 export const metadata: Metadata = {
-  description: "BodyKit Merkezi - Aracınıza Özel Premium Bodykit, Difüzör, Spoiler, Ön Lip ve Marşpiyel Koleksiyonu",
+  title: "BodyKit Merkezi | Türkiye'nin Lider Body Kit & Modifiye Mağazası",
+  description:
+    "BodyKit Merkezi - Aracınıza özel premium body kit, ön ek (lip), arka difüzör, yan marşpiyel, spoiler ve panjur modelleri. Birebir kalıp garantisi ve hızlı kargo ile hemen keşfedin.",
+  alternates: {
+    canonical: "https://bodykitmerkezi.com/tr",
+  },
+  openGraph: {
+    title: "BodyKit Merkezi | Türkiye'nin Lider Body Kit & Modifiye Mağazası",
+    description:
+      "Aracınıza özel premium body kit, ön ek (lip), arka difüzör, yan marşpiyel, spoiler ve panjur modelleri. Birebir kalıp garantisi ve hızlı kargo ile hemen keşfedin.",
+    url: "https://bodykitmerkezi.com/tr",
+    siteName: "BodyKit Merkezi",
+    locale: "tr_TR",
+    type: "website",
+  },
 }
 
 const NEXT_PUBLIC_MEDUSA_BACKEND_URL = process.env.MEDUSA_BACKEND_URL || "https://api.bodykitmerkezi.com"

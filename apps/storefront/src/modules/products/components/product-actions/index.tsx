@@ -12,6 +12,7 @@ import { convertToLocale } from "@lib/util/money"
 import MobileActions from "./mobile-actions"
 import { trackViewContent, trackAddToCart } from "@lib/util/tracking"
 import { extractVehicleCompatibility } from "./vehicle-compatibility"
+import { getProductReviewSummary } from "@modules/products/components/product-reviews/generate-product-reviews"
 
 const BOYA_SERVICE_PRICE_TL = 1800
 const MONTAJ_SERVICE_PRICE_TL = 1200
@@ -464,6 +465,10 @@ export default function ProductActions({
     )
   }, [product.title, product.description, product.metadata])
 
+  const reviewSummary = useMemo(() => {
+    return getProductReviewSummary(product)
+  }, [product])
+
   // Calculate pricing
   const price = getProductPrice({
     product,
@@ -688,6 +693,31 @@ export default function ProductActions({
       <div className="flex flex-col gap-y-6" ref={actionsRef}>
         {/* Title & Favorites */}
         <div className="flex flex-col gap-y-2">
+          {/* Breadcrumbs for SEO & Navigation */}
+          <nav
+            aria-label="Breadcrumb"
+            className="flex items-center gap-1.5 text-xs text-zinc-500 overflow-x-auto no-scrollbar py-0.5"
+          >
+            <a href={`/${countryCode}`} className="hover:text-black transition-colors shrink-0">
+              Anasayfa
+            </a>
+            <span className="text-zinc-300">/</span>
+            <a href={`/${countryCode}/store`} className="hover:text-black transition-colors shrink-0">
+              Mağaza
+            </a>
+            {vehicleCompat.brandAndModel && (
+              <>
+                <span className="text-zinc-300">/</span>
+                <a
+                  href={`/${countryCode}/store?q=${encodeURIComponent(vehicleCompat.brandAndModel)}`}
+                  className="hover:text-black transition-colors font-semibold text-zinc-700 shrink-0"
+                >
+                  {vehicleCompat.brandAndModel}
+                </a>
+              </>
+            )}
+          </nav>
+
           <div className="flex items-start justify-between">
             <h1 className="font-sans text-3xl sm:text-4xl leading-tight text-black font-medium tracking-wide pr-4" data-testid="product-title">
               {product.title}
@@ -716,29 +746,35 @@ export default function ProductActions({
           {/* Star review trigger */}
           <a
             href="#product-reviews"
-            className="flex items-center gap-2 mt-1 text-sm text-gray-500 hover:text-black cursor-pointer w-max"
+            className="flex items-center gap-2 mt-1 text-sm text-gray-600 hover:text-black cursor-pointer w-max"
           >
             <div className="flex gap-0.5">
-              {[...Array(5)].map((_, i) => (
-                <svg
-                  key={i}
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="w-3.5 h-3.5 fill-gray-200 text-gray-200"
-                  aria-hidden="true"
-                >
-                  <path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z" />
-                </svg>
-              ))}
+              {[...Array(5)].map((_, i) => {
+                const filled = i < Math.round(Number(reviewSummary.averageRating) || 5)
+                return (
+                  <svg
+                    key={i}
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className={`w-3.5 h-3.5 ${
+                      filled ? "fill-amber-400 text-amber-400" : "fill-gray-200 text-gray-200"
+                    }`}
+                    aria-hidden="true"
+                  >
+                    <path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z" />
+                  </svg>
+                )
+              })}
             </div>
-            <span>İlk değerlendiren siz olun</span>
+            <span className="font-semibold text-zinc-800">{reviewSummary.averageRating}</span>
+            <span className="text-zinc-500">({reviewSummary.count} Değerlendirme)</span>
           </a>
         </div>
 

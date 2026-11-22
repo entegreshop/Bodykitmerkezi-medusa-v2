@@ -3,15 +3,19 @@ import fs from "fs"
 import path from "path"
 import { readCatalogState, writeCatalogState, DEFAULT_REVIEWS } from "../../admin/catalog-operations/route"
 
+const LEGACY_DUPLICATE_IDS = new Set(["rev_1", "rev_2", "rev_3"])
+
 export async function GET(req: MedusaRequest, res: MedusaResponse) {
   try {
     const state = readCatalogState()
     const productId = String(req.query?.product_id || "").trim()
-    const allActive = (state.reviews || DEFAULT_REVIEWS).filter((r) => r.active !== false)
+    const allActive = (state.reviews || DEFAULT_REVIEWS).filter(
+      (r) => r.active !== false && !LEGACY_DUPLICATE_IDS.has(String(r.id))
+    )
 
-    // Product-specific reviews + general reviews ("all") so every product page has rich reviews
+    // Only return reviews specifically bound to this product_id (no global "all" duplicates across products)
     const filtered = productId
-      ? allActive.filter((r) => r.product_id === productId || r.product_id === "all")
+      ? allActive.filter((r) => r.product_id === productId)
       : allActive
 
     const totalCount = filtered.length

@@ -35,7 +35,7 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({
       >
         {/* 1. Ürün Görseli (Masaüstünde Sol Üst 60%, Mobilde 1. Sırada) */}
         <div className="order-1 w-full small:col-span-7 small:col-start-1 small:row-start-1">
-          <ImageGallery images={images} />
+          <ImageGallery images={images} productTitle={product.title} />
         </div>
 
         {/* 2. Başlık, Fiyat, Sepete Ekle, Ödeme Seçenekleri ve Açıklama/Özellikler (Masaüstünde Sağ 40% Sticky, Mobilde Görselin Hemen Altında 2. Sırada) */}

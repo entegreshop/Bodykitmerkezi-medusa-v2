@@ -6,6 +6,7 @@ import { useState, useRef } from "react"
 
 type ImageGalleryProps = {
   images: HttpTypes.StoreProductImage[]
+  productTitle?: string
 }
 
 function isRedCoverTemplateUrl(url?: string | null): boolean {
@@ -46,7 +47,7 @@ function normalizeCleanImageUrl(url?: string | null): string {
   return url
 }
 
-const ImageGallery = ({ images: rawImages }: ImageGalleryProps) => {
+const ImageGallery = ({ images: rawImages, productTitle }: ImageGalleryProps) => {
   const [activeIndex, setActiveIndex] = useState(0)
   const carouselRef = useRef<HTMLDivElement>(null)
   const thumbListRef = useRef<HTMLDivElement>(null)
@@ -179,7 +180,7 @@ const ImageGallery = ({ images: rawImages }: ImageGalleryProps) => {
                     />
                   ) : (
                     <Image
-                      alt={`Thumbnail ${index + 1}`}
+                      alt={`${productTitle || "Ürün"} - Açı ${index + 1}`}
                       src={image.url}
                       fill
                       unoptimized
@@ -239,7 +240,7 @@ const ImageGallery = ({ images: rawImages }: ImageGalleryProps) => {
                   />
                 ) : (
                   <Image
-                    alt="Product Image"
+                    alt={`${productTitle || "Ürün"} - Görsel ${index + 1}`}
                     src={image.url}
                     fill
                     unoptimized
