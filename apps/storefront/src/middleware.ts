@@ -133,7 +133,7 @@ export async function middleware(request: NextRequest) {
   const origin = forwardedHost ? `${forwardedProto}://${forwardedHost}` : request.nextUrl.origin
   const redirectUrl = `${origin}/${countryCode}${redirectPath}${queryString}`
 
-  const response = NextResponse.redirect(redirectUrl, 307)
+  const response = NextResponse.redirect(redirectUrl, 308)
   if (!cacheIdCookie) {
     response.cookies.set("_medusa_cache_id", cacheId, {
       maxAge: 60 * 60 * 24,
