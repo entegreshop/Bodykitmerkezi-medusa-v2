@@ -84,6 +84,7 @@ export interface BannerCarouselItem {
   footer_note: string
   badge_text: string
   bg_image_url: string
+  bg_image_url_mobile?: string
   bg_color: string
   source_type: "latest" | "category" | "collection"
   handle: string
@@ -3772,6 +3773,43 @@ export const DesignStudio: React.FC<DesignStudioProps> = ({ initialSection = "he
                                 uploadMediaFile(f, `bcarousel-${bIdx}`, (url) => {
                                   const next = [...(config.banner_carousels || [])]
                                   next[bIdx] = { ...bBlock, bg_image_url: url }
+                                  updateField("banner_carousels", next)
+                                })
+                              }
+                            }}
+                          />
+                        </label>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5 mt-2">
+                      <label className="text-[12px] font-semibold text-[#1e293b]">
+                        📱 Mobil Özel Banner Görseli (İsteğe Bağlı - 750x700 Önerilir)
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={bBlock.bg_image_url_mobile || ""}
+                          onChange={(e) => {
+                            const next = [...(config.banner_carousels || [])]
+                            next[bIdx] = { ...bBlock, bg_image_url_mobile: e.target.value }
+                            updateField("banner_carousels", next)
+                          }}
+                          placeholder="Mobil görsel URL veya dosya seçin"
+                          className="flex-1 h-[36px] px-3 rounded border border-[#e2e5ec] text-[12px]"
+                        />
+                        <label className="px-3.5 py-2 rounded bg-[#fdf2f8] text-[#db2777] text-[12px] font-bold cursor-pointer shrink-0">
+                          {uploadingKey === `bcarousel-mob-${bIdx}` ? "Yükleniyor..." : "📱 Mobil Görsel Yükle"}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              const f = e.target.files?.[0]
+                              if (f) {
+                                uploadMediaFile(f, `bcarousel-mob-${bIdx}`, (url) => {
+                                  const next = [...(config.banner_carousels || [])]
+                                  next[bIdx] = { ...bBlock, bg_image_url_mobile: url }
                                   updateField("banner_carousels", next)
                                 })
                               }

@@ -737,7 +737,10 @@ function mergeHeroConfig(parsed: Record<string, any>) {
     categories: mergedCategories,
     banners: parsed.banners && parsed.banners.length > 0 ? parsed.banners : defaultBanners,
     carousel_blocks: parsed.carousel_blocks && parsed.carousel_blocks.length > 0 ? parsed.carousel_blocks : defaultCarouselBlocks,
-    banner_carousels: parsed.banner_carousels && parsed.banner_carousels.length > 0 ? parsed.banner_carousels : defaultBannerCarousels,
+    banner_carousels: (parsed.banner_carousels && parsed.banner_carousels.length > 0 ? parsed.banner_carousels : defaultBannerCarousels).map((b: any) => ({
+      ...b,
+      bg_image_url_mobile: b.bg_image_url_mobile || (b.bg_image_url && b.bg_image_url.includes("unsplash.com") ? b.bg_image_url.replace(/w=1600/g, "w=750&h=700&fit=crop&crop=center") : b.bg_image_url),
+    })),
     trust_badges: parsed.trust_badges && parsed.trust_badges.length > 0 ? parsed.trust_badges : defaultTrustBadges,
     car_brands: parsed.car_brands && parsed.car_brands.length > 0 ? parsed.car_brands : defaultData.car_brands,
     header_settings: { ...defaultData.header_settings, ...(parsed.header_settings || {}) },
