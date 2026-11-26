@@ -83,8 +83,8 @@ export default function CouponBanner({ config }: { config?: CouponBannerConfig |
 
     if (cfg.auto_apply_checkout !== false && typeof window !== "undefined") {
       try {
-        window.localStorage.setItem("cizgibutik_active_coupon", codeToCopy)
-        window.dispatchEvent(new CustomEvent("cizgibutik:coupon-copied", { detail: { code: codeToCopy } }))
+        window.localStorage.setItem("bodykitmerkezi_active_coupon", codeToCopy)
+        window.dispatchEvent(new CustomEvent("bodykitmerkezi:coupon-copied", { detail: { code: codeToCopy } }))
       } catch {}
     }
 

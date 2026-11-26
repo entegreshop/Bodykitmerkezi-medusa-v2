@@ -926,7 +926,7 @@ export const DesignStudio: React.FC<DesignStudioProps> = ({ initialSection = "he
                   Yapay Zeka Destekli Mağaza, Banner Carousel, Kupon &amp; Tema Tasarım Stüdyosu
                 </h4>
                 <p className="text-[12.5px] text-slate-300 max-w-3xl">
-                  Tek bir komutla (prompt) Hero Banner, n11 Stili Kategori Carousel, BellButik Kupon Barı, kampanya sloganları ve mağaza renk paletlerini yapay zeka ile saniyeler içinde üretip vitrine uygulayın.
+                  Tek bir komutla (prompt) Hero Banner, n11 Stili Kategori Carousel, Kupon Barı, kampanya sloganları ve mağaza renk paletlerini yapay zeka ile saniyeler içinde üretip vitrine uygulayın.
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2.5">
@@ -946,7 +946,7 @@ export const DesignStudio: React.FC<DesignStudioProps> = ({ initialSection = "he
                 >
                   <option value="luxury_editorial" className="text-black">💎 Ton: Lüks &amp; Editoryal Butik</option>
                   <option value="high_conversion" className="text-black">🔥 Ton: Yüksek Dönüşüm &amp; Fırsat (n11 / Trendyol)</option>
-                  <option value="bellbutik_glam" className="text-black">🖤 Ton: BellButik Gece &amp; Kupon Vurgulu</option>
+                  <option value="bellbutik_glam" className="text-black">🖤 Ton: Gece Fırsatı &amp; Kupon Vurgulu</option>
                   <option value="minimal_modern" className="text-black">🌿 Ton: Minimalist &amp; Modern</option>
                 </select>
               </div>
@@ -1025,8 +1025,8 @@ export const DesignStudio: React.FC<DesignStudioProps> = ({ initialSection = "he
                         },
                       },
                       {
-                        label: "🎟️ BellButik Gece İndirimi & Kupon",
-                        prompt: "BellButik tarzı koyu lüks kupon barı ve sepette ekstra %15 gece indirimi kampanya kurgusu üret",
+                        label: "🎟️ BodyKit Merkezi Gece İndirimi & Kupon",
+                        prompt: "Koyu lüks kupon barı ve sepette ekstra %15 gece indirimi kampanya kurgusu üret",
                         preset: {
                           tag: "BU GECEYE ÖZEL • EKSTRA İNDİRİM",
                           title: "Sepette Ekstra %15 Gece İndirimi Başladı",
@@ -1323,7 +1323,7 @@ export const DesignStudio: React.FC<DesignStudioProps> = ({ initialSection = "he
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
                 {[
                   {
-                    name: "BellButik Luxury Crimson",
+                    name: "BodyKit Sport Crimson",
                     desc: "Koyu obsidyen kupon barı, yakut kırmızı ışık efektleri ve yüksek kontrastlı siyah-beyaz vitrin.",
                     colors: ["#0b0b0c", "#c81e2d", "#ff6a6a", "#111827"],
                     apply: () => {
@@ -1333,7 +1333,7 @@ export const DesignStudio: React.FC<DesignStudioProps> = ({ initialSection = "he
                       updateNested("category_tab_carousel", "accent_color", "#c81e2d")
                       updateField("hero_btn_bg", "#c81e2d")
                       updateField("buy_now_bg", "#c81e2d")
-                      notify("🎨 'BellButik Luxury Crimson' AI tema paleti mağazaya uygulandı!")
+                      notify("🎨 'BodyKit Sport Crimson' AI tema paleti mağazaya uygulandı!")
                     },
                   },
                   {

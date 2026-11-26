@@ -149,7 +149,7 @@ export default function QuickCheckoutModal({
        };
 
        try {
-          const savedCoupon = window.localStorage.getItem("cizgibutik_active_coupon")
+          const savedCoupon = window.localStorage.getItem("bodykitmerkezi_active_coupon") || window.localStorage.getItem("cizgibutik_active_coupon")
           if (savedCoupon) {
              setFormData(prev => ({ ...prev, coupon: prev.coupon || savedCoupon }))
           }

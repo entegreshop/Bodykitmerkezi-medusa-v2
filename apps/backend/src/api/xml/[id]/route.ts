@@ -132,7 +132,7 @@ function resolveCanonicalStorefrontUrl(): string {
   const raw =
     process.env.STOREFRONT_URL ||
     process.env.NEXT_PUBLIC_STOREFRONT_URL ||
-    "https://www.bodykitmerkezi.com"
+    "https://bodykitmerkezi.com"
   if (
     !raw ||
     raw.includes("localhost") ||
@@ -140,9 +140,9 @@ function resolveCanonicalStorefrontUrl(): string {
     raw.includes("0.0.0.0") ||
     raw.includes("api.bodykitmerkezi.com")
   ) {
-    return "https://www.bodykitmerkezi.com"
+    return "https://bodykitmerkezi.com"
   }
-  return raw.replace(/\/+$/, "")
+  return raw.replace("www.bodykitmerkezi.com", "bodykitmerkezi.com").replace(/\/+$/, "")
 }
 
 function escapeXml(str: string): string {
@@ -350,15 +350,23 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
 
       xml += `    <item>\n`
       xml += `      <g:id>${escapeXml(itemId)}</g:id>\n`
-      xml += `      <id>${escapeXml(itemId)}</id>\n`
       xml += `      <g:item_group_id>${escapeXml(itemGroupId)}</g:item_group_id>\n`
-      xml += `      <item_group_id>${escapeXml(itemGroupId)}</item_group_id>\n`
       xml += `      <title>${safeCdata(rawTitle)}</title>\n`
-      xml += `      <g:title>${safeCdata(rawTitle)}</g:title>\n`
       xml += `      <description>${safeCdata(rawDesc)}</description>\n`
-      xml += `      <g:description>${safeCdata(rawDesc)}</g:description>\n`
       xml += `      <link>${escapeXml(link)}</link>\n`
-      xml += `      <g:link>${escapeXml(link)}</g:link>\n`
+      xml += `      <g:image_link>${escapeXml(primaryImage)}</g:image_link>\n`
+
+      for (const addImg of additionalImages) {
+        xml += `      <g:additional_image_link>${escapeXml(addImg)}</g:additional_image_link>\n`
+      }
+
+      xml += `      <g:availability>in_stock</g:availability>\n`
+      xml += `      <g:price>${priceString}</g:price>\n`
+      xml += `      <g:sale_price>${salePriceString}</g:sale_price>\n`
+      xml += `      <g:google_product_category>${escapeXml(googleCategory)}</g:google_product_category>\n`
+      xml += `      <g:product_type>${escapeXml(catLabel)}</g:product_type>\n`
+      xml += `      <g:brand>${escapeXml(brand)}</g:brand>\n`
+      xml += `      <g:condition>new</g:condition>\n`
       xml += `      <g:gtin>${escapeXml(gtin)}</g:gtin>\n`
       xml += `      <g:mpn>${escapeXml(rawSku)}</g:mpn>\n`
       xml += `      <g:identifier_exists>yes</g:identifier_exists>\n`
@@ -367,37 +375,10 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
       xml += `      <g:custom_label_2>${escapeXml(colorLabel)}</g:custom_label_2>\n`
       xml += `      <g:custom_label_3>Hızlı Kargo</g:custom_label_3>\n`
       xml += `      <g:custom_label_4>BodyKit Merkezi</g:custom_label_4>\n`
-      xml += `      <g:product_type>${escapeXml(catLabel)}</g:product_type>\n`
-      xml += `      <g:google_product_category>${escapeXml(googleCategory)}</g:google_product_category>\n`
-      xml += `      <google_product_category>${escapeXml(googleCategory)}</google_product_category>\n`
-      xml += `      <g:fb_product_category>vehicles &amp; parts &gt; vehicle parts &amp; accessories</g:fb_product_category>\n`
-      xml += `      <g:price>${priceString}</g:price>\n`
-      xml += `      <price>${priceString}</price>\n`
-      xml += `      <sale_price>${salePriceString}</sale_price>\n`
-      xml += `      <g:sale_price>${salePriceString}</g:sale_price>\n`
-      xml += `      <g:brand>${escapeXml(brand)}</g:brand>\n`
-      xml += `      <brand>${escapeXml(brand)}</brand>\n`
-      xml += `      <g:condition>new</g:condition>\n`
-      xml += `      <condition>new</condition>\n`
-      xml += `      <availability>in_stock</availability>\n`
-      xml += `      <g:availability>in_stock</g:availability>\n`
-      xml += `      <g:quantity>100</g:quantity>\n`
-      xml += `      <g:size>Standart / Araca Özel Tam Uyum</g:size>\n`
-      xml += `      <size>Standart / Araca Özel Tam Uyum</size>\n`
-      xml += `      <g:color>${escapeXml(colorLabel)}</g:color>\n`
-      xml += `      <g:material>1. Sınıf Esnek ABS Plastik / PP</g:material>\n`
-      xml += `      <g:image_link>${escapeXml(primaryImage)}</g:image_link>\n`
-      xml += `      <image_link>${escapeXml(primaryImage)}</image_link>\n`
-
-      for (const addImg of additionalImages) {
-        xml += `      <g:additional_image_link>${escapeXml(addImg)}</g:additional_image_link>\n`
-        xml += `      <additional_image_link>${escapeXml(addImg)}</additional_image_link>\n`
-      }
-
       xml += `      <g:shipping>\n`
       xml += `        <g:country>TR</g:country>\n`
-      xml += `        <g:service>Standart</g:service>\n`
-      xml += `        <g:price>0 ${isoCurrency}</g:price>\n`
+      xml += `        <g:service>Standart Kargo</g:service>\n`
+      xml += `        <g:price>0.00 ${isoCurrency}</g:price>\n`
       xml += `      </g:shipping>\n`
       xml += `    </item>\n`
     })

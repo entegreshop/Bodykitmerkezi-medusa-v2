@@ -4328,6 +4328,47 @@ const StoreSettingsPage = () => {
         {/* 9. PERSONELLER */}
         {activeTab === "staff" && (
           <div className="quka-card">
+            {/* Bilgilendirme ve Hızlı Eylemler Kutusu */}
+            <div
+              style={{
+                background: "linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%)",
+                border: "1px solid #bfdbfe",
+                borderRadius: 12,
+                padding: "16px 20px",
+                marginBottom: 20,
+                display: "flex",
+                flexWrap: "wrap",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 14,
+              }}
+            >
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#1e3a8a", display: "flex", alignItems: "center", gap: 6 }}>
+                  <span>🔐</span> Yönetici Giriş Bilgileri & Personel Yetkilendirme
+                </div>
+                <div style={{ fontSize: 12.5, color: "#475569", marginTop: 4, maxWidth: 620, lineHeight: 1.5 }}>
+                  Mevcut giriş şifrenizi veya e-postanızı değiştirmek için <strong>Profil Ayarları</strong>'na gidebilir; mağazaya yeni yönetici, depo veya sipariş sorumlusu eklemek için <strong>Medusa Kullanıcı Yönetimi</strong>'ni kullanabilirsiniz.
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <a
+                  href="/app/settings/profile"
+                  className="quka-btn-secondary"
+                  style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5 }}
+                >
+                  👤 Giriş & Şifremi Değiştir
+                </a>
+                <a
+                  href="/app/settings/users"
+                  className="quka-btn-primary"
+                  style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5 }}
+                >
+                  + Yeni Kullanıcı & Yetki Yönetimi
+                </a>
+              </div>
+            </div>
+
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
               <div>
                 <h5 style={{ margin: 0 }}>Yönetici Kullanıcılar & Personel Yetkileri</h5>
@@ -4335,13 +4376,13 @@ const StoreSettingsPage = () => {
                   Yönetim paneline erişebilen personelleri ve departman bazlı yetki gruplarını yönetin.
                 </div>
               </div>
-              <button
-                type="button"
+              <a
+                href="/app/settings/users"
                 className="quka-btn-primary"
-                onClick={() => showToast("Yeni personel ekleme formu açıldı.")}
+                style={{ textDecoration: "none" }}
               >
                 + Yeni Personel Ekle
-              </button>
+              </a>
             </div>
 
             <table className="quka-table">

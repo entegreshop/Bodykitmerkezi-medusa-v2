@@ -78,7 +78,7 @@ const StarIcon = () => (
 
 const CizgiLogo = () => (
   <svg width="40" height="20" viewBox="0 0 100 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <text x="50" y="25" fontFamily="Arial, sans-serif" fontSize="24" fontWeight="900" fill="#18181b" textAnchor="middle" letterSpacing="2">ÇİZGİ</text>
+    <text x="50" y="25" fontFamily="Arial, sans-serif" fontSize="16" fontWeight="900" fill="#18181b" textAnchor="middle" letterSpacing="1">BODYKİT</text>
   </svg>
 )
 
@@ -104,7 +104,7 @@ interface OrderLog {
 interface CustomOrder {
   id: string
   display_id: string
-  platform: "WhatsApp" | "Cizgibutik"
+  platform: "WhatsApp" | "Bodykitmerkezi" | "Cizgibutik"
   store: string
   order_tag: string
   discount_total?: any
@@ -817,8 +817,8 @@ const SiparisYonetimiPage = () => {
       return {
         id: o.id,
         display_id: o.display_id?.toString() || o.id.slice(-8),
-        platform: o.metadata?.platform || "Cizgibutik",
-        store: "Cizgibutik",
+        platform: o.metadata?.platform || "Bodykitmerkezi",
+        store: "BodyKit Merkezi",
         order_tag: o.metadata?.order_tag || "Seçilmedi",
         customer: {
           first_name: o.customer?.first_name || o.shipping_address?.first_name || "Müşteri",
@@ -1540,7 +1540,7 @@ const SiparisYonetimiPage = () => {
                   <div style="font-size: 12px; font-weight: bold; color: #a1a1aa; margin-top: 4px;">Sipariş Numarası: ${orderObj.display_id}</div>
                 </div>
                 <div style="text-align: right;">
-                  <div style="font-size: 18px; font-weight: 950; letter-spacing: -1px;">CIZGIBUTIK</div>
+                  <div style="font-size: 18px; font-weight: 950; letter-spacing: -1px;">BODYKİT MERKEZİ</div>
                   <div style="font-size: 11px; font-weight: bold; color: #71717a;">${orderObj.created_at}</div>
                 </div>
               </div>
@@ -2761,7 +2761,7 @@ const SiparisYonetimiPage = () => {
                   className="w-full h-9 px-3 rounded border border-zinc-200 focus:outline-none focus:border-[#3b82f6] text-[12px] text-zinc-700 bg-white"
                 >
                   <option value="">Hiçbiri seçilmedi</option>
-                  <option value="Cizgibutik">Web Sitesi</option>
+                  <option value="Bodykitmerkezi">Web Sitesi</option>
                   <option value="WhatsApp">WhatsApp</option>
                   <option value="Instagram">Instagram</option>
                   <option value="Trendyol">Trendyol</option>

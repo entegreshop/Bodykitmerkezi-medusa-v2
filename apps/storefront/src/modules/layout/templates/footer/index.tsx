@@ -112,6 +112,7 @@ export default async function Footer() {
               <li><LocalizedClientLink href="/pages/iade-ve-degisim" className="hover:text-black hover:underline">İptal, İade ve Değişim Koşulları</LocalizedClientLink></li>
               <li><LocalizedClientLink href="/pages/kvkk" className="hover:text-black hover:underline">KVKK</LocalizedClientLink></li>
               <li><LocalizedClientLink href="/pages/teslimat-kargo" className="hover:text-black hover:underline">Teslimat ve Kargo Şartları</LocalizedClientLink></li>
+              <li><LocalizedClientLink href="/pages/gizlilik-sozlesmesi" className="hover:text-black hover:underline">Gizlilik ve Güvenlik Sözleşmesi</LocalizedClientLink></li>
               <li><LocalizedClientLink href="/pages/kullanici-sozlesmesi" className="hover:text-black hover:underline">Kullanıcı Sözleşmesi</LocalizedClientLink></li>
               <li><LocalizedClientLink href="/pages/iletisim" className="hover:text-black hover:underline">İletişim</LocalizedClientLink></li>
             </ul>
