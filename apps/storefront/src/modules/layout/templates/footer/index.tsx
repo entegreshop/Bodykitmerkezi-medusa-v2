@@ -53,12 +53,12 @@ export default async function Footer() {
   const footerSettings = heroConfig?.footer_settings || {}
   const footerLogo = logoConfig?.footerLogo || logoConfig?.headerLogo || logoConfig?.logo || logoConfig?.logoUrl || "/logo.png"
 
-  const contactCompany = logoConfig?.contactCompany || logoConfig?.siteTitle || logoConfig?.storeTitle || "BODYKİT MERKEZİ"
-  const contactAddress = logoConfig?.contactAddress || logoConfig?.address || "İkitelli OSB Oto Sanayi Sitesi Başakşehir / İstanbul"
+  const contactCompany = logoConfig?.contactCompany || "ÖZSE MODA TEKSTİL KAFE GIDA İNŞAAT SANAYİ TİCARET LİMİTED ŞİRKETİ"
+  const contactAddress = logoConfig?.contactAddress || logoConfig?.address || "Merkez Mah. Muallim Naci Sk. Merve No: 9 Güngören / İstanbul 34160"
   const contactPhone = logoConfig?.contactPhone || logoConfig?.phone || "+90 532 337 00 81"
   const contactEmail = logoConfig?.contactEmail || logoConfig?.email || "info@bodykitmerkezi.com"
   const contactHours = logoConfig?.contactHours || logoConfig?.workingHours || "Pzt - Cmt: 09:00 - 19:00"
-  const copyrightText = logoConfig?.footerCopyrightText || logoConfig?.copyrightText || `© ${new Date().getFullYear()} BodyKit Merkezi. Tüm hakları saklıdır.`
+  const copyrightText = logoConfig?.footerCopyrightText || logoConfig?.copyrightText || `© ${new Date().getFullYear()} BodyKit Merkezi - ÖZSE MODA TEKSTİL KAFE GIDA İNŞAAT SAN. TİC. LTD. ŞTİ. Tüm hakları saklıdır.`
   const socialLinks = logoConfig?.socialLinks || {}
 
   return (
@@ -153,7 +153,8 @@ export default async function Footer() {
           <div className="flex flex-col gap-y-4">
             <span className="font-bold text-[15px] text-black">Bize Ulaşın</span>
             <div className="flex flex-col gap-y-3 text-gray-500 text-[13px] leading-relaxed">
-              <p className="font-semibold text-gray-800">{contactCompany}</p>
+              <p className="font-semibold text-gray-900 text-[12px] leading-snug">{contactCompany}</p>
+              <p className="text-[12px] text-gray-600 font-medium">Ticari Marka: BodyKit Merkezi</p>
               {contactAddress && <p>{contactAddress.startsWith("Adres") ? contactAddress : `Adres: ${contactAddress}`}</p>}
               {contactPhone && <p>{contactPhone.startsWith("Tel") ? contactPhone : `Tel: ${contactPhone}`}</p>}
               {contactEmail && <p>{contactEmail.startsWith("E-posta") ? contactEmail : `E-posta: ${contactEmail}`}</p>}

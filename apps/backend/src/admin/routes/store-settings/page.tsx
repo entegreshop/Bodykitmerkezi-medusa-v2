@@ -57,7 +57,7 @@ const DEFAULT_CONFIG: StoreConfigState = {
   phone: "0532 337 00 81",
   whatsapp: "905323370081",
   email: "info@bodykitmerkezi.com",
-  address: "İkitelli OSB Oto Sanayi Sitesi Başakşehir / İstanbul",
+  address: "Merkez Mah. Muallim Naci Sk. Merve No: 9 Güngören / İstanbul 34160",
   workingHours: "Pzt - Cmt: 09:00 - 19:00",
   socialLinks: {
     instagram: "https://instagram.com/bodykitmerkezi",

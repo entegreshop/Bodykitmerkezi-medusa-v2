@@ -14,8 +14,8 @@ export const defaultPages = {
 Müşteri memnuniyeti, şeffaf fiyatlandırma, güvenli paketleme ve hızlı teslimat ilkelerimiz doğrultusunda, aracınıza estetik ve sportif bir görünüm kazandırırken her adımda uzman ekibimizle teknik destek sunuyoruz.
 
 İletişim & Şirket Bilgileri:
-Unvan: BodyKit Merkezi Oto Modifiye & Aksesuar
-Adres: İkitelli OSB Oto Sanayi Sitesi Başakşehir / İstanbul
+Unvan: ÖZSE MODA TEKSTİL KAFE GIDA İNŞAAT SANAYİ TİCARET LİMİTED ŞİRKETİ (Ticari Marka: BodyKit Merkezi)
+Adres: Merkez Mah. Muallim Naci Sk. Merve No: 9 Güngören / İstanbul 34160
 Telefon: +90 532 337 00 81
 E-posta: info@bodykitmerkezi.com`
   },
@@ -24,8 +24,8 @@ E-posta: info@bodykitmerkezi.com`
     content: `MADDE 1 - TARAFLAR
 
 1.1. SATICI:
-Unvan: BodyKit Merkezi Oto Modifiye & Aksesuar
-Adres: İkitelli OSB Oto Sanayi Sitesi Başakşehir / İstanbul
+Unvan: ÖZSE MODA TEKSTİL KAFE GIDA İNŞAAT SANAYİ TİCARET LİMİTED ŞİRKETİ (Ticari Marka: BodyKit Merkezi)
+Adres: Merkez Mah. Muallim Naci Sk. Merve No: 9 Güngören / İstanbul 34160
 Telefon: +90 532 337 00 81
 E-posta: info@bodykitmerkezi.com
 Web Sitesi: https://bodykitmerkezi.com
@@ -87,7 +87,7 @@ Kargoya henüz teslim edilmemiş olan siparişlerinizi aynı gün içinde +90 53
 
 7. İADE ADRESİ VE İLETİŞİM
 İade Alıcı Adı: BodyKit Merkezi Depo & İade Birimi
-Adres: İkitelli OSB Oto Sanayi Sitesi Başakşehir / İstanbul
+Adres: Merkez Mah. Muallim Naci Sk. Merve No: 9 Güngören / İstanbul 34160
 Telefon: +90 532 337 00 81
 E-posta: info@bodykitmerkezi.com`
   },
@@ -177,7 +177,7 @@ BodyKit Merkezi (bodykitmerkezi.com), kullanıcılarının ve müşterilerinin g
 
 Veri Sorumlusu İletişim:
 BodyKit Merkezi Oto Modifiye & Aksesuar
-Adres: İkitelli OSB Oto Sanayi Sitesi Başakşehir / İstanbul
+Adres: Merkez Mah. Muallim Naci Sk. Merve No: 9 Güngören / İstanbul 34160
 E-posta: info@bodykitmerkezi.com
 Tel: +90 532 337 00 81`
   },
@@ -204,12 +204,12 @@ BodyKit Merkezi, dilediği zaman işbu sözleşme şartlarını güncelleme hakk
   },
   "iletisim": {
     title: "İletişim",
-    content: `BODYKİT MERKEZİ OTO MODİFİYE & DIŞ AKSESUAR
+    content: `BODYKİT MERKEZİ (ÖZSE MODA TEKSTİL KAFE GIDA İNŞAAT SANAYİ TİCARET LİMİTED ŞİRKETİ)
 
 Bizimle iletişime geçmekten çekinmeyiniz. Uzman ekibimiz araç uyumluluğu, montaj detayları, sipariş takibi ve teknik sorularınız için hizmetinizdedir.
 
 Fiziki Mağaza & Depo Adresi:
-İkitelli Organize Sanayi Bölgesi (OSB) Oto Sanayi Sitesi, Başakşehir / İstanbul
+Merkez Mah. Muallim Naci Sk. Merve No: 9 Güngören / İstanbul 34160
 
 Telefon & WhatsApp Hattı:
 +90 532 337 00 81

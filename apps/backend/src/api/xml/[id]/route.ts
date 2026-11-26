@@ -227,6 +227,11 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
       })
     }
 
+    const limitQuery = req.query?.limit ? Number(req.query.limit) : 0
+    if (limitQuery > 0 && limitQuery < filteredProducts.length) {
+      filteredProducts = filteredProducts.slice(0, limitQuery)
+    }
+
     const storefrontUrl = resolveCanonicalStorefrontUrl()
 
     // Normalize currency code to ISO 4217 (Meta & Google Merchant strictly require "TRY", never "TL")

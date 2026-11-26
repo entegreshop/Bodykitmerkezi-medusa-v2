@@ -6,12 +6,13 @@ const BACKEND_URL =
   "https://api.bodykitmerkezi.com"
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await context.params
-    const upstream = await fetch(`${BACKEND_URL}/export/${encodeURIComponent(id)}`, {
+    const search = req.nextUrl.search || ""
+    const upstream = await fetch(`${BACKEND_URL}/export/${encodeURIComponent(id)}${search}`, {
       cache: "no-store",
       headers: {
         Accept: "application/xml, text/xml, */*",
